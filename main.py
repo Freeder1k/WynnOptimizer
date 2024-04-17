@@ -1,8 +1,9 @@
 import asyncio
-import json
 
-import crafter.crafter
 import core.managers.httpSessionManager
+import crafter.crafter
+import crafter.recipe
+
 
 async def main():
     print(f" ∧,,∧\n"
@@ -11,7 +12,13 @@ async def main():
           "し———J\n")
     try:
         await core.managers.httpSessionManager.HTTPSessionManager().start()
-        print(await crafter.crafter.get_ingredients())
+
+        test = await crafter.recipe.Recipe.from_names("Lunar Charm", "Lunar Charm",
+                                                      "Naval Stone", "Naval Stone",
+                                                      "Naval Stone", "Naval Stone")
+
+        print(test.build())
+
     finally:
         await core.managers.httpSessionManager.HTTPSessionManager().close()
 
