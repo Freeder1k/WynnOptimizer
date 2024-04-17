@@ -32,6 +32,19 @@ armouring_base = [
 ]
 
 
+def constraints(item: crafter.ingredient.Ingredient):
+    return (
+            item.durability > -625000
+            and item.requirements.strength <= 30
+            and item.requirements.dexterity <= 30
+            and item.requirements.intelligence <= 120
+            and item.requirements.defence <= 50
+            and item.requirements.agility <= 50
+            and "rawDefence" in item.identifications
+            and "rawAgility" in item.identifications
+            and item.identifications['rawAgility'].max + item.identifications['rawDefence'].max >= 15
+    )
+
 async def main():
     print(f" ∧,,∧\n"
           "( `•ω•) 。•。︵\n"
@@ -48,18 +61,6 @@ async def main():
             "Fiberglass Frame",
             "Voidtossed Memory"
         ] + armouring_base]
-
-        def constraints(item: crafter.ingredient.Ingredient):
-            return (
-                    item.durability > -625000
-                    and item.requirements.strength <= 30
-                    and item.requirements.dexterity <= 30
-                    and item.requirements.intelligence <= 120
-                    and item.requirements.defence <= 50
-                    and item.requirements.agility <= 50
-                    and "rawDefence" in item.identifications and item.identifications['rawDefence'].max >= 10
-                    and "rawAgility" in item.identifications and item.identifications['rawAgility'].max >= 10
-            )
 
         t = time.time()
         print("Optimizing...")
