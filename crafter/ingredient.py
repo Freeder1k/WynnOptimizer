@@ -74,11 +74,11 @@ class Requirements:
     def from_api_data(cls, item_only_ids: dict, requirements: dict):
         return cls(
             {Skill(skill) for skill in requirements['skills']},
-            item_only_ids.get('strength', 0),
-            item_only_ids.get('dexterity', 0),
-            item_only_ids.get('intelligence', 0),
-            item_only_ids.get('defence', 0),
-            item_only_ids.get('agility', 0),
+            item_only_ids.get('strengthRequirement', 0),
+            item_only_ids.get('dexterityRequirement', 0),
+            item_only_ids.get('intelligenceRequirement', 0),
+            item_only_ids.get('defenceRequirement', 0),
+            item_only_ids.get('agilityRequirement', 0),
             requirements.get('level', 0)
         )
 
