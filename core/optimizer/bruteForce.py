@@ -1,8 +1,8 @@
-from typing import TypeVar
+from typing import TypeVar, Generator, Tuple
 
 T = TypeVar('T')
 
-def generate_all_combinations(n: int, *choices: T):
+def generate_all_combinations(n: int, *choices: T) -> Generator[Tuple[T], None, None]:
     if n == 1:
         for choice in choices:
             yield (choice,)
