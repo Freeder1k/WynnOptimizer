@@ -1,26 +1,18 @@
-from async_lru import alru_cache
-
-from core.wynnAPI import item
-from .ingredient import Ingredient
+from core.optimizer import bruteForce
+from . import ingredient, recipe
 
 
-@alru_cache(ttl=3600)
-async def get_ingredients():
-    items = await item.database()
+async def optimize(stat: str, min_dura: int, ingredients: list[ingredient.Ingredient]):
+    best = ingredient.NO_INGREDIENT
+    best_r = None
+    best.identifications[stat] = ingredient.Identification(0)  # uhh yeah... ig it works
 
-    return {k: Ingredient.from_api_json(k, v) for k, v in items.items()
-            if 'itemOnlyIDs' in v or 'consumableOnlyIDs' in v}
+    for combination in bruteForce.generate_all_combinations(6, *ingredients):
+        r = recipe.Recipe(*combination)
+        item = r.build()
 
+        if item.identifications[stat].max > best.identifications[stat].max and item.durability >= min_dura:
+            best = item
+            best_r = r
 
-def clean_data(ingredient: dict):
-    ingredient.pop('skin', None)
-    ingredient.pop('material', None)
-    ingredient.pop('tier', None)
-    ingredient.pop('internalName', None)
-    ingredient.pop('droppedBy', None)
-    return ingredient
-
-
-async def get_ingredient(name: str):
-    ingredients = await get_ingredients()
-    return ingredients.get(name, None)
+    return best_r

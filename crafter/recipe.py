@@ -1,4 +1,5 @@
 import crafter.crafter
+import crafter.ingredient
 from .ingredient import Ingredient, Modifier, NO_INGREDIENT
 
 
@@ -70,4 +71,10 @@ class Recipe:
 
     @classmethod
     async def from_names(cls, *names: str):
-        return cls(*[await crafter.crafter.get_ingredient(name) for name in names])
+        return cls(*[await crafter.ingredient.get_ingredient(name) for name in names])
+
+    def __str__(self):
+        return f"Recipe({', '.join(str(i) for i in self.ingredients)})"
+
+    def __repr__(self):
+        return self.__str__()

@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from async_lru import alru_cache
+
+from core.wynnAPI import item
+
 
 @dataclass
 class Identification:
@@ -163,6 +167,25 @@ class Ingredient:
             self.requirements * scale
         )
 
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
+
 
 NO_INGREDIENT = Ingredient("No Ingredient", 0, 0, 0, {}, Modifier(),
                            Requirements(set(Skill(s) for s in Skill), 0, 0, 0, 0, 0, 0))
+
+
+@alru_cache(ttl=3600)
+async def get_all_ingredients():
+    items = await item.database()
+
+    return {k: Ingredient.from_api_json(k, v) for k, v in items.items()
+            if 'itemOnlyIDs' in v or 'consumableOnlyIDs' in v}
+
+
+async def get_ingredient(name: str):
+    ingredients = await get_all_ingredients()
+    return ingredients.get(name, None)
