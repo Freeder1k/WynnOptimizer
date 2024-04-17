@@ -11,7 +11,7 @@ async def main():
           "し———J\n")
     try:
         await core.managers.httpSessionManager.HTTPSessionManager().start()
-        print(json.dumps(await crafter.crafter.get_ingredients(), indent=4))
+        print(await crafter.crafter.get_ingredients())
     finally:
         await core.managers.httpSessionManager.HTTPSessionManager().close()
 
