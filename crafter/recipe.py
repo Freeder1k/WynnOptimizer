@@ -48,6 +48,8 @@ class Recipe:
         i5 i6
         """
         self.ingredients = [i1, i2, i3, i4, i5, i6]
+        self.built = False
+        self.item = None
 
     def calculate_modifiers(self):
         """
@@ -61,11 +63,16 @@ class Recipe:
         return m.flatten()
 
     def build(self) -> Ingredient:
+        if self.built:
+            return self.item
+
         # calculate the recipe stats
         modifier_vector = self.calculate_modifiers()
         result = NO_INGREDIENT
         for i in range(6):
             result = result + (self.ingredients[i] * modifier_vector[i])
+
+        self.item = result
 
         return result
 
