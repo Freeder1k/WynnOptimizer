@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -189,3 +190,17 @@ async def get_all_ingredients():
 async def get_ingredient(name: str):
     ingredients = await get_all_ingredients()
     return ingredients.get(name, None)
+
+
+_ing_ids = {}
+
+
+def _get_ing_ids():
+    if not _ing_ids:
+        with open("crafter/ingreds_clean.json") as f:
+            _ing_ids.update({i['name']: i['id'] for i in json.load(f)})
+    return _ing_ids
+
+
+def get_ing_id(name: str):
+    return _get_ing_ids().get(name, 0)

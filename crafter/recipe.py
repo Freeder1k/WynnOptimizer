@@ -1,7 +1,7 @@
 import crafter.crafter
 import crafter.ingredient
 from .ingredient import Ingredient, Modifier, NO_INGREDIENT
-
+from utils.integer import Base64
 
 class ModifierMatrix:
     def __init__(self):
@@ -75,6 +75,9 @@ class Recipe:
         self.item = result
 
         return result
+
+    def b64_hash(self):
+        return "".join([Base64.fromInt(crafter.ingredient.get_ing_id(i.name)) for i in self.ingredients])
 
     @classmethod
     async def from_names(cls, *names: str):
