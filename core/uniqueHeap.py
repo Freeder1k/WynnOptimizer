@@ -45,8 +45,3 @@ class UniqueHeap(Generic[T]):
         popped = heapq.heappop(self.elements)
         del self._mapping[popped[0]]
         return popped[1]
-
-    def merge(self, other: UniqueHeap):
-        for prio, item in other.elements:
-            if prio not in self._mapping:
-                self.put(item)
