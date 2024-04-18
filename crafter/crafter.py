@@ -1,9 +1,8 @@
-import bisect
-from heapq import merge
 from multiprocessing import Pool
 from typing import Callable
 
 from core.optimizer import bruteForce
+from core.uniqueHeap import UniqueHeap
 from . import ingredient, recipe
 
 
@@ -26,7 +25,8 @@ async def optimize(
         results = p.starmap(_get_best_recipes,
                             [(constraint_func, scoring_func, i, ingredients, n) for i in ingredients])
 
-    return list(merge(*results, key=lambda x: -scoring_func(x.build()))[:n])
+    heap = UniqueHeap(sum(results, []), key=lambda x: scoring_func(x.build()), max_size=n)
+    return [item for _, item in heap.elements][::-1]
 
 
 def _get_best_recipes(
@@ -35,7 +35,7 @@ def _get_best_recipes(
         first_ing,
         ingredients,
         n: int) -> list[recipe.Recipe]:
-    best_r = []
+    best_r = UniqueHeap(key=lambda x: scoring_func(x.build()), max_size=n)
 
     for combination in bruteForce.generate_all_combinations(5, *ingredients):
         r = recipe.Recipe(first_ing, *combination)
@@ -43,7 +43,6 @@ def _get_best_recipes(
         if not constraints(r.build()):
             continue
 
-        bisect.insort(best_r, r, key=lambda x: -scoring_func(x.build()))
-        best_r = best_r[:n]
+        best_r.put(r)
 
-    return best_r
+    return [item for _, item in best_r.elements][::-1]
