@@ -12,7 +12,7 @@ async def optimize(
         scoring_func: Callable[[ingredient.Ingredient], int],
         ingredients: list[ingredient.Ingredient],
         n: int = 10,
-        pool_size: int = 4):
+        pool_size: int = 4) -> list[recipe.Recipe]:
     """
     Optimizes the recipe for the given ingredients.
     :param constraint_func: The function to filter the recipes. True = keep.
@@ -26,7 +26,7 @@ async def optimize(
         results = p.starmap(_get_best_recipes,
                             [(constraint_func, scoring_func, i, ingredients, n) for i in ingredients])
 
-    return merge(*results, key=lambda x: -scoring_func(x.build()))[:n]
+    return list(merge(*results, key=lambda x: -scoring_func(x.build()))[:n])
 
 
 def _get_best_recipes(
@@ -34,7 +34,7 @@ def _get_best_recipes(
         scoring_func: Callable[[ingredient.Ingredient], bool],
         first_ing,
         ingredients,
-        n: int):
+        n: int) -> list[recipe.Recipe]:
     best_r = []
 
     for combination in bruteForce.generate_all_combinations(5, *ingredients):
