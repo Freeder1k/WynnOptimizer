@@ -229,8 +229,9 @@ def _get_ing_ids():
     if not _ing_ids:
         with open("crafter/ingreds_clean.json") as f:
             _ing_ids.update({i['name']: i['id'] for i in json.load(f)})
+        _ing_ids["No Ingredient"] = 4000
     return _ing_ids
 
 
 def get_ing_id(name: str):
-    return _get_ing_ids().get(name, 0)
+    return _get_ing_ids().get(name, 4095)
