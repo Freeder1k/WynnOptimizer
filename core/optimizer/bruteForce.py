@@ -31,6 +31,7 @@ def generate_all_subpermutations(*choices: T, repeat: bool = False, ordered: boo
     tuple[T], None, None]:
     """
     Generate all sub permutations of the given choices. A sub-permutation u of a set U fulfills: u ⊂ U.
+    Does not return an empty tuple.
     :param choices: The choices to generate the sub-permutations from.
     :param repeat: Whether to allow the same element multiple times in the sub-permutation.
     :param ordered: Whether to preserve order.
