@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 
 from async_lru import alru_cache
@@ -44,6 +44,35 @@ class Identification:
 
 
 @dataclass
+class IdentificationList:
+    identifications: dict[str, Identification] = field(default_factory=dict)
+
+    @classmethod
+    def from_api_data(cls, data: dict):
+        return cls({k: Identification.from_api_data(v) for k, v in data.items()})
+
+    def __getitem__(self, key):
+        if key in self.identifications:
+            return self.identifications[key]
+        return Identification(0)
+
+    def __add__(self, other: IdentificationList):
+        if other is None:
+            return self
+        if not isinstance(other, IdentificationList):
+            raise TypeError(f"unsupported operand type(s) for +: '{type(self)}' and '{type(other)}'")
+
+        return IdentificationList({k: self.identifications.get(k, None) + other.identifications.get(k, None) for k in
+                                   self.identifications.keys() | other.identifications.keys()})
+
+    def __mul__(self, scale: int):
+        if not isinstance(scale, int):
+            raise TypeError(f"unsupported operand type(s) for *: '{type(self)}' and '{type(scale)}'")
+
+        return IdentificationList({k: v * scale for k, v in self.identifications.items()})
+
+
+@dataclass
 class Modifier:
     left: int = 0
     right: int = 0
@@ -66,7 +95,7 @@ class Skill(StrEnum):
 
 @dataclass
 class Requirements:
-    skills: set[Skill]
+    skills: set[Skill] = field(default_factory=set)
     strength: int = 0
     dexterity: int = 0
     intelligence: int = 0
@@ -121,7 +150,7 @@ class Ingredient:
     charges: int
     duration: int
     durability: int
-    identifications: dict[str, Identification]
+    identifications: IdentificationList
     modifiers: Modifier
     requirements: Requirements
 
@@ -133,8 +162,7 @@ class Ingredient:
                 data['consumableOnlyIDs']['charges'] if 'consumableOnlyIDs' in data else 0,
                 data['consumableOnlyIDs']['duration'] if 'consumableOnlyIDs' in data else 0,
                 data['itemOnlyIDs']['durabilityModifier'] if 'itemOnlyIDs' in data else 0,
-                {k: Identification.from_api_data(v) for k, v in
-                 data['identifications'].items()} if 'identifications' in data else {},
+                IdentificationList.from_api_data(data['identifications'] if 'identifications' in data else {}),
                 Modifier(**data['ingredientPositionModifiers']),
                 Requirements.from_api_data(data['itemOnlyIDs'], data['requirements']),
             )
@@ -151,8 +179,7 @@ class Ingredient:
             self.charges + other.charges,
             self.duration + other.duration,
             self.durability + other.durability,
-            {k: self.identifications.get(k, None) + other.identifications.get(k, None) for k in
-             self.identifications.keys() | other.identifications.keys()},
+            self.identifications + other.identifications,
             Modifier(),
             self.requirements + other.requirements
         )
@@ -166,7 +193,7 @@ class Ingredient:
             self.charges,
             self.duration,
             self.durability,
-            {k: v * scale for k, v in self.identifications.items()},
+            self.identifications * scale,
             self.modifiers,
             self.requirements * scale
         )
@@ -178,7 +205,7 @@ class Ingredient:
         return self.name
 
 
-NO_INGREDIENT = Ingredient("No Ingredient", 0, 0, 0, {}, Modifier(),
+NO_INGREDIENT = Ingredient("No Ingredient", 0, 0, 0, IdentificationList(), Modifier(),
                            Requirements(set(Skill(s) for s in Skill), 0, 0, 0, 0, 0, 0))
 
 

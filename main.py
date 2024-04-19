@@ -45,16 +45,12 @@ def constraints(item: crafter.ingredient.Ingredient):
             and item.requirements.defence <= 4 + free_sp
             and item.requirements.agility <= 60 + free_sp
             and item.requirements.strength + item.requirements.dexterity + item.requirements.intelligence + item.requirements.defence + item.requirements.agility <= 4 + 30 + 120 + 4 + 60 + free_sp
-            and "waterDamage" in item.identifications
-            and "rawDefence" in item.identifications
-            and "rawAgility" in item.identifications
             and item.identifications['rawAgility'].max + item.identifications['rawDefence'].max >= 10
     )
 
 def constraints2(item: crafter.ingredient.Ingredient):
     return (
             item.durability > -735000 + 20000
-            and 'rawHealth' in item.identifications
     )
 
 def score2(item: crafter.ingredient.Ingredient):
