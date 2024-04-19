@@ -1,3 +1,4 @@
+import signal
 from multiprocessing import Pool
 from typing import Callable
 
@@ -6,7 +7,7 @@ from core.uniqueHeap import UniqueHeap
 from . import ingredient, recipe
 
 
-async def optimize(
+def optimize(
         constraint_func: Callable[[ingredient.Ingredient], bool],
         scoring_func: Callable[[ingredient.Ingredient], int],
         ingredients: list[ingredient.Ingredient],
@@ -21,12 +22,20 @@ async def optimize(
     :param pool_size: The number of processes to use.
     :return: List of up to n recipes sorted from best to worst.
     """
-    with Pool(pool_size) as p:
-        results = p.starmap(_get_best_recipes,
-                            [(constraint_func, scoring_func, i, ingredients, n) for i in ingredients])
+    with Pool(pool_size, initializer=initializer) as p:
+        try:
+            results = p.starmap(_get_best_recipes,
+                                [(constraint_func, scoring_func, i, ingredients, n) for i in ingredients])
+        except KeyboardInterrupt:
+            p.terminate()
+            raise KeyboardInterrupt
 
     heap = UniqueHeap(sum(results, []), key=lambda x: scoring_func(x.build()), max_size=n)
     return [item for _, item in heap.elements][::-1]
+
+
+def initializer():
+    signal.signal(signal.SIGINT, lambda: None)
 
 
 def _get_best_recipes(
@@ -37,7 +46,7 @@ def _get_best_recipes(
         n: int) -> list[recipe.Recipe]:
     best_r = UniqueHeap(key=lambda x: scoring_func(x.build()), max_size=n)
 
-    for combination in bruteForce.generate_all_combinations(5, *ingredients):
+    for combination in bruteForce.generate_all_permutations(5, *ingredients, repeat=True):
         r = recipe.Recipe(first_ing, *combination)
 
         if not constraints(r.build()):
@@ -46,3 +55,4 @@ def _get_best_recipes(
         best_r.put(r)
 
     return [item for _, item in best_r.elements][::-1]
+

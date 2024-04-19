@@ -4,6 +4,7 @@ import time
 
 import core.managers.httpSessionManager
 import crafter.crafter
+import crafter.effectiveness_combos
 import crafter.ingredient
 import crafter.recipe
 
@@ -35,14 +36,15 @@ armouring_base = [
 
 
 def constraints(item: crafter.ingredient.Ingredient):
+    free_sp = 22
     return (
             item.durability > -735000 + 150000
-            and item.requirements.strength <= 58
-            and item.requirements.dexterity <= 63
-            and item.requirements.intelligence <= 120
-            and item.requirements.defence <= 58
-            and item.requirements.agility <= 58
-            and item.requirements.defence + item.requirements.agility + item.requirements.strength + item.requirements.dexterity <= 25 + 30 + 25 + 25 + 33
+            and item.requirements.strength <= 4 + free_sp
+            and item.requirements.dexterity <= 30 + free_sp
+            and item.requirements.intelligence <= 120 + free_sp
+            and item.requirements.defence <= 4 + free_sp
+            and item.requirements.agility <= 60 + free_sp
+            and item.requirements.strength + item.requirements.dexterity + item.requirements.intelligence + item.requirements.defence + item.requirements.agility <= 4 + 30 + 120 + 4 + 60 + free_sp
             and "waterDamage" in item.identifications
             and "rawDefence" in item.identifications
             and "rawAgility" in item.identifications
@@ -52,7 +54,7 @@ def constraints(item: crafter.ingredient.Ingredient):
 
 def eff_defagi(item: crafter.ingredient.Ingredient):
     return ((item.identifications['rawDefence'].max + item.identifications['rawAgility'].max)
-            - (max(0, item.requirements.strength - 25) + max(0, item.requirements.dexterity - 30)))
+            - (max(0, item.requirements.strength - 4) + max(0, item.requirements.dexterity - 30)))
 
 
 def score(item: crafter.ingredient.Ingredient):
@@ -63,8 +65,39 @@ def score(item: crafter.ingredient.Ingredient):
 
 def durascore(dura: int):
     normed = ((dura + 735000) // 1000) / 100
-    normed_score = math.tanh((normed - 1.5) / .7) + 1
+    normed_score = math.tanh((normed - 1.3) / .7) + 1
     return int(normed_score * 1000)
+
+
+async def opt_craft():
+    ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
+        # "Ocea Steel",
+        "Deep Ice Core",
+        "River Clay",
+        "Wintery Aspect",
+        "Fiberglass Frame",
+        "Voidtossed Memory",
+        "Coastal Shell",
+        "Soft Silk",
+        "Fragmentation"
+    ] + armouring_base]
+
+    t = time.time()
+    print("Optimizing...")
+    r = crafter.crafter.optimize(constraints, score, ingredients, 20, 5)
+    print('\n'.join(map(print_recipe, r)))
+    print(f"Time taken: {time.time() - t:.2f}s")
+
+
+async def eff_combos():
+    ingredients = [await crafter.ingredient.get_ingredient(name) for name in jeweling_base]
+    t = time.time()
+    print("Calculating combos...")
+    res = crafter.effectiveness_combos.get_effectiveness_combos(ingredients, 5)
+    print(len(res))
+    combos = sorted(res.keys(), key=lambda x: sum(x))
+    print('\n'.join(map(str, combos)))
+    print(f"Time taken: {time.time() - t:.2f}s")
 
 
 async def main():
@@ -75,24 +108,7 @@ async def main():
     try:
         await core.managers.httpSessionManager.HTTPSessionManager().start()
 
-        ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
-            "Ocea Steel",
-            "Deep Ice Core",
-            "River Clay",
-            "Wintery Aspect",
-            "Fiberglass Frame",
-            "Voidtossed Memory",
-            "Coastal Shell",
-            "Soft Silk",
-            "Fragmentation"
-        ] + armouring_base]
-
-        t = time.time()
-        print("Optimizing...")
-        r = await crafter.crafter.optimize(constraints, score, ingredients, 20, 5)
-        print('\n'.join(map(print_recipe, r)))
-        print(f"Time taken: {time.time() - t:.2f}s")
-
+        await eff_combos()
     finally:
         await core.managers.httpSessionManager.HTTPSessionManager().close()
 
