@@ -12,12 +12,12 @@ def generate_all_permutations(n: int, *choices: T, repeat=False, ordered=False) 
     :param ordered: Whether to preserve order.
     :return: A generator yielding all permutations of length n of the given choices.
     """
+    if len(choices) == 0:
+        return  # Don't yield since the result would be shorter than the requested n
     if n == 1:
         for choice in choices:
             yield (choice,)
     else:
-        if len(choices) == 0:
-            return  # Don't yield since the result would be shorter than the requested n
         for i in range(len(choices)):
             for sub_choice in generate_all_permutations(n - 1,
                                                         *(choices[:i] if not ordered else ()),
