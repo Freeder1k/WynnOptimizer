@@ -17,7 +17,7 @@ jeweling_base = [
     "Old Treasure֎",
     "Eye of The Beast",
     "Major's Badge",
-    "Stolen Pearls",
+    #"Stolen Pearls",
 ]
 
 armouring_base = [
@@ -94,9 +94,9 @@ async def eff_combos():
     t = time.time()
     print("Calculating combos...")
     res = crafter.effectiveness_combos.get_effectiveness_combos(ingredients, 5)
-    print(len(res))
-    combos = sorted(res.keys(), key=lambda x: sum(x))
-    print('\n'.join(map(str, combos)))
+    #print(len(res))
+    #combos = sorted(res.keys(), key=lambda x: sum(x))
+    #print('\n'.join(map(str, combos)))
     print(f"Time taken: {time.time() - t:.2f}s")
 
 
