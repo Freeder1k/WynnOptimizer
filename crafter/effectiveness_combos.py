@@ -98,6 +98,17 @@ def _to_csv(combos: dict[tuple[int, ...], recipe.Recipe]):
             f.write(
                 f"{','.join(_pad_r(tuple(map(str, k)), 6, ''))},{(v.build().durability + 735000) // 1000},{','.join(map(str, v.ingredients))}\n")
 
+async def from_csv():
+    combos = {}
+    with open("combos.csv", "r", encoding='utf8') as f:
+        f.readline()
+        for line in f:
+            parts = line.strip().split(',')
+            combo = tuple([int(val) for val in parts[:6] if val != ''])
+            #durability = int(parts[6])
+            ings = [ingredient.NO_INGREDIENT if name == 'No Ingredient' else await ingredient.get_ingredient(name) for name in parts[7:]]
+            combos[combo] = recipe.Recipe(*ings)
+    return combos
 
 def _initializer():
     signal.signal(signal.SIGINT, lambda: None)

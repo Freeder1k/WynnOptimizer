@@ -37,7 +37,10 @@ class Identification:
         if not isinstance(scale, int):
             raise TypeError(f"unsupported operand type(s) for *: '{type(self)}' and '{type(scale)}'")
 
-        return Identification(self.raw * scale // 100, self.min * scale // 100, self.max * scale // 100)
+        if scale < 0:
+            return Identification(self.raw * scale // 100, self.max * scale // 100, self.min * scale // 100)
+        else:
+            return Identification(self.raw * scale // 100, self.min * scale // 100, self.max * scale // 100)
 
 
 @dataclass

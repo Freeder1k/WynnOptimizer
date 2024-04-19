@@ -53,7 +53,7 @@ def constraints(item: crafter.ingredient.Ingredient):
 
 def constraints2(item: crafter.ingredient.Ingredient):
     return (
-            item.durability > -735000 + 50000
+            item.durability > -735000 + 20000
             and 'rawHealth' in item.identifications
     )
 
@@ -106,15 +106,16 @@ async def eff_combos():
         "Organic Explosive",
         "Tungsten Chunk",
         "Serafite",
-        "Condensed Darkness"
+        #"Condensed Darkness"
     ]]
     t = time.time()
     print("Calculating combos...")
-    combos = crafter.effectiveness_combos.get_effectiveness_combos(eff_ings, 5)
+    #combos = crafter.effectiveness_combos.get_effectiveness_combos(eff_ings, 5)
+    combos = await crafter.effectiveness_combos.from_csv()
     print(f"Time taken: {time.time() - t:.2f}s")
     t = time.time()
     print("Calculating optimal recipe...")
-    res = crafter.crafter.optimize(constraints2, score2, ingredients, combos, 1, 5)
+    res = crafter.crafter.optimize(constraints2, score2, ingredients, combos, 20, 5)
     print(f"Time taken: {time.time() - t:.2f}s")
     print('\n'.join(map(print_recipe, res)))
 

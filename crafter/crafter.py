@@ -1,4 +1,5 @@
 import signal
+import traceback
 from multiprocessing import Pool
 from typing import Callable
 
@@ -61,19 +62,24 @@ def _get_best_recipes(
         ingredients,
         combos,
         n: int) -> list[recipe.Recipe]:
-    best_r = UniqueHeap(key=lambda x: scoring_func(x.build()), max_size=n)
+    try:
+        best_r = UniqueHeap(key=lambda x: scoring_func(x.build()), max_size=n)
 
-    for combo, base_r in combos.items():
-        if len(combo) <= 1:
-            r = recipe.Recipe(*_replace_no_ing(base_r, first_ing))
-            if not constraints(r.build()):
-                continue
-            best_r.put(r)
-        else:
-            for ings in bruteForce.generate_all_permutations(len(combo) - 1, *ingredients, repeat=True):
-                r = recipe.Recipe(*_replace_no_ing(base_r, first_ing, *ings))
+        for combo, base_r in combos.items():
+            if len(combo) <= 1:
+                r = recipe.Recipe(*_replace_no_ing(base_r, first_ing))
                 if not constraints(r.build()):
                     continue
                 best_r.put(r)
+            else:
+                for ings in bruteForce.generate_all_permutations(len(combo) - 1, *ingredients, repeat=True):
+                    r = recipe.Recipe(*_replace_no_ing(base_r, first_ing, *ings))
+                    if not constraints(r.build()):
+                        continue
+                    best_r.put(r)
 
-    return [item for _, item in best_r.elements][::-1]
+        return [item for _, item in best_r.elements][::-1]
+    except Exception as e:
+        print(e)
+        print(traceback.format_exc())
+        return []
