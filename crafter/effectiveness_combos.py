@@ -23,66 +23,68 @@ def get_effectiveness_combos(
             if k not in res or v.build().durability > res[k].build().durability:
                 res[k] = v
 
-    combos = sorted(res.keys(), key=lambda x: len(x), reverse=True)
-
-    print(len(res))
-    for c1 in combos:
-        if c1 not in res:
-            continue
-        for sub_c in bruteForce.generate_all_subpermutations(*c1, ordered=True):
-            if sub_c in res and res[sub_c].build().durability <= res[c1].build().durability:
-                del res[sub_c]
-
     if () in res:
         del res[()]
 
-    print(len(res))
+    combo_amount = len(res)
+    print(f"Found {combo_amount} unique combos.")
 
     combos = sorted([(c, r.build().durability) for c, r in res.items()], key=lambda x: x[1], reverse=True)
-
     combos2 = [combos[0]]
 
     # This should only run if no global effects ingredients with undesirable ids are used
-    for c1, dura1 in combos[1:]:
+    for i in range(1, len(combos)):
+        c1, dura1 = combos[i]
         passes = True
         for c2, dura2 in combos2:
             if dura1 > dura2:
-                continue
+                break
             if len(c1) > len(c2):
                 continue
-
-            n1 = negatives(c1)
-            n2 = negatives(c2)
-            p1 = positives(c1)
-            p2 = positives(c2)
-            if len(n1) > len(n2) or len(p1) > len(p2):
-                continue
-
-            n2 = n2[:len(n1)]
-            p2 = p2[len(p2) - len(p1):]
-
-            if (all(n1[i] >= n2[i] for i in range(len(n1)))
-                    and all(p1[i] <= p2[i] for i in range(len(p1)))):
+            if is_worse_combo(c1, c2):
                 passes = False
                 break
+        for j in range(i + 1, len(combos)):
+            c2, dura2 = combos[j]
+            if dura1 > dura2:
+                break
+            if len(c1) > len(c2):
+                continue
+            if is_worse_combo(c1, c2):
+                passes = False
+                break
+
         if passes:
             combos2.append((c1, dura1))
 
     combos = sorted([c[0] for c in combos2], key=lambda x: sum(x), reverse=True)
-    print(len(combos))
+    print(f"Removed {combo_amount - len(combos)} worse sub-combos. -> Now {len(combos)} unique combos.")
 
-    # print('\n'.join(map(str, combos)))
-    to_csv({c: res[c] for c in combos})
+    res = {c: res[c] for c in combos}
+    to_csv(res)
 
     return res
 
 
-def negatives(t: tuple[int, ...]) -> tuple[int, ...]:
-    return tuple(x for x in t if x < 0)
+def is_worse_combo(c1: tuple[int, ...], c2: tuple[int, ...]) -> bool:
+    """
+    Compare two combos. c1 is worse than c2 if all values are worse or equal.
+    """
+    if len(c1) > len(c2):
+        return False
 
+    n1 = tuple(x for x in c1 if x < 0)
+    n2 = tuple(x for x in c2 if x < 0)
+    p1 = tuple(x for x in c1 if x >= 0)
+    p2 = tuple(x for x in c2 if x >= 0)
+    if len(n1) > len(n2) or len(p1) > len(p2):
+        return False
 
-def positives(t: tuple[int, ...]) -> tuple[int, ...]:
-    return tuple(x for x in t if x >= 0)
+    n2 = n2[:len(n1)]
+    p2 = p2[len(p2) - len(p1):]
+
+    return (all(n1[i] >= n2[i] for i in range(len(n1)))
+            and all(p1[i] <= p2[i] for i in range(len(p1))))
 
 
 def pad_r(t: tuple, n: int, val) -> tuple:
