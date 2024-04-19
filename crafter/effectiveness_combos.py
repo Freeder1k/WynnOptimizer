@@ -10,7 +10,7 @@ def get_effectiveness_combos(
         pool_size: int = 4) -> dict[tuple[int, ...], recipe.Recipe]:
     ingredients.append(ingredient.NO_INGREDIENT)
 
-    with Pool(pool_size, initializer=initializer) as p:
+    with Pool(pool_size, initializer=_initializer) as p:
         try:
             results = p.starmap(_get_combos, [(i, ingredients) for i in ingredients])
         except KeyboardInterrupt:
@@ -41,7 +41,7 @@ def get_effectiveness_combos(
                 break
             if len(c1) > len(c2):
                 continue
-            if is_worse_combo(c1, c2):
+            if _is_worse_combo(c1, c2):
                 passes = False
                 break
         for j in range(i + 1, len(combos)):
@@ -50,7 +50,7 @@ def get_effectiveness_combos(
                 break
             if len(c1) > len(c2):
                 continue
-            if is_worse_combo(c1, c2):
+            if _is_worse_combo(c1, c2):
                 passes = False
                 break
 
@@ -61,12 +61,12 @@ def get_effectiveness_combos(
     print(f"Removed {combo_amount - len(combos)} worse sub-combos. -> Now {len(combos)} unique combos.")
 
     res = {c: res[c] for c in combos}
-    to_csv(res)
+    _to_csv(res)
 
     return res
 
 
-def is_worse_combo(c1: tuple[int, ...], c2: tuple[int, ...]) -> bool:
+def _is_worse_combo(c1: tuple[int, ...], c2: tuple[int, ...]) -> bool:
     """
     Compare two combos. c1 is worse than c2 if all values are worse or equal.
     """
@@ -87,19 +87,19 @@ def is_worse_combo(c1: tuple[int, ...], c2: tuple[int, ...]) -> bool:
             and all(p1[i] <= p2[i] for i in range(len(p1))))
 
 
-def pad_r(t: tuple, n: int, val) -> tuple:
+def _pad_r(t: tuple, n: int, val) -> tuple:
     return t + (val,) * (n - len(t))
 
 
-def to_csv(combos: dict[tuple[int, ...], recipe.Recipe]):
+def _to_csv(combos: dict[tuple[int, ...], recipe.Recipe]):
     with open("combos.csv", "w", encoding='utf8') as f:
         f.write("Combo,,,,,,Durability,I1,I2,I3,I4,I5,I6\n")
         for k, v in combos.items():
             f.write(
-                f"{','.join(pad_r(tuple(map(str, k)), 6, ''))},{(v.build().durability + 735000) // 1000},{','.join(map(str, v.ingredients))}\n")
+                f"{','.join(_pad_r(tuple(map(str, k)), 6, ''))},{(v.build().durability + 735000) // 1000},{','.join(map(str, v.ingredients))}\n")
 
 
-def initializer():
+def _initializer():
     signal.signal(signal.SIGINT, lambda: None)
 
 
