@@ -1,7 +1,8 @@
 import crafter.crafter
 import crafter.ingredient
-from .ingredient import Ingredient, Modifier, NO_INGREDIENT
 from utils.integer import Base64
+from .ingredient import Ingredient, Modifier, NO_INGREDIENT
+
 
 class ModifierMatrix:
     def __init__(self):
@@ -47,9 +48,9 @@ class Recipe:
         i3 i4
         i5 i6
         """
-        self.ingredients = [i1, i2, i3, i4, i5, i6]
-        self.built = False
-        self.item = None
+        self.ingredients = (i1, i2, i3, i4, i5, i6)
+        self._built = False
+        self._item = None
 
     def calculate_modifiers(self):
         """
@@ -63,8 +64,12 @@ class Recipe:
         return m.flatten()
 
     def build(self) -> Ingredient:
-        if self.built:
-            return self.item
+        """
+        Build the item from the recipe.
+        :return: A new Ingredient object representing the crafted item.
+        """
+        if self._built:
+            return self._item
 
         # calculate the recipe stats
         modifier_vector = self.calculate_modifiers()
@@ -72,7 +77,7 @@ class Recipe:
         for i in range(6):
             result = result + (self.ingredients[i] * modifier_vector[i])
 
-        self.item = result
+        self._item = result
 
         return result
 
@@ -80,8 +85,8 @@ class Recipe:
         return "".join([Base64.fromInt(crafter.ingredient.get_ing_id(i.name)) for i in self.ingredients])
 
     @classmethod
-    async def from_names(cls, *names: str):
-        return cls(*[await crafter.ingredient.get_ingredient(name) for name in names])
+    async def from_ingredient_strings(cls, i1: str, i2: str, i3: str, i4: str, i5: str, i6: str):
+        return cls(*(await crafter.ingredient.get_ingredient(ing) for ing in (i1, i2, i3, i4, i5, i6)))
 
     def __str__(self):
         return f"Recipe({', '.join(str(i) for i in self.ingredients)})"
