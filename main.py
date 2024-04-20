@@ -3,8 +3,8 @@ import math
 import time
 
 import core.managers.httpSessionManager
-import crafter.base_recipe
 import crafter.crafter
+import crafter.base_recipe
 import crafter.ingredient
 import crafter.recipe
 
@@ -92,7 +92,7 @@ async def opt_craft():
 
     t = time.time()
     print("Optimizing...")
-    r = crafter.crafter.optimize(constraints, score, ingredients, 20, 5)
+    r = crafter.crafter.optimize(constraints, score, ingredients, 20, 7)
     print('\n'.join(map(print_recipe, r)))
     print(f"Time taken: {time.time() - t:.2f}s")
 
@@ -117,7 +117,7 @@ async def eff_combos():
     print(f"Time taken: {time.time() - t:.2f}s")
     t = time.time()
     print("Calculating optimal recipe...")
-    res = crafter.crafter.optimize(constraints2, score2, ingredients, combos, 20, 5)
+    res = crafter.crafter.optimize(constraints2, score2, ingredients, combos, 20, 7)
     print(f"Time taken: {time.time() - t:.2f}s")
     print('\n'.join(map(print_recipe, res)))
 
