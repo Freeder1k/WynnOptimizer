@@ -102,12 +102,13 @@ async def eff_combos():
         "Organic Explosive",
         "Tungsten Chunk",
         "Serafite",
-        #"Condensed Darkness"
+        "Condensed Darkness",
+        "Frozen Ghostly Essence"
     ]]
     t = time.time()
     print("Calculating combos...")
-    #combos = crafter.effectiveness_combos.get_effectiveness_combos(eff_ings, 5)
-    combos = await crafter.effectiveness_combos.from_csv()
+    combos = crafter.effectiveness_combos.get_effectiveness_combos(eff_ings, 5, strict=True)
+    #combos = await crafter.effectiveness_combos.from_csv()
     print(f"Time taken: {time.time() - t:.2f}s")
     t = time.time()
     print("Calculating optimal recipe...")

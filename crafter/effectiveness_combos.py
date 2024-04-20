@@ -7,7 +7,8 @@ from . import ingredient, recipe
 
 def get_effectiveness_combos(
         ingredients: list[ingredient.Ingredient],
-        pool_size: int = 4) -> dict[tuple[int, ...], recipe.Recipe]:
+        pool_size: int = 4,
+        strict=False) -> dict[tuple[int, ...], recipe.Recipe]:
     ingredients.append(ingredient.NO_INGREDIENT)
 
     with Pool(pool_size, initializer=_initializer) as p:
@@ -26,39 +27,51 @@ def get_effectiveness_combos(
     if () in res:
         del res[()]
 
+    print(f"Found {len(res)} unique combos.")
     combo_amount = len(res)
-    print(f"Found {combo_amount} unique combos.")
 
-    combos = sorted([(c, r.build().durability) for c, r in res.items()], key=lambda x: x[1], reverse=True)
-    combos2 = [combos[0]]
+    combos = sorted([(c, r.build().durability) for c, r in res.items() if sum((abs(x) for x in c)) >= 300],
+                    key=lambda x: x[1],
+                    reverse=True)
 
-    # This should only run if no global effects ingredients with undesirable ids are used
-    for i in range(1, len(combos)):
-        c1, dura1 = combos[i]
-        passes = True
-        for c2, dura2 in combos2:
-            if dura1 > dura2:
-                break
-            if len(c1) > len(c2):
-                continue
-            if _is_worse_combo(c1, c2):
-                passes = False
-                break
-        for j in range(i + 1, len(combos)):
-            c2, dura2 = combos[j]
-            if dura1 > dura2:
-                break
-            if len(c1) > len(c2):
-                continue
-            if _is_worse_combo(c1, c2):
-                passes = False
-                break
+    print(f"Removed {combo_amount - len(combos)} bad combos. -> Now {len(combos)} unique combos.")
+    combo_amount = len(combos)
 
-        if passes:
-            combos2.append((c1, dura1))
+    if not strict:
+        combos2 = [combos[0]]
+        for i in range(1, len(combos)):
+            c1, dura1 = combos[i]
+            passes = True
+            for c2, dura2 in combos2:
+                if dura1 > dura2:
+                    break
+                if len(c1) > len(c2):
+                    continue
+                if _is_worse_combo(c1, c2):
+                    passes = False
+                    break
+            for j in range(i + 1, len(combos)):
+                c2, dura2 = combos[j]
+                if dura1 > dura2:
+                    break
+                if len(c1) > len(c2):
+                    continue
+                if _is_worse_combo(c1, c2):
+                    passes = False
+                    break
 
-    combos = sorted([c[0] for c in combos2], key=lambda x: sum(x), reverse=True)
-    print(f"Removed {combo_amount - len(combos)} worse sub-combos. -> Now {len(combos)} unique combos.")
+            if passes:
+                combos2.append((c1, dura1))
+        combos = sorted([c[0] for c in combos2], key=lambda x: sum(x), reverse=True)
+    else:
+        combos = {c: dura for c, dura in reversed(combos)}
+        for combo, dura1 in list(combos.items()):
+            for sub_combo in bruteForce.generate_all_subpermutations(*combo, ordered=True):
+                if sub_combo in combos and combos[sub_combo] <= dura1:
+                    del combos[sub_combo]
+        combos = sorted([c for c in combos.keys()], key=lambda x: sum(x), reverse=True)
+
+    print(f"Removed {combo_amount - len(combos)} sub-combos. -> Now {len(combos)} unique combos.")
 
     res = {c: res[c] for c in combos}
     _to_csv(res)
@@ -98,6 +111,7 @@ def _to_csv(combos: dict[tuple[int, ...], recipe.Recipe]):
             f.write(
                 f"{','.join(_pad_r(tuple(map(str, k)), 6, ''))},{(v.build().durability + 735000) // 1000},{','.join(map(str, v.ingredients))}\n")
 
+
 async def from_csv():
     combos = {}
     with open("combos.csv", "r", encoding='utf8') as f:
@@ -105,10 +119,12 @@ async def from_csv():
         for line in f:
             parts = line.strip().split(',')
             combo = tuple([int(val) for val in parts[:6] if val != ''])
-            #durability = int(parts[6])
-            ings = [ingredient.NO_INGREDIENT if name == 'No Ingredient' else await ingredient.get_ingredient(name) for name in parts[7:]]
+            # durability = int(parts[6])
+            ings = [ingredient.NO_INGREDIENT if name == 'No Ingredient' else await ingredient.get_ingredient(name) for
+                    name in parts[7:]]
             combos[combo] = recipe.Recipe(*ings)
     return combos
+
 
 def _initializer():
     signal.signal(signal.SIGINT, lambda: None)
