@@ -5,10 +5,17 @@ from core.optimizer import bruteForce
 from . import ingredient, recipe
 
 
-def get_effectiveness_combos(
-        ingredients: list[ingredient.Ingredient],
-        pool_size: int = 4,
-        strict=False) -> dict[tuple[int, ...], recipe.Recipe]:
+def calc_base_recipes(ingredients: list[ingredient.Ingredient],
+                      pool_size: int = 4,
+                      strict=False) -> dict[tuple[int, ...], recipe.Recipe]:
+    """
+    Calculate the base recipes for the given ingredients.
+     These ingredients should only include effectiveness and durability ingredients without any undesired requirements/ids.
+    :param ingredients: The list of ingredients to use.
+    :param pool_size: The number of processes to use.
+    :param strict: If True, only exact sub-recipes will be removed.
+    :return: Dictionary of tuples of effectiveness values of the free slots mapped to recipes.
+    """
     ingredients.append(ingredient.NO_INGREDIENT)
 
     with Pool(pool_size, initializer=_initializer) as p:
@@ -27,14 +34,14 @@ def get_effectiveness_combos(
     if () in res:
         del res[()]
 
-    print(f"Found {len(res)} unique combos.")
+    print(f"Found {len(res)} unique recipes.")
     combo_amount = len(res)
 
     combos = sorted([(c, r.build().durability) for c, r in res.items() if sum((abs(x) for x in c)) >= 300],
                     key=lambda x: x[1],
                     reverse=True)
 
-    print(f"Removed {combo_amount - len(combos)} bad combos. -> Now {len(combos)} unique combos.")
+    print(f"Removed {combo_amount - len(combos)} bad recipes. -> Now {len(combos)} unique recipes.")
     combo_amount = len(combos)
 
     if not strict:
@@ -65,13 +72,13 @@ def get_effectiveness_combos(
         combos = sorted([c[0] for c in combos2], key=lambda x: sum(x), reverse=True)
     else:
         combos = {c: dura for c, dura in reversed(combos)}
-        for combo, dura1 in list(combos.items()):
+        for combo, dura in list(combos.items()):
             for sub_combo in bruteForce.generate_all_subpermutations(*combo, ordered=True):
-                if sub_combo in combos and combos[sub_combo] <= dura1:
+                if sub_combo in combos and combos[sub_combo] <= dura:
                     del combos[sub_combo]
         combos = sorted([c for c in combos.keys()], key=lambda x: sum(x), reverse=True)
 
-    print(f"Removed {combo_amount - len(combos)} sub-combos. -> Now {len(combos)} unique combos.")
+    print(f"Removed {combo_amount - len(combos)} sub-recipes. -> Now {len(combos)} unique combos.")
 
     res = {c: res[c] for c in combos}
     _to_csv(res)
@@ -130,10 +137,7 @@ def _initializer():
     signal.signal(signal.SIGINT, lambda: None)
 
 
-def _get_combos(
-        first_ing,
-        ingredients
-) -> dict[tuple[int, ...], recipe.Recipe]:
+def _get_combos(first_ing, ingredients) -> dict[tuple[int, ...], recipe.Recipe]:
     combos = {}
 
     for combination in bruteForce.generate_all_permutations(5, *ingredients, repeat=True):

@@ -8,13 +8,12 @@ from core.uniqueHeap import UniqueHeap
 from . import ingredient, recipe
 
 
-def optimize(
-        constraint_func: Callable[[ingredient.Ingredient], bool],
-        scoring_func: Callable[[ingredient.Ingredient], int],
-        ingredients: list[ingredient.Ingredient],
-        combos: dict[tuple[int, ...], recipe.Recipe] = None,
-        n: int = 10,
-        pool_size: int = 4) -> list[recipe.Recipe]:
+def optimize(constraint_func: Callable[[ingredient.Ingredient], bool],
+             scoring_func: Callable[[ingredient.Ingredient], int],
+             ingredients: list[ingredient.Ingredient],
+             combos: dict[tuple[int, ...], recipe.Recipe] = None,
+             n: int = 10,
+             pool_size: int = 4) -> list[recipe.Recipe]:
     """
     Optimizes the recipe for the given ingredients.
     :param constraint_func: The function to filter the recipes. True = keep.
@@ -55,13 +54,12 @@ def _replace_no_ing(r: recipe.Recipe, *ings):
     return res
 
 
-def _get_best_recipes(
-        constraints: Callable[[ingredient.Ingredient], bool],
-        scoring_func: Callable[[ingredient.Ingredient], bool],
-        first_ing,
-        ingredients,
-        combos,
-        n: int) -> list[recipe.Recipe]:
+def _get_best_recipes(constraints: Callable[[ingredient.Ingredient], bool],
+                      scoring_func: Callable[[ingredient.Ingredient], bool],
+                      first_ing,
+                      ingredients,
+                      combos,
+                      n: int) -> list[recipe.Recipe]:
     try:
         best_r = UniqueHeap(key=lambda x: scoring_func(x.build()), max_size=n)
 

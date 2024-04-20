@@ -4,7 +4,7 @@ import time
 
 import core.managers.httpSessionManager
 import crafter.crafter
-import crafter.effectiveness_combos
+import crafter.base_recipe
 import crafter.ingredient
 import crafter.recipe
 
@@ -17,7 +17,7 @@ jeweling_base = [
     "Old Treasure֎",
     "Eye of The Beast",
     "Major's Badge",
-    #"Stolen Pearls",
+    "Stolen Pearls",
 ]
 
 armouring_base = [
@@ -97,7 +97,7 @@ async def opt_craft():
 async def eff_combos():
     eff_ings = [await crafter.ingredient.get_ingredient(name) for name in jeweling_base]
     ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
-        "Stolen Pearls",
+        #"Stolen Pearls",
         "Vim Veins",
         "Organic Explosive",
         "Tungsten Chunk",
@@ -107,7 +107,7 @@ async def eff_combos():
     ]]
     t = time.time()
     print("Calculating combos...")
-    combos = crafter.effectiveness_combos.get_effectiveness_combos(eff_ings, 5, strict=True)
+    combos = crafter.effectiveness_combos.calc_base_recipes(eff_ings, 5, strict=True)
     #combos = await crafter.effectiveness_combos.from_csv()
     print(f"Time taken: {time.time() - t:.2f}s")
     t = time.time()
