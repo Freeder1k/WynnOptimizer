@@ -3,8 +3,8 @@ import math
 import time
 
 import core.managers.httpSessionManager
-import crafter.crafter
 import crafter.base_recipe
+import crafter.crafter
 import crafter.ingredient
 import crafter.recipe
 
@@ -48,13 +48,16 @@ def constraints(item: crafter.ingredient.Ingredient):
             and item.identifications['rawAgility'].max + item.identifications['rawDefence'].max >= 10
     )
 
+
 def constraints2(item: crafter.ingredient.Ingredient):
     return (
-            item.durability > -735000 + 20000
+            item.durability > -735000 + 10000
+            and item.requirements.intelligence <= 70
     )
 
+
 def score2(item: crafter.ingredient.Ingredient):
-    return item.identifications['rawHealth'].max
+    return item.identifications['rawHealth'].max * 100000 + item.durability // 10 + item.requirements.intelligence
 
 
 def eff_defagi(item: crafter.ingredient.Ingredient):
@@ -97,17 +100,19 @@ async def opt_craft():
 async def eff_combos():
     eff_ings = [await crafter.ingredient.get_ingredient(name) for name in jeweling_base]
     ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
-        #"Stolen Pearls",
+        # "Stolen Pearls",
         "Vim Veins",
         "Organic Explosive",
         "Tungsten Chunk",
         "Serafite",
         "Condensed Darkness",
-        "Frozen Ghostly Essence"
+        "Frozen Ghostly Essence",
+        "Regretless Talisman",
+        "Vortexian Event Horizon"
     ]]
     t = time.time()
     print("Calculating combos...")
-    #combos = crafter.base_recipe.calc_base_recipes(eff_ings, 5, strict=True)
+    # combos = crafter.base_recipe.calc_base_recipes(eff_ings, 5, strict=True)
     combos = await crafter.base_recipe.from_csv()
     print(f"Time taken: {time.time() - t:.2f}s")
     t = time.time()
@@ -134,7 +139,7 @@ def print_recipe(r: crafter.recipe.Recipe) -> str:
     item = r.build()
     return (f"https://hppeng-wynn.github.io/crafter/#1{r.b64_hash()}9g91 "
             f"{item.identifications['rawHealth'].max} hp "
-            #f"{eff_defagi(item)} def+agi "
+            # f"{eff_defagi(item)} def+agi "
             f"{(item.durability + 735000) // 1000} dura   "
             f"{r}")
 

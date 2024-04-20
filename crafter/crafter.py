@@ -28,7 +28,7 @@ def optimize(constraint_func: Callable[[ingredient.Ingredient], bool],
         combos = {(100,) * 6: recipe.Recipe(*((ingredient.NO_INGREDIENT,) * 6))}
 
     with Pool(pool_size, initializer=initializer) as p:
-        try: # TODO map combos instead of ingredients
+        try:
             results = p.starmap(_get_best_recipes,
                                 [(constraint_func, scoring_func, i, ingredients, combos, n) for i in ingredients])
         except KeyboardInterrupt:
@@ -54,13 +54,17 @@ def _replace_no_ing(r: recipe.Recipe, *ings):
     return res
 
 
-def _generate_permutations(amounts: tuple[int, ...], *ingredients):
+def _generate_permutations(amounts: list[int, ...], first_idx, *ingredients):
     if len(amounts) == 1:
-        for ings in bruteForce.generate_all_permutations(amounts[0], *ingredients, repeat=True, ordered=True):
+        for ings in bruteForce.generate_all_permutations(amounts[0], *ingredients[first_idx:], repeat=True, ordered=True):
             yield ings
         return
-    for ings in bruteForce.generate_all_permutations(amounts[0], *ingredients, repeat=True, ordered=True):
-        for ings2 in _generate_permutations(amounts[1:], *ingredients):
+    if amounts[0] == 0:
+        for ings in _generate_permutations(amounts[1:], 0, *ingredients):
+            yield ings
+        return
+    for ings in bruteForce.generate_all_permutations(amounts[0], *ingredients[first_idx:], repeat=True, ordered=True):
+        for ings2 in _generate_permutations(amounts[1:], 0, *ingredients):
             yield ings + ings2
 
 
@@ -71,6 +75,8 @@ def _get_best_recipes(constraints: Callable[[ingredient.Ingredient], bool],
                       combos,
                       n: int) -> list[recipe.Recipe]:
     try:
+        first_idx = ingredients.index(first_ing)
+
         best_r = UniqueHeap(key=lambda x: scoring_func(x.build()), max_size=n)
 
         for combo, base_r in combos.items():
@@ -80,8 +86,9 @@ def _get_best_recipes(constraints: Callable[[ingredient.Ingredient], bool],
                     continue
                 best_r.put(r)
             else:
-                amounts = tuple(count for val, count in sorted(Counter(combo[1:]).items(), key=lambda x: x[0]))
-                for ings in _generate_permutations(amounts, *ingredients):
+                amounts = list(count for val, count in sorted(Counter(combo).items(), key=lambda x: x[0]))
+                amounts[0] -= 1
+                for ings in _generate_permutations(amounts, first_idx, *ingredients):
                     r = recipe.Recipe(*_replace_no_ing(base_r, first_ing, *ings))
                     if not constraints(r.build()):
                         continue
