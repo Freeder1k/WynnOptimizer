@@ -6,7 +6,7 @@ from typing import Callable
 from core.optimizer import bruteForce
 from core.uniqueHeap import UniqueHeap
 from . import ingredient, recipe
-
+from collections import Counter
 
 def optimize(constraint_func: Callable[[ingredient.Ingredient], bool],
              scoring_func: Callable[[ingredient.Ingredient], int],
@@ -28,7 +28,7 @@ def optimize(constraint_func: Callable[[ingredient.Ingredient], bool],
         combos = {(100,) * 6: recipe.Recipe(*((ingredient.NO_INGREDIENT,) * 6))}
 
     with Pool(pool_size, initializer=initializer) as p:
-        try:
+        try: # TODO map combos instead of ingredients
             results = p.starmap(_get_best_recipes,
                                 [(constraint_func, scoring_func, i, ingredients, combos, n) for i in ingredients])
         except KeyboardInterrupt:
@@ -54,6 +54,16 @@ def _replace_no_ing(r: recipe.Recipe, *ings):
     return res
 
 
+def _generate_permutations(amounts: tuple[int, ...], *ingredients):
+    if len(amounts) == 1:
+        for ings in bruteForce.generate_all_permutations(amounts[0], *ingredients, repeat=True, ordered=True):
+            yield ings
+        return
+    for ings in bruteForce.generate_all_permutations(amounts[0], *ingredients, repeat=True, ordered=True):
+        for ings2 in _generate_permutations(amounts[1:], *ingredients):
+            yield ings + ings2
+
+
 def _get_best_recipes(constraints: Callable[[ingredient.Ingredient], bool],
                       scoring_func: Callable[[ingredient.Ingredient], bool],
                       first_ing,
@@ -70,7 +80,8 @@ def _get_best_recipes(constraints: Callable[[ingredient.Ingredient], bool],
                     continue
                 best_r.put(r)
             else:
-                for ings in bruteForce.generate_all_permutations(len(combo) - 1, *ingredients, repeat=True):
+                amounts = tuple(count for val, count in sorted(Counter(combo[1:]).items(), key=lambda x: x[0]))
+                for ings in _generate_permutations(amounts, *ingredients):
                     r = recipe.Recipe(*_replace_no_ing(base_r, first_ing, *ings))
                     if not constraints(r.build()):
                         continue
