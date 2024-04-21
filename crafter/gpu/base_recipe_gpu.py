@@ -1,12 +1,12 @@
 import math
 import time
 
+import cupy
+import numba
 import numpy as np
 from numba import cuda
 
-from core.optimizer import bruteForce
 from crafter import ingredient, recipe
-from core.uniqueHeap import UniqueHeap
 
 
 # ingredient format:
@@ -90,7 +90,7 @@ def apply_modifier(effectiveness_vec, ingredient, pos):
 @cuda.jit(device=True)
 def score(charges, duration, durability, req_strength, req_dexterity, req_intelligence, req_defence, req_agility,
           id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
-    return id1_max * 1000 + durability // 1000 + req_intelligence
+    return max(0, id1_max * 1000 + (durability + 735000) // 1000)
 
 
 @cuda.jit(device=True)
@@ -98,11 +98,14 @@ def constraints(charges, duration, durability, req_strength, req_dexterity, req_
                 id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
     return (durability > -735000 + 10000
             and req_intelligence <= 150
-            and id1_max > 500)
+            and id1_max > 0)
 
 
 @cuda.jit(device=True)
-def calc_recipe_score(recipe, effectiveness_vec):
+def calc_recipe_score(recipe):
+    effectiveness_vec = cuda.local.array(shape=6, dtype=numba.intc)
+    for i in range(6):
+        effectiveness_vec[i] = 100
     charges = 0
     duration = 0
     durability = 0
@@ -161,80 +164,95 @@ def calc_recipe_score(recipe, effectiveness_vec):
     if not constraints(charges, duration, durability, req_strength, req_dexterity, req_intelligence, req_defence,
                        req_agility, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
                        id5_max):
-        return -1
+        return 0
 
     return score(charges, duration, durability, req_strength, req_dexterity, req_intelligence, req_defence, req_agility,
                  id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
 
+
 @cuda.jit(device=True)
 def get_recipe_cuda(ingredients, pos):
     base = ingredients.shape[0]
-    i1 = ingredients[pos%base]
+    i1 = ingredients[pos % base]
     pos //= base
-    i2 = ingredients[pos%base]
+    i2 = ingredients[pos % base]
     pos //= base
-    i3 = ingredients[pos%base]
+    i3 = ingredients[pos % base]
     pos //= base
-    i4 = ingredients[pos%base]
+    i4 = ingredients[pos % base]
     pos //= base
-    i5 = ingredients[pos%base]
+    i5 = ingredients[pos % base]
     pos //= base
-    i6 = ingredients[pos%base]
+    i6 = ingredients[pos % base]
     return i1, i2, i3, i4, i5, i6
 
 
 def get_recipe(ingredients, pos):
     base = len(ingredients)
-    i1 = ingredients[pos%base]
+    i1 = ingredients[pos % base]
     pos //= base
-    i2 = ingredients[pos%base]
+    i2 = ingredients[pos % base]
     pos //= base
-    i3 = ingredients[pos%base]
+    i3 = ingredients[pos % base]
     pos //= base
-    i4 = ingredients[pos%base]
+    i4 = ingredients[pos % base]
     pos //= base
-    i5 = ingredients[pos%base]
+    i5 = ingredients[pos % base]
     pos //= base
-    i6 = ingredients[pos%base]
+    i6 = ingredients[pos % base]
     return i1, i2, i3, i4, i5, i6
 
-@cuda.jit(fastmath=True)
-def scoring_kernel(ingredients, effectivenesses, scores):
+
+@cuda.jit
+def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
     pos = cuda.grid(1)
-    if pos < effectivenesses.shape[0]:
-        recipe = get_recipe_cuda(ingredients, pos)
-        scores[pos] = calc_recipe_score(recipe, effectivenesses[pos])
+    if pos < scores.shape[0]:
+        if pos + offset >= perm_amt:
+            scores[pos] = 0
+            return
+        recipe = get_recipe_cuda(ingredients, pos + offset)
+        r_score = calc_recipe_score(recipe)
+        if r_score >= score_min:
+            scores[pos] = r_score
+        else:
+            scores[pos] = 0
 
 
 def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient]) -> list[recipe.Recipe]:
-    permutation_amt = len(ingredients)**6
+    permutation_amt = len(ingredients) ** 6
+    batch_size = min(2 ** 27, permutation_amt)
 
+    print(f"Total permutation amount: {permutation_amt}")
     ingredients_array = np.array([i.to_np_array("rawHealth", "", "", "", "") for i in ingredients], dtype=np.intc)
-    effectivenesses = np.full((permutation_amt, 6), 100, dtype=np.intc)
-
     device_ingreds = cuda.to_device(ingredients_array)
-    device_effectivenesses = cuda.to_device(effectivenesses)
-    device_scores = cuda.device_array((permutation_amt,), dtype=np.intc)
+    scores = cupy.empty(batch_size, dtype=np.uint)
 
-    threadsperblock = 256
+    threadsperblock = 512
     blockspergrid = math.ceil(permutation_amt / threadsperblock)
 
-    print("Calculating scores...")
+    total_best = []
+    loop_amount = math.ceil(permutation_amt / batch_size)
 
-    scoring_kernel[blockspergrid, threadsperblock](device_ingreds, device_effectivenesses, device_scores)
-    scores = device_scores.copy_to_host()
+    for offset in range(0, permutation_amt, batch_size):
+        score_min = 0 if len(total_best) < 20 else total_best[-1][0]
+        print(
+            f"\rCalculating scores for batch {offset // batch_size + 1}/{loop_amount} (minimum score set to: {score_min})...        ",
+            end="")
+        scoring_kernel[blockspergrid, threadsperblock](device_ingreds, scores, offset, permutation_amt, score_min)
 
-    print("Sorting results...")
+        nonzero = cupy.nonzero(scores)[0]
+        nonzero_scores = scores.take(nonzero)
 
-    heap = UniqueHeap(key=lambda x: x[0], max_size=20)
+        best_idx = cupy.argsort(nonzero_scores)[-20:]
 
-    for i in range(permutation_amt):
-        if scores[i] > 0:
-            heap.put((scores[i], i))
+        best = [(nonzero_scores[i].item(), nonzero[i].item() + offset) for i in best_idx]
 
-    best = sorted([e for _, e in heap.elements], key=lambda x: x[0], reverse=True)
+        total_best = sorted(total_best + best, key=lambda x: x[0], reverse=True)[:20]
 
-    return [recipe.Recipe(*get_recipe(ingredients, p)) for s, p in best]
+    print()
+    print("Finished.")
+
+    return [recipe.Recipe(*get_recipe(ingredients, i)) for s, i in total_best]
 
 
 if __name__ == "__main__":

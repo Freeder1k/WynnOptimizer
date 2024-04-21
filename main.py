@@ -106,13 +106,6 @@ async def eff_combos():
         "Serafite",
         "Condensed Darkness",
         "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
     ]]
     t = time.time()
     print("Calculating combos...")
