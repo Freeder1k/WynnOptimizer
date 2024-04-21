@@ -106,12 +106,55 @@ async def eff_combos():
         "Serafite",
         "Condensed Darkness",
         "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
     ]]
-    t = time.time()
-    print("Calculating combos...")
-    #combos = crafter.base_recipe.calc_base_recipes(eff_ings, 5, strict=True)
-    #combos = await crafter.base_recipe.from_csv()
-    print(f"Time taken: {time.time() - t:.2f}s")
+    # t = time.time()
+    # print("Calculating combos...")
+    # combos = crafter.base_recipe.calc_base_recipes(eff_ings, 5, strict=True)
+    # combos = await crafter.base_recipe.from_csv()
+    # print(f"Time taken: {time.time() - t:.2f}s")
     t = time.time()
     print("Calculating optimal recipe...")
     res = crafter.gpu.base_recipe_gpu.get_best_recipes_gpu(ingredients + eff_ings)
