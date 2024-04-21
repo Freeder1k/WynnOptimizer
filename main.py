@@ -7,6 +7,7 @@ import crafter.crafter
 import crafter.base_recipe
 import crafter.ingredient
 import crafter.recipe
+import crafter.gpu.base_recipe_gpu
 
 jeweling_base = [
     "Lunar Charm",
@@ -52,7 +53,7 @@ def constraints(item: crafter.ingredient.Ingredient):
 def constraints2(item: crafter.ingredient.Ingredient):
     return (
             item.durability > -735000 + 10000
-            and item.requirements.intelligence <= 70
+            and item.requirements.intelligence <= 130
     )
 
 
@@ -102,22 +103,26 @@ async def eff_combos():
     ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
         # "Stolen Pearls",
         "Vim Veins",
-        "Organic Explosive",
-        "Tungsten Chunk",
         "Serafite",
         "Condensed Darkness",
-        "Frozen Ghostly Essence",
-        "Regretless Talisman",
-        "Vortexian Event Horizon"
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
+        "Tungsten Chunk",
     ]]
     t = time.time()
     print("Calculating combos...")
-    # combos = crafter.base_recipe.calc_base_recipes(eff_ings, 5, strict=True)
-    combos = await crafter.base_recipe.from_csv()
+    #combos = crafter.base_recipe.calc_base_recipes(eff_ings, 5, strict=True)
+    #combos = await crafter.base_recipe.from_csv()
     print(f"Time taken: {time.time() - t:.2f}s")
     t = time.time()
     print("Calculating optimal recipe...")
-    res = crafter.crafter.optimize(constraints2, score2, ingredients, combos, 20, 7)
+    res = crafter.gpu.base_recipe_gpu.get_best_recipes_gpu(ingredients + eff_ings)
+    #res = crafter.crafter.optimize(constraints2, score2, ingredients, combos, 20, 5)
     print(f"Time taken: {time.time() - t:.2f}s")
     print('\n'.join(map(print_recipe, res)))
 

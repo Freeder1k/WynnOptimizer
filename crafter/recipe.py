@@ -1,4 +1,3 @@
-import crafter.crafter
 import crafter.ingredient
 from utils.integer import Base64
 from .ingredient import Ingredient, Modifier, NO_INGREDIENT

@@ -1,3 +1,4 @@
+import itertools
 from typing import TypeVar, Generator
 
 T = TypeVar('T')
@@ -40,3 +41,22 @@ def generate_all_subpermutations(*choices: T, repeat: bool = False, ordered: boo
     for i in range(1, len(choices)):
         for choice in generate_all_permutations(i, *choices, repeat=repeat, ordered=ordered):
             yield choice
+
+
+def gen_permutations_fast(n: int, *choices: str, repeat: bool = False, ordered: bool = False):
+    """
+    Generate all permutations of length n of the given choices. (Compiles with jit).
+    :param n: The length of the permutation.
+    :param choices: The choices to generate the permutations from.
+    :param repeat: Whether to allow the same element multiple times in the permutation.
+    :param ordered: Whether to preserve order.
+    :return: A generator yielding all permutations of length n of the given choices.
+    """
+    if repeat and not ordered:
+        return itertools.product(choices, repeat=n)
+    if not repeat and not ordered:
+        return itertools.permutations(choices, n)
+    if not repeat and ordered:
+        return itertools.combinations(choices, n)
+    if repeat and ordered:
+        return itertools.combinations_with_replacement(choices, n)

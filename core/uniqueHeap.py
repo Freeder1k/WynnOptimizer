@@ -33,13 +33,15 @@ class UniqueHeap(Generic[T]):
             return
 
         entry = (prio, item)
-        self._mapping[prio] = entry
 
         if self._max_size is not None and len(self.elements) >= self._max_size:
             popped = heapq.heappushpop(self.elements, entry)
-            del self._mapping[popped[0]]
+            if popped != entry:
+                del self._mapping[popped[0]]
+                self._mapping[prio] = entry
         else:
             heapq.heappush(self.elements, entry)
+            self._mapping[prio] = entry
 
     def pop(self) -> T:
         popped = heapq.heappop(self.elements)

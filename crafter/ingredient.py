@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import itertools
 import json
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+import numpy as np
 from async_lru import alru_cache
 
 from core.wynnAPI import item
@@ -12,8 +14,13 @@ from core.wynnAPI import item
 @dataclass
 class Identification:
     raw: int
-    min: int = 0
-    max: int = 0
+    min: int
+    max: int
+
+    def __init__(self, raw: int, min: int = None, max: int = None):
+        self.raw = raw
+        self.min = min if min is not None else raw
+        self.max = max if max is not None else raw
 
     @classmethod
     def from_api_data(cls, data: int | dict):
@@ -169,6 +176,27 @@ class Ingredient:
         except Exception as e:
             print(name)
             raise e
+
+    def to_np_array(self, id1: str, id2: str, id3: str, id4: str, id5: str):
+        return np.array([self.charges,
+                         self.duration,
+                         self.durability,
+                         self.requirements.strength,
+                         self.requirements.dexterity,
+                         self.requirements.intelligence,
+                         self.requirements.defence,
+                         self.requirements.agility,
+                         self.modifiers.left,
+                         self.modifiers.right,
+                         self.modifiers.above,
+                         self.modifiers.under,
+                         self.modifiers.touching,
+                         self.modifiers.notTouching,
+                         *itertools.chain(*((self.identifications[i].min, self.identifications[i].max)
+                                            for i in [id1, id2, id3, id4, id5]))
+                         ],
+                        dtype=np.intc
+                        )
 
     def __add__(self, other: Ingredient):
         if not isinstance(other, Ingredient):
