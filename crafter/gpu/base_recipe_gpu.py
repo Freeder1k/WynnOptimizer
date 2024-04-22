@@ -38,7 +38,7 @@ from crafter import ingredient, recipe
 # id5.max                       # 23
 
 
-BATCH_SIZE = 2 ** 26
+BATCH_SIZE = 2 ** 24
 THREADSPERBLOCK = 128
 _running = Lock()
 
@@ -142,12 +142,11 @@ def calc_recipe_score(ingredients, r, mods):
             id5_min += ingr[23] * mods[i] // 100
             id5_max += ingr[22] * mods[i] // 100
 
-    if not constraints(charges, duration, durability, req_str, req_dex, req_int, req_def,
+    passes = constraints(charges, duration, durability, req_str, req_dex, req_int, req_def,
                        req_agi, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
-                       id5_max):
-        return 0
+                       id5_max)
 
-    return score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
+    return passes * score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
                  id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
 
 
@@ -191,10 +190,7 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
 
         r_score = calc_recipe_score(ingredients, r_arr, mod_arr)
 
-        if r_score > score_min:
-            scores[pos] = r_score
-        else:
-            scores[pos] = 0
+        scores[pos] = (r_score > score_min) * r_score
 
 
 def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Callable, constraint_fun: Callable, ids: list[str]) -> list[
@@ -228,9 +224,11 @@ def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Ca
         blockspergrid = math.ceil(batch_size / THREADSPERBLOCK)
 
         total_best = []
+        best_scores = set()
 
         scoring_time = 0
         zero_time = 0
+        unique_time = 0
         sort_time = 0
         select_time = 0
 
@@ -251,7 +249,11 @@ def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Ca
             zero_time += time.time() - t
 
             t = time.time()
-            best_idx = cupy.argsort(nonzero_scores)
+            unique_scores, unique_indxs = cupy.unique(nonzero_scores, return_index=True)
+            unique_time = time.time() - t
+
+            t = time.time()
+            best_idx = cupy.argsort(unique_scores)
             sort_time += time.time() - t
 
             t = time.time()
@@ -262,12 +264,13 @@ def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Ca
                 if i < 0:
                     break
                 indx = best_idx[i]
-                score = nonzero_scores[indx].item()
-                if (len(best) == 0 or score != best[-1][0]) and score not in (b[0] for b in total_best):
-                    best.append((score, nonzero[indx].item() + offset))
+                score = unique_scores[indx].item()
+                if len(best) == 0 and score not in best_scores:
+                    best.append((score, nonzero[unique_indxs[indx]].item() + offset))
                 i -= 1
 
             total_best = sorted(total_best + best, key=lambda x: x[0], reverse=True)[:20]
+            best_scores = {s for s, i in total_best}
             select_time += time.time() - t
 
         print()
@@ -275,6 +278,7 @@ def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Ca
 
         print(f"Scoring time: {scoring_time:.2f}s")
         print(f"Zero time: {zero_time:.2f}s")
+        print(f"Unique time: {unique_time:.2f}s")
         print(f"Sort time: {sort_time:.2f}s")
         print(f"Select time: {select_time:.2f}s")
 

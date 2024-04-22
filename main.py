@@ -78,23 +78,23 @@ def score(item: crafter.ingredient.Ingredient):
 
 def score_cuda(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
                id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
-    return int(100 * id1_max
-               + 125 * (id2_max + id3_max - max(0, req_str - 4) - max(0, req_dex - 30))
-               + min((durability + 735000) // 100000, 200))
+    return int(100 * id1_max)
+               # + 125 * (id2_max + id3_max - max(0, req_str - 4) - max(0, req_dex - 30))
+               # + min((durability + 735000) // 100000, 200))
 
 
 def constraints_cuda(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
                      id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
     free_sp = 22
     return (
-            durability > -735000 + 150000
-            and req_str <= 4 + free_sp
-            and req_dex <= 30 + free_sp
-            and req_int <= 120 + free_sp
-            and req_def <= 4 + free_sp
-            and req_agi <= 60 + free_sp
-            and req_str + req_dex + req_int + req_def + req_agi <= 4 + 30 + 120 + 4 + 60 + free_sp
-            and id1_max + id2_max + id3_max >= 10
+            durability > -735000 + 150000 and id1_max > 0
+            # and req_str <= 4 + free_sp
+            # and req_dex <= 30 + free_sp
+            # and req_int <= 120 + free_sp
+            # and req_def <= 4 + free_sp
+            # and req_agi <= 60 + free_sp
+            # and req_str + req_dex + req_int + req_def + req_agi <= 4 + 30 + 120 + 4 + 60 + free_sp
+            # and id1_max + id2_max + id3_max >= 10
     )
 
 
@@ -118,12 +118,30 @@ async def craft():
     agi_ings = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if abs(ingr.identifications["rawAgility"].max) >= 2]
     ingredients = {i.name for i in eff_ings + water_ings + def_ings + agi_ings}
     ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
+        "Antique Metal",
     ] + list(ingredients)]
     ingredients = [ingr for ingr in ingredients if "armouring" in ingr.requirements.skills]
+
     print(len(ingredients))
     t = time.time()
     print(f"Calculating optimal recipe with {len(ingredients)} ingredients...")
-    res = crafter.gpu.base_recipe_gpu.get_best_recipes_gpu(ingredients + eff_ings, score_cuda, constraints_cuda,
+    res = crafter.gpu.base_recipe_gpu.get_best_recipes_gpu(ingredients, score_cuda, constraints_cuda,
                                                            ["waterDamage", "rawDefence", "rawAgility"])
     print(f"Time taken: {time.time() - t:.2f}s")
     print('\n'.join(map(print_recipe, res)))
