@@ -1,3 +1,4 @@
+import itertools
 import math
 import time
 
@@ -7,6 +8,7 @@ import numpy as np
 from numba import cuda
 
 from crafter import ingredient, recipe
+from crafter.crafter import _replace_no_ing
 
 
 # ingredient format:
@@ -102,10 +104,7 @@ def constraints(charges, duration, durability, req_strength, req_dexterity, req_
 
 
 @cuda.jit(device=True)
-def calc_recipe_score(recipe):
-    effectiveness_vec = cuda.local.array(shape=6, dtype=numba.intc)
-    for i in range(6):
-        effectiveness_vec[i] = 100
+def calc_recipe_score(recipe, recipe_len, effectiveness_vec):
     charges = 0
     duration = 0
     durability = 0
@@ -125,10 +124,7 @@ def calc_recipe_score(recipe):
     id5_min = 0
     id5_max = 0
 
-    for i in range(6):
-        apply_modifier(effectiveness_vec, recipe[i], i)
-
-    for i in range(6):
+    for i in range(recipe_len):
         ingr = recipe[i]
         charges += ingr[0]
         duration += ingr[1]
@@ -170,21 +166,17 @@ def calc_recipe_score(recipe):
                  id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
 
 
-@cuda.jit(device=True)
-def get_recipe_cuda(ingredients, pos):
-    base = ingredients.shape[0]
-    i1 = ingredients[pos % base]
-    pos //= base
-    i2 = ingredients[pos % base]
-    pos //= base
-    i3 = ingredients[pos % base]
-    pos //= base
-    i4 = ingredients[pos % base]
-    pos //= base
-    i5 = ingredients[pos % base]
-    pos //= base
-    i6 = ingredients[pos % base]
-    return i1, i2, i3, i4, i5, i6
+def get_effectiveness_indx(ing_count, effectivenesses, pos):
+    i = 0
+    while pos > ing_count ** effectivenesses[i][0]:
+        if i >= len(effectivenesses) - 1:
+            return -1, 0
+        i += 1
+        pos //= ing_count ** effectivenesses[i][0]
+    return i, pos
+
+
+get_effectiveness_indx_cuda = cuda.jit(get_effectiveness_indx, device=True)
 
 
 def get_recipe(ingredients, pos):
@@ -203,6 +195,9 @@ def get_recipe(ingredients, pos):
     return i1, i2, i3, i4, i5, i6
 
 
+get_recipe_cuda = cuda.jit(get_recipe, device=True)
+
+
 @cuda.jit
 def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
     pos = cuda.grid(1)
@@ -211,24 +206,132 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
             scores[pos] = 0
             return
         recipe = get_recipe_cuda(ingredients, pos + offset)
-        r_score = calc_recipe_score(recipe)
+
+        effectiveness_vec = cuda.local.array(shape=6, dtype=numba.intc)
+        for i in range(6):
+            effectiveness_vec[i] = 100
+
+        for i in range(6):
+            apply_modifier(effectiveness_vec, recipe[i], i)
+
+        r_score = calc_recipe_score(recipe, 6, effectiveness_vec)
         if r_score > score_min:
             scores[pos] = r_score
         else:
             scores[pos] = 0
 
 
-def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient]) -> list[recipe.Recipe]:
-    permutation_amt = len(ingredients) ** 6
+@cuda.jit(device=True)
+def get_effectiveness_tuple(effectivenesses, indx):
+    return effectivenesses[indx][1], effectivenesses[indx][2], effectivenesses[indx][3], effectivenesses[indx][4], \
+        effectivenesses[indx][5], effectivenesses[indx][6]
+
+
+@cuda.jit(device=True)
+def recipe_from_base(base, mod_ingrs, ingrs):
+    j = 0
+    i = 0
+    if base[i] < 0:
+        i1 = ingrs[j]
+        j += 1
+    else:
+        i1 = mod_ingrs[i]
+    i += 1
+    if base[i] < 0:
+        i2 = ingrs[j]
+        j += 1
+    else:
+        i2 = mod_ingrs[i]
+    i += 1
+    if base[i] < 0:
+        i3 = ingrs[j]
+        j += 1
+    else:
+        i3 = mod_ingrs[i]
+    i += 1
+    if base[i] < 0:
+        i4 = ingrs[j]
+        j += 1
+    else:
+        i4 = mod_ingrs[i]
+    i += 1
+    if base[i] < 0:
+        i5 = ingrs[j]
+        j += 1
+    else:
+        i5 = mod_ingrs[i]
+    i += 1
+    if base[i] < 0:
+        i6 = ingrs[j]
+        j += 1
+    else:
+        i6 = mod_ingrs[i]
+    return i1, i2, i3, i4, i5, i6
+
+
+@cuda.jit
+def scoring_kernel2(ingredients, effectivenesses, effectiveness_ingrs, base_recipes, scores, offset, score_min):
+    pos = cuda.grid(1)
+    if pos < scores.shape[0]:
+        eff_indx, recipe_pos = get_effectiveness_indx_cuda(len(ingredients), effectivenesses, pos + offset)
+        if eff_indx == -1:
+            scores[pos] = 0
+            return
+
+        r = get_recipe_cuda(ingredients, recipe_pos)
+        r = recipe_from_base(base_recipes[eff_indx], effectiveness_ingrs, r)
+
+        effectiveness_vec = cuda.local.array(shape=6, dtype=numba.intc)
+        for i in range(6):
+            effectiveness_vec[i] = 100
+
+        for i in range(6):
+            apply_modifier(effectiveness_vec, r[i], i)
+
+        r_score = calc_recipe_score(r, 6, effectiveness_vec)
+        if r_score > score_min:
+            scores[pos] = r_score
+        else:
+            scores[pos] = 0
+
+
+def homogenize(t, n):
+    return (len(t),) + tuple(t) + (0,) * (n - len(t))
+
+
+def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], combos: dict[tuple[int, ...], recipe.Recipe] = None,
+                         ) -> list[recipe.Recipe]:
+    if combos is None:
+        combos = {(100,) * 6: recipe.Recipe(*((ingredient.NO_INGREDIENT,) * 6))}
+
+    effectivenesses = list(combos.keys())
+
+    effectivenesses = [homogenize(e, 6) for e in effectivenesses]
+    effectiveness_ingredients = itertools.chain(*[r.ingredients for r in combos.values()])
+    effectiveness_ingredients = list({i.name: i for i in effectiveness_ingredients}.values())
+    effectiveness_ingr_indices = {i.name: idx for idx, i in enumerate(effectiveness_ingredients)}
+
+    permutation_amt = (sum(len(ingredients) ** e[0] for e in effectivenesses))
     batch_size = min(2 ** 26, permutation_amt)
 
     print(f"Total permutation amount: {permutation_amt}")
     ingredients_array = np.array([i.to_np_array("rawHealth", "", "", "", "") for i in ingredients], dtype=np.intc)
+
+    effectivenesses_array = np.array(effectivenesses, dtype=np.short)
+    effectiveness_ingredients_array = np.array(
+        [i.to_np_array("rawHealth", "", "", "", "") for i in effectiveness_ingredients], dtype=np.intc)
+    base_recipes_array = np.array(
+        [[effectiveness_ingr_indices.get(i.name, -1) for i in r.ingredients] for r in combos.values()], dtype=np.intc)
+
     device_ingreds = cuda.to_device(ingredients_array)
+    device_effectivenesses = cuda.to_device(effectivenesses_array)
+    device_effectiveness_ingredients = cuda.to_device(effectiveness_ingredients_array)
+    device_base_recipes = cuda.to_device(base_recipes_array)
+
     scores = cupy.empty(batch_size, dtype=np.uint)
 
     batch_count = math.ceil(permutation_amt / batch_size)
-    threadsperblock = 128
+    threadsperblock = 256
     blockspergrid = math.ceil(batch_size / threadsperblock)
 
     total_best = []
@@ -245,7 +348,9 @@ def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient]) -> list[recip
             end="")
 
         t = time.time()
-        scoring_kernel[blockspergrid, threadsperblock](device_ingreds, scores, offset, permutation_amt, score_min)
+        scoring_kernel2[blockspergrid, threadsperblock](device_ingreds, device_effectivenesses,
+                                                        device_effectiveness_ingredients, device_base_recipes, scores,
+                                                        offset, score_min)
         cuda.synchronize()
         scoring_time += time.time() - t
 
@@ -273,13 +378,15 @@ def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient]) -> list[recip
     print(f"Sort time: {sort_time:.2f}s")
     print(f"Select time: {select_time:.2f}s")
 
-    return [recipe.Recipe(*get_recipe(ingredients, i)) for s, i in total_best]
+    res = []
+    for s, i in total_best:
+        eff_indx, recipe_pos = get_effectiveness_indx(len(ingredients), effectivenesses, i)
+        if eff_indx == -1:
+            print("???")
+            continue
 
+        r = get_recipe(ingredients, recipe_pos)
+        base = combos[effectivenesses[eff_indx][1:effectivenesses[eff_indx][0] + 1]]
+        res.append(recipe.Recipe(*_replace_no_ing(base, *r)))
 
-if __name__ == "__main__":
-    # host()
-    t = time.time()
-    # print(get_best_recipes_gpu([ingredient.NO_INGREDIENT] * 10))
-
-    print("time: ", time.time() - t)
-    # print([x for x in itertools.product((1,2,3), repeat=3)])
+    return res
