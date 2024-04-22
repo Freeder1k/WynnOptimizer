@@ -263,7 +263,7 @@ def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Ca
                     break
                 indx = best_idx[i]
                 score = nonzero_scores[indx].item()
-                if len(best) == 0 or (score != best[-1][0] and score not in (b[0] for b in total_best)):
+                if (len(best) == 0 or score != best[-1][0]) and score not in (b[0] for b in total_best):
                     best.append((score, nonzero[indx].item() + offset))
                 i -= 1
 

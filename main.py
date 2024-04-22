@@ -29,9 +29,11 @@ armouring_base = [
     "Bob's Tear",
     "Decaying Heart",
     "Obelisk Core",
+    "Disturbed Dye",
     "Transformativity",
     "Festering Face",
     "Major's Badge",
+    'Alginate Dressing',
     "Familiar Essence",
     "Antique Metal",
     "Elephelk Trunk"
@@ -78,7 +80,7 @@ def score_cuda(charges, duration, durability, req_str, req_dex, req_int, req_def
                id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
     return int(100 * id1_max
                + 125 * (id2_max + id3_max - max(0, req_str - 4) - max(0, req_dex - 30))
-               + durascore_cuda(durability))
+               + min((durability + 735000) // 100000, 200))
 
 
 def constraints_cuda(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
@@ -96,30 +98,31 @@ def constraints_cuda(charges, duration, durability, req_str, req_dex, req_int, r
     )
 
 
-def durascore(dura: int):
+@cuda.jit(device=True, fastmath=True)
+def durascore_cuda(dura: int):
     normed = ((dura + 735000) // 1000) / 100
-    normed_score = math.tanh((normed - 1.3) / .7) + 1
+    normed_score = fast_sigmoid((normed - 1.3)/0.3)
     return int(normed_score * 1000)
 
 
-durascore_cuda = cuda.jit(durascore, device=True)
+@cuda.jit(device=True, fastmath=True)
+def fast_sigmoid(x: float):
+    return (1 / (1 + abs(x))) + 1
+
 
 
 async def craft():
     eff_ings = [await crafter.ingredient.get_ingredient(name) for name in armouring_base]
+    water_ings = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if abs(ingr.identifications["waterDamage"].max) >= 5]
+    def_ings = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if ingr.identifications["rawDefence"].max >= 4 or ingr.identifications["rawAgility"].min <= -3]
+    agi_ings = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if abs(ingr.identifications["rawAgility"].max) >= 2]
+    ingredients = {i.name for i in eff_ings + water_ings + def_ings + agi_ings}
     ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
-        "Ocea Steel",
-        "Deep Ice Core",
-        "River Clay",
-        "Wintery Aspect",
-        "Fiberglass Frame",
-        "Voidtossed Memory",
-        "Coastal Shell",
-        "Soft Silk",
-        "Fragmentation"
-    ]]
+    ] + list(ingredients)]
+    ingredients = [ingr for ingr in ingredients if "armouring" in ingr.requirements.skills]
+    print(len(ingredients))
     t = time.time()
-    print("Calculating optimal recipe...")
+    print(f"Calculating optimal recipe with {len(ingredients)} ingredients...")
     res = crafter.gpu.base_recipe_gpu.get_best_recipes_gpu(ingredients + eff_ings, score_cuda, constraints_cuda,
                                                            ["waterDamage", "rawDefence", "rawAgility"])
     print(f"Time taken: {time.time() - t:.2f}s")
