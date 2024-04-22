@@ -193,7 +193,7 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
         scores[pos] = (r_score > score_min) * r_score
 
 
-def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Callable, constraint_fun: Callable, ids: list[str]) -> list[
+def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Callable, constraint_fun: Callable, ids: list[str], min_score: int) -> list[
     recipe.Recipe]:
     with _running:
         # check if the score and constraint functions have the right signature
@@ -233,7 +233,7 @@ def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Ca
         select_time = 0
 
         for offset in range(0, permutation_amt, batch_size):
-            score_min = 0 if len(total_best) < 20 else total_best[-1][0]
+            score_min = max(0 if len(total_best) < 20 else total_best[-1][0], min_score)
             print(
                 f"\rCalculating scores for batch {offset // batch_size + 1}/{batch_count} (minimum score set to: {score_min})...        ",
                 end="")
