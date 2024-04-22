@@ -2,12 +2,14 @@ import asyncio
 import math
 import time
 
+from numba import cuda
+
 import core.managers.httpSessionManager
-import crafter.crafter
 import crafter.base_recipe
+import crafter.crafter
+import crafter.gpu.base_recipe_gpu
 import crafter.ingredient
 import crafter.recipe
-import crafter.gpu.base_recipe_gpu
 
 jeweling_base = [
     "Lunar Charm",
@@ -26,11 +28,11 @@ armouring_base = [
     "Borange Fluff",
     "Bob's Tear",
     "Decaying Heart",
-    # "Obelisk Core",
-    # "Transformativity",
-    # "Festering Face",
-    # "Major's Badge",
-    # "Familiar Essence",
+    "Obelisk Core",
+    "Transformativity",
+    "Festering Face",
+    "Major's Badge",
+    "Familiar Essence",
     "Antique Metal",
     "Elephelk Trunk"
 ]
@@ -72,15 +74,41 @@ def score(item: crafter.ingredient.Ingredient):
                + durascore(item.durability))
 
 
+def score_cuda(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
+               id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
+    return int(100 * id1_max
+               + 125 * (id2_max + id3_max - max(0, req_str - 4) - max(0, req_dex - 30))
+               + durascore_cuda(durability))
+
+
+def constraints_cuda(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
+                     id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
+    free_sp = 22
+    return (
+            durability > -735000 + 150000
+            and req_str <= 4 + free_sp
+            and req_dex <= 30 + free_sp
+            and req_int <= 120 + free_sp
+            and req_def <= 4 + free_sp
+            and req_agi <= 60 + free_sp
+            and req_str + req_dex + req_int + req_def + req_agi <= 4 + 30 + 120 + 4 + 60 + free_sp
+            and id1_max + id2_max + id3_max >= 10
+    )
+
+
 def durascore(dura: int):
     normed = ((dura + 735000) // 1000) / 100
     normed_score = math.tanh((normed - 1.3) / .7) + 1
     return int(normed_score * 1000)
 
 
-async def opt_craft():
+durascore_cuda = cuda.jit(durascore, device=True)
+
+
+async def craft():
+    eff_ings = [await crafter.ingredient.get_ingredient(name) for name in armouring_base]
     ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
-        # "Ocea Steel",
+        "Ocea Steel",
         "Deep Ice Core",
         "River Clay",
         "Wintery Aspect",
@@ -89,53 +117,11 @@ async def opt_craft():
         "Coastal Shell",
         "Soft Silk",
         "Fragmentation"
-    ] + armouring_base]
-
-    t = time.time()
-    print("Optimizing...")
-    r = crafter.crafter.optimize(constraints, score, ingredients, 20, 7)
-    print('\n'.join(map(print_recipe, r)))
-    print(f"Time taken: {time.time() - t:.2f}s")
-
-
-async def eff_combos():
-    eff_ings = [await crafter.ingredient.get_ingredient(name) for name in jeweling_base]
-    ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
-        # "Stolen Pearls",
-        "Vim Veins",
-        "Serafite",
-        "Condensed Darkness",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
-        "Tungsten Chunk",
     ]]
-    # t = time.time()
-    # print("Calculating combos...")
-    # combos = crafter.base_recipe.calc_base_recipes(eff_ings, 5, strict=True)
-    # combos = await crafter.base_recipe.from_csv()
-    # print(f"Time taken: {time.time() - t:.2f}s")
     t = time.time()
     print("Calculating optimal recipe...")
-    res = crafter.gpu.base_recipe_gpu.get_best_recipes_gpu(ingredients + eff_ings)
-    #res = crafter.crafter.optimize(constraints2, score2, ingredients, combos, 20, 5)
+    res = crafter.gpu.base_recipe_gpu.get_best_recipes_gpu(ingredients + eff_ings, score_cuda, constraints_cuda,
+                                                           ["waterDamage", "rawDefence", "rawAgility"])
     print(f"Time taken: {time.time() - t:.2f}s")
     print('\n'.join(map(print_recipe, res)))
 
@@ -148,7 +134,7 @@ async def main():
     try:
         await core.managers.httpSessionManager.HTTPSessionManager().start()
 
-        await eff_combos()
+        await craft()
     finally:
         await core.managers.httpSessionManager.HTTPSessionManager().close()
 
@@ -156,8 +142,8 @@ async def main():
 def print_recipe(r: crafter.recipe.Recipe) -> str:
     item = r.build()
     return (f"https://hppeng-wynn.github.io/crafter/#1{r.b64_hash()}9g91 "
-            f"{item.identifications['rawHealth'].max} hp "
-            # f"{eff_defagi(item)} def+agi "
+            f"{item.identifications['waterDamage'].max} wd "
+            f"{eff_defagi(item)} def+agi "
             f"{(item.durability + 735000) // 1000} dura   "
             f"{r}")
 

@@ -1,5 +1,8 @@
+import inspect
 import math
 import time
+from threading import Lock
+from typing import Callable
 
 import cupy
 import numba
@@ -7,7 +10,6 @@ import numpy as np
 from numba import cuda
 
 from crafter import ingredient, recipe
-
 
 # ingredient format:
 # charges,                      # 0
@@ -36,18 +38,26 @@ from crafter import ingredient, recipe
 # id5.max                       # 23
 
 
+BATCH_SIZE = 2 ** 26
+THREADSPERBLOCK = 128
+_running = Lock()
+
+_score_fun: Callable = None
+_constraint_fun: Callable = None
+
+
 @cuda.jit(device=True)
 def score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
           id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
-    return max(0, id1_max * 1000 + (durability + 735000) // 1000)
+    return max(0, _score_fun(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
+                             id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max))
 
 
 @cuda.jit(device=True)
 def constraints(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
                 id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
-    return (durability > -735000 + 10000
-            and req_int <= 150
-            and id1_max > 0)
+    return _constraint_fun(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
+                           id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
 
 
 @cuda.jit(device=True)
@@ -150,29 +160,16 @@ def calc_mods(ingredients, r, mod_arr):
         apply_modifier(mod_arr, ingredients[r[i]], i)
 
 
-def get_recipe(ingredients, pos: int):
-    base = len(ingredients)
-    i1 = ingredients[pos % base]
-    pos //= base
-    i2 = ingredients[pos % base]
-    pos //= base
-    i3 = ingredients[pos % base]
-    pos //= base
-    i4 = ingredients[pos % base]
-    pos //= base
-    i5 = ingredients[pos % base]
-    pos //= base
-    i6 = ingredients[pos % base]
-    return i1, i2, i3, i4, i5, i6
-
-
-get_recipe_cuda = cuda.jit(get_recipe, device=True)
-
-
 def get_permutation(base, pos, r_arr):
     for i in range(6):
         r_arr[i] = pos % base
         pos //= base
+
+
+def get_permutation_py(base, pos):
+    res = [0] * 6
+    get_permutation(base, pos, res)
+    return res
 
 
 get_permutation_cuda = cuda.jit(get_permutation, device=True)
@@ -200,59 +197,86 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
             scores[pos] = 0
 
 
-def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient]) -> list[recipe.Recipe]:
-    permutation_amt = len(ingredients) ** 6
-    batch_size = min(2 ** 26, permutation_amt)
+def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Callable, constraint_fun: Callable, ids: list[str]) -> list[
+    recipe.Recipe]:
+    with _running:
+        # check if the score and constraint functions have the right signature
+        sig = inspect.signature(score_fun)
+        if len(sig.parameters) != 18:
+            raise ValueError("Score function must have 24 parameters")
+        sig = inspect.signature(constraint_fun)
+        if len(sig.parameters) != 18:
+            raise ValueError("Constraint function must have 24 parameters")
 
-    print(f"Total permutation amount: {permutation_amt}")
-    ingredients_array = np.array([i.to_np_array("rawHealth", "", "", "", "") for i in ingredients], dtype=np.intc)
-    device_ingreds = cuda.to_device(ingredients_array)
-    scores = cupy.empty(batch_size, dtype=np.uint)
+        global _score_fun, _constraint_fun
+        _score_fun = cuda.jit(score_fun, device=True)
+        _constraint_fun = cuda.jit(constraint_fun, device=True)
 
-    batch_count = math.ceil(permutation_amt / batch_size)
-    threadsperblock = 128
-    blockspergrid = math.ceil(batch_size / threadsperblock)
+        permutation_amt = len(ingredients) ** 6
+        batch_size = min(BATCH_SIZE, permutation_amt)
+        print(f"Total permutation amount: {permutation_amt}")
 
-    total_best = []
+        if len(ids) < 5:
+            ids += [""] * (5 - len(ids))
 
-    scoring_time = 0
-    zero_time = 0
-    sort_time = 0
-    select_time = 0
+        ingredients_array = np.array([i.to_np_array(*ids[:5]) for i in ingredients], dtype=np.intc)
+        device_ingreds = cuda.to_device(ingredients_array)
 
-    for offset in range(0, permutation_amt, batch_size):
-        score_min = 0 if len(total_best) < 20 else total_best[-1][0]
-        print(
-            f"\rCalculating scores for batch {offset // batch_size + 1}/{batch_count} (minimum score set to: {score_min})...        ",
-            end="")
+        scores = cupy.empty(batch_size, dtype=np.uint)
 
-        t = time.time()
-        scoring_kernel[blockspergrid, threadsperblock](device_ingreds, scores, offset, permutation_amt, score_min)
-        cuda.synchronize()
-        scoring_time += time.time() - t
+        batch_count = math.ceil(permutation_amt / batch_size)
+        blockspergrid = math.ceil(batch_size / THREADSPERBLOCK)
 
-        t = time.time()
-        nonzero = cupy.nonzero(scores)[0]
-        nonzero_scores = scores.take(nonzero)
-        zero_time += time.time() - t
+        total_best = []
 
-        t = time.time()
-        best_idx = cupy.argsort(nonzero_scores)[-20:]
-        sort_time += time.time() - t
+        scoring_time = 0
+        zero_time = 0
+        sort_time = 0
+        select_time = 0
 
-        t = time.time()
+        for offset in range(0, permutation_amt, batch_size):
+            score_min = 0 if len(total_best) < 20 else total_best[-1][0]
+            print(
+                f"\rCalculating scores for batch {offset // batch_size + 1}/{batch_count} (minimum score set to: {score_min})...        ",
+                end="")
 
-        best = [(nonzero_scores[i].item(), nonzero[i].item() + offset) for i in best_idx]
+            t = time.time()
+            scoring_kernel[blockspergrid, THREADSPERBLOCK](device_ingreds, scores, offset, permutation_amt, score_min)
+            cuda.synchronize()
+            scoring_time += time.time() - t
 
-        total_best = sorted(total_best + best, key=lambda x: x[0], reverse=True)[:20]
-        select_time += time.time() - t
+            t = time.time()
+            nonzero = cupy.nonzero(scores)[0]
+            nonzero_scores = scores.take(nonzero)
+            zero_time += time.time() - t
 
-    print()
-    print("Finished.")
+            t = time.time()
+            best_idx = cupy.argsort(nonzero_scores)
+            sort_time += time.time() - t
 
-    print(f"Scoring time: {scoring_time:.2f}s")
-    print(f"Zero time: {zero_time:.2f}s")
-    print(f"Sort time: {sort_time:.2f}s")
-    print(f"Select time: {select_time:.2f}s")
+            t = time.time()
 
-    return [recipe.Recipe(*get_recipe(ingredients, i)) for s, i in total_best]
+            best = []
+            i = len(best_idx) - 1
+            while len(best) < 20:
+                if i < 0:
+                    break
+                indx = best_idx[i]
+                score = nonzero_scores[indx].item()
+                if len(best) == 0 or (score != best[-1][0] and score not in (b[0] for b in total_best)):
+                    best.append((score, nonzero[indx].item() + offset))
+                i -= 1
+
+            total_best = sorted(total_best + best, key=lambda x: x[0], reverse=True)[:20]
+            select_time += time.time() - t
+
+        print()
+        print("Finished.")
+
+        print(f"Scoring time: {scoring_time:.2f}s")
+        print(f"Zero time: {zero_time:.2f}s")
+        print(f"Sort time: {sort_time:.2f}s")
+        print(f"Select time: {select_time:.2f}s")
+
+        return [recipe.Recipe(*[ingredients[p] for p in get_permutation_py(len(ingredients), i)]) for s, i in
+                total_best]
