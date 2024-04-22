@@ -54,7 +54,7 @@ def constraints(charges, duration, durability, req_str, req_dex, req_int, req_de
 def add_maybe(vec, x, y, val):
     if x < 0 or y < 0 or x >= 2 or y >= 3:
         return
-    vec[y << 1 + x] += val
+    vec[(y << 1) + x] += val
 
 
 @cuda.jit(device=True)
