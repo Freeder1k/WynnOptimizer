@@ -88,32 +88,29 @@ def apply_modifier(effectiveness_vec, ingredient, pos):
 
 
 @cuda.jit(device=True)
-def score(charges, duration, durability, req_strength, req_dexterity, req_intelligence, req_defence, req_agility,
+def score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
           id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
     return max(0, id1_max * 1000 + (durability + 735000) // 1000)
 
 
 @cuda.jit(device=True)
-def constraints(charges, duration, durability, req_strength, req_dexterity, req_intelligence, req_defence, req_agility,
+def constraints(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
                 id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
     return (durability > -735000 + 10000
-            and req_intelligence <= 150
+            and req_int <= 150
             and id1_max > 0)
 
 
 @cuda.jit(device=True)
-def calc_recipe_score(recipe):
-    effectiveness_vec = cuda.local.array(shape=6, dtype=numba.intc)
-    for i in range(6):
-        effectiveness_vec[i] = 100
+def calc_recipe_score(r, mods):
     charges = 0
     duration = 0
     durability = 0
-    req_strength = 0
-    req_dexterity = 0
-    req_intelligence = 0
-    req_defence = 0
-    req_agility = 0
+    req_str = 0
+    req_dex = 0
+    req_int = 0
+    req_def = 0
+    req_agi = 0
     id1_min = 0
     id1_max = 0
     id2_min = 0
@@ -126,81 +123,77 @@ def calc_recipe_score(recipe):
     id5_max = 0
 
     for i in range(6):
-        apply_modifier(effectiveness_vec, recipe[i], i)
+        ingr = r[i]
 
-    for i in range(6):
-        ingr = recipe[i]
         charges += ingr[0]
         duration += ingr[1]
         durability += ingr[2]
-        req_strength += ingr[3] * effectiveness_vec[i] // 100
-        req_dexterity += ingr[4] * effectiveness_vec[i] // 100
-        req_intelligence += ingr[5] * effectiveness_vec[i] // 100
-        req_defence += ingr[6] * effectiveness_vec[i] // 100
-        req_agility += ingr[7] * effectiveness_vec[i] // 100
-        if effectiveness_vec[i] > 0:
-            id1_min += ingr[14] * effectiveness_vec[i] // 100
-            id1_max += ingr[15] * effectiveness_vec[i] // 100
-            id2_min += ingr[16] * effectiveness_vec[i] // 100
-            id2_max += ingr[17] * effectiveness_vec[i] // 100
-            id3_min += ingr[18] * effectiveness_vec[i] // 100
-            id3_max += ingr[19] * effectiveness_vec[i] // 100
-            id4_min += ingr[20] * effectiveness_vec[i] // 100
-            id4_max += ingr[21] * effectiveness_vec[i] // 100
-            id5_min += ingr[22] * effectiveness_vec[i] // 100
-            id5_max += ingr[23] * effectiveness_vec[i] // 100
-        elif effectiveness_vec[i] < 0:
-            id1_min += ingr[15] * effectiveness_vec[i] // 100
-            id1_max += ingr[14] * effectiveness_vec[i] // 100
-            id2_min += ingr[17] * effectiveness_vec[i] // 100
-            id2_max += ingr[16] * effectiveness_vec[i] // 100
-            id3_min += ingr[19] * effectiveness_vec[i] // 100
-            id3_max += ingr[18] * effectiveness_vec[i] // 100
-            id4_min += ingr[21] * effectiveness_vec[i] // 100
-            id4_max += ingr[20] * effectiveness_vec[i] // 100
-            id5_min += ingr[23] * effectiveness_vec[i] // 100
-            id5_max += ingr[22] * effectiveness_vec[i] // 100
+        req_str += ingr[3] * mods[i] // 100
+        req_dex += ingr[4] * mods[i] // 100
+        req_int += ingr[5] * mods[i] // 100
+        req_def += ingr[6] * mods[i] // 100
+        req_agi += ingr[7] * mods[i] // 100
+        if mods[i] > 0:
+            id1_min += ingr[14] * mods[i] // 100
+            id1_max += ingr[15] * mods[i] // 100
+            id2_min += ingr[16] * mods[i] // 100
+            id2_max += ingr[17] * mods[i] // 100
+            id3_min += ingr[18] * mods[i] // 100
+            id3_max += ingr[19] * mods[i] // 100
+            id4_min += ingr[20] * mods[i] // 100
+            id4_max += ingr[21] * mods[i] // 100
+            id5_min += ingr[22] * mods[i] // 100
+            id5_max += ingr[23] * mods[i] // 100
+        elif mods[i] < 0:
+            id1_min += ingr[15] * mods[i] // 100
+            id1_max += ingr[14] * mods[i] // 100
+            id2_min += ingr[17] * mods[i] // 100
+            id2_max += ingr[16] * mods[i] // 100
+            id3_min += ingr[19] * mods[i] // 100
+            id3_max += ingr[18] * mods[i] // 100
+            id4_min += ingr[21] * mods[i] // 100
+            id4_max += ingr[20] * mods[i] // 100
+            id5_min += ingr[23] * mods[i] // 100
+            id5_max += ingr[22] * mods[i] // 100
 
-    if not constraints(charges, duration, durability, req_strength, req_dexterity, req_intelligence, req_defence,
-                       req_agility, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
+    if not constraints(charges, duration, durability, req_str, req_dex, req_int, req_def,
+                       req_agi, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
                        id5_max):
         return 0
 
-    return score(charges, duration, durability, req_strength, req_dexterity, req_intelligence, req_defence, req_agility,
+    return score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
                  id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
 
 
 @cuda.jit(device=True)
-def get_recipe_cuda(ingredients, pos):
-    base = ingredients.shape[0]
-    i1 = ingredients[pos % base]
-    pos //= base
-    i2 = ingredients[pos % base]
-    pos //= base
-    i3 = ingredients[pos % base]
-    pos //= base
-    i4 = ingredients[pos % base]
-    pos //= base
-    i5 = ingredients[pos % base]
-    pos //= base
-    i6 = ingredients[pos % base]
-    return i1, i2, i3, i4, i5, i6
+def get_mods(r):
+    mod_arr = cuda.local.array(shape=6, dtype=numba.intc)
+    for i in range(6):
+        mod_arr[i] = 100
+
+    for i in range(6):
+        apply_modifier(mod_arr, r[i], i)
+
+    return mod_arr[0], mod_arr[1], mod_arr[2], mod_arr[3], mod_arr[4], mod_arr[5]
 
 
-def get_recipe(ingredients, pos):
+def get_recipe(ingredients, permutation: int):
     base = len(ingredients)
-    i1 = ingredients[pos % base]
-    pos //= base
-    i2 = ingredients[pos % base]
-    pos //= base
-    i3 = ingredients[pos % base]
-    pos //= base
-    i4 = ingredients[pos % base]
-    pos //= base
-    i5 = ingredients[pos % base]
-    pos //= base
-    i6 = ingredients[pos % base]
+    i1 = ingredients[permutation % base]
+    permutation //= base
+    i2 = ingredients[permutation % base]
+    permutation //= base
+    i3 = ingredients[permutation % base]
+    permutation //= base
+    i4 = ingredients[permutation % base]
+    permutation //= base
+    i5 = ingredients[permutation % base]
+    permutation //= base
+    i6 = ingredients[permutation % base]
     return i1, i2, i3, i4, i5, i6
+
+
+get_recipe_cuda = cuda.jit(get_recipe, device=True)
 
 
 @cuda.jit
@@ -210,8 +203,12 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
         if pos + offset >= perm_amt:
             scores[pos] = 0
             return
-        recipe = get_recipe_cuda(ingredients, pos + offset)
-        r_score = calc_recipe_score(recipe)
+
+        r = get_recipe_cuda(ingredients, pos + offset)
+        
+        mods = get_mods(r)
+        r_score = calc_recipe_score(r, mods)
+
         if r_score > score_min:
             scores[pos] = r_score
         else:
@@ -274,12 +271,3 @@ def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient]) -> list[recip
     print(f"Select time: {select_time:.2f}s")
 
     return [recipe.Recipe(*get_recipe(ingredients, i)) for s, i in total_best]
-
-
-if __name__ == "__main__":
-    # host()
-    t = time.time()
-    # print(get_best_recipes_gpu([ingredient.NO_INGREDIENT] * 10))
-
-    print("time: ", time.time() - t)
-    # print([x for x in itertools.product((1,2,3), repeat=3)])
