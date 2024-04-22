@@ -37,57 +37,6 @@ from crafter import ingredient, recipe
 
 
 @cuda.jit(device=True)
-def grid_pos(pos):
-    x = pos & 1
-    y = pos >> 1
-    return x, y
-
-
-@cuda.jit(device=True)
-def flat_pos(x, y):
-    if x < 0 or y < 0 or x >= 2 or y >= 3:
-        return -1
-    return y * 2 + x
-
-
-@cuda.jit(device=True)
-def add_maybe(vec, val, i):
-    if i != -1:
-        vec[i] += val
-
-
-@cuda.jit(device=True)
-def apply_modifier(effectiveness_vec, ingredient, pos):
-    for i in range(6):
-        effectiveness_vec[i] += ingredient[13]
-
-    x, y = grid_pos(pos)
-
-    add_maybe(effectiveness_vec,
-              ingredient[8] + ingredient[12] - ingredient[13],
-              flat_pos(x - 1, y))
-    add_maybe(effectiveness_vec,
-              ingredient[9] + ingredient[12] - ingredient[13],
-              flat_pos(x + 1, y))
-
-    add_maybe(effectiveness_vec,
-              ingredient[10] + ingredient[12] - ingredient[13],
-              flat_pos(x, y - 1))
-    add_maybe(effectiveness_vec,
-              ingredient[10],
-              flat_pos(x, y - 2))
-
-    add_maybe(effectiveness_vec,
-              ingredient[11] + ingredient[12] - ingredient[13],
-              flat_pos(x, y + 1))
-    add_maybe(effectiveness_vec,
-              ingredient[11],
-              flat_pos(x, y + 2))
-
-    effectiveness_vec[flat_pos(x, y)] -= ingredient[13]
-
-
-@cuda.jit(device=True)
 def score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
           id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
     return max(0, id1_max * 1000 + (durability + 735000) // 1000)
@@ -102,7 +51,34 @@ def constraints(charges, duration, durability, req_str, req_dex, req_int, req_de
 
 
 @cuda.jit(device=True)
-def calc_recipe_score(r, mods):
+def add_maybe(vec, x, y, val):
+    if x < 0 or y < 0 or x >= 2 or y >= 3:
+        return
+    vec[y << 1 + x] += val
+
+
+@cuda.jit(device=True)
+def apply_modifier(mod_vec, ingr, pos):
+    for i in range(6):
+        mod_vec[i] += ingr[13]
+
+    x = pos & 1
+    y = pos >> 1
+
+    add_maybe(mod_vec, x - 1, y, ingr[8] + ingr[12] - ingr[13])
+    add_maybe(mod_vec, x + 1, y, ingr[9] + ingr[12] - ingr[13])
+
+    add_maybe(mod_vec, x, y - 1, ingr[10] + ingr[12] - ingr[13])
+    add_maybe(mod_vec, x, y - 2, ingr[10])
+
+    add_maybe(mod_vec, x, y + 1, ingr[11] + ingr[12] - ingr[13])
+    add_maybe(mod_vec, x, y + 2, ingr[11])
+
+    mod_vec[pos] -= ingr[13]
+
+
+@cuda.jit(device=True)
+def calc_recipe_score(ingredients, r, mods):
     charges = 0
     duration = 0
     durability = 0
@@ -123,7 +99,7 @@ def calc_recipe_score(r, mods):
     id5_max = 0
 
     for i in range(6):
-        ingr = r[i]
+        ingr = ingredients[r[i]]
 
         charges += ingr[0]
         duration += ingr[1]
@@ -166,34 +142,40 @@ def calc_recipe_score(r, mods):
 
 
 @cuda.jit(device=True)
-def get_mods(r):
-    mod_arr = cuda.local.array(shape=6, dtype=numba.intc)
+def calc_mods(ingredients, r, mod_arr):
     for i in range(6):
         mod_arr[i] = 100
 
     for i in range(6):
-        apply_modifier(mod_arr, r[i], i)
-
-    return mod_arr[0], mod_arr[1], mod_arr[2], mod_arr[3], mod_arr[4], mod_arr[5]
+        apply_modifier(mod_arr, ingredients[r[i]], i)
 
 
-def get_recipe(ingredients, permutation: int):
+def get_recipe(ingredients, pos: int):
     base = len(ingredients)
-    i1 = ingredients[permutation % base]
-    permutation //= base
-    i2 = ingredients[permutation % base]
-    permutation //= base
-    i3 = ingredients[permutation % base]
-    permutation //= base
-    i4 = ingredients[permutation % base]
-    permutation //= base
-    i5 = ingredients[permutation % base]
-    permutation //= base
-    i6 = ingredients[permutation % base]
+    i1 = ingredients[pos % base]
+    pos //= base
+    i2 = ingredients[pos % base]
+    pos //= base
+    i3 = ingredients[pos % base]
+    pos //= base
+    i4 = ingredients[pos % base]
+    pos //= base
+    i5 = ingredients[pos % base]
+    pos //= base
+    i6 = ingredients[pos % base]
     return i1, i2, i3, i4, i5, i6
 
 
 get_recipe_cuda = cuda.jit(get_recipe, device=True)
+
+
+def get_permutation(base, pos, r_arr):
+    for i in range(6):
+        r_arr[i] = pos % base
+        pos //= base
+
+
+get_permutation_cuda = cuda.jit(get_permutation, device=True)
 
 
 @cuda.jit
@@ -204,10 +186,13 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
             scores[pos] = 0
             return
 
-        r = get_recipe_cuda(ingredients, pos + offset)
-        
-        mods = get_mods(r)
-        r_score = calc_recipe_score(r, mods)
+        r_arr = cuda.local.array(shape=6, dtype=numba.intc)
+        get_permutation_cuda(len(ingredients), pos + offset, r_arr)
+
+        mod_arr = cuda.local.array(shape=6, dtype=numba.intc)
+        calc_mods(ingredients, r_arr, mod_arr)
+
+        r_score = calc_recipe_score(ingredients, r_arr, mod_arr)
 
         if r_score > score_min:
             scores[pos] = r_score
