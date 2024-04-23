@@ -39,7 +39,7 @@ from crafting.config.base import OptimalCrafterConfigBase
 
 
 BATCH_SIZE = 2 ** 24
-THREADSPERBLOCK = 32
+THREADSPERBLOCK = 128
 _running = Lock()
 
 _score_fun: Callable = None
