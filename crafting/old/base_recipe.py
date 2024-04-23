@@ -8,7 +8,7 @@ import numpy
 from numba import jit, cuda
 
 from core.optimizer import bruteForce
-from . import ingredient, recipe
+from crafting import ingredient, recipe
 
 
 def calc_base_recipes(ingredients: list[ingredient.Ingredient],

@@ -8,8 +8,8 @@ import numba
 import numpy as np
 from numba import cuda
 
-from crafter import recipe
-from crafter.config.base import OptimalCrafterConfigBase
+from crafting import recipe
+from crafting.config.base import OptimalCrafterConfigBase
 
 # ingredient format:
 # charges,                      # 0

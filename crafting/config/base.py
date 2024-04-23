@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import cupy
 
-from crafter import ingredient
+from crafting import ingredient
 
 
 class OptimalCrafterConfigBase(ABC):

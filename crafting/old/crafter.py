@@ -5,7 +5,7 @@ from typing import Callable
 
 from core.optimizer import bruteForce
 from core.uniqueHeap import UniqueHeap
-from . import ingredient, recipe
+from crafting import ingredient, recipe
 from collections import Counter
 
 def optimize(constraint_func: Callable[[ingredient.Ingredient], bool],
