@@ -45,9 +45,6 @@ _running = Lock()
 _score_fun: Callable = None
 _constraint_fun: Callable = None
 
-@cuda.jit(device=True, fastmath=True)
-def min_max(a, b):
-    return min(a, b), max(a, b)
 
 @cuda.jit(device=True, fastmath=True)
 def calc_recipe_score(ingredients, r, mods):
@@ -81,11 +78,28 @@ def calc_recipe_score(ingredients, r, mods):
         req_int += int(ingr[5] * mods[i])
         req_def += int(ingr[6] * mods[i])
         req_agi += int(ingr[7] * mods[i])
-        id1_min, id1_max = min_max(int(ingr[14] * mods[i]), int(ingr[15] * mods[i]))
-        id2_min, id2_max = min_max(int(ingr[16] * mods[i]), int(ingr[17] * mods[i]))
-        id3_min, id3_max = min_max(int(ingr[18] * mods[i]), int(ingr[19] * mods[i]))
-        id4_min, id4_max = min_max(int(ingr[20] * mods[i]), int(ingr[21] * mods[i]))
-        id5_min, id5_max = min_max(int(ingr[22] * mods[i]), int(ingr[23] * mods[i]))
+        if mods[i] > 0:
+            id1_min += int(ingr[14] * mods[i])
+            id1_max += int(ingr[15] * mods[i])
+            id2_min += int(ingr[16] * mods[i])
+            id2_max += int(ingr[17] * mods[i])
+            id3_min += int(ingr[18] * mods[i])
+            id3_max += int(ingr[19] * mods[i])
+            id4_min += int(ingr[20] * mods[i])
+            id4_max += int(ingr[21] * mods[i])
+            id5_min += int(ingr[22] * mods[i])
+            id5_max += int(ingr[23] * mods[i])
+        elif mods[i] < 0:
+            id1_min += int(ingr[15] * mods[i])
+            id1_max += int(ingr[14] * mods[i])
+            id2_min += int(ingr[17] * mods[i])
+            id2_max += int(ingr[16] * mods[i])
+            id3_min += int(ingr[19] * mods[i])
+            id3_max += int(ingr[18] * mods[i])
+            id4_min += int(ingr[21] * mods[i])
+            id4_max += int(ingr[20] * mods[i])
+            id5_min += int(ingr[23] * mods[i])
+            id5_max += int(ingr[22] * mods[i])
 
     passes = _constraint_fun(charges, duration, durability, req_str, req_dex, req_int, req_def,
                              req_agi, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
@@ -279,8 +293,3 @@ def get_best_recipes_gpu(config: OptimalCrafterConfigBase) -> list[
 
         return [recipe.Recipe(*[ingredients[p] for p in get_permutation_py(len(ingredients), i)]) for s, i in
                 total_best]
-"""
- 3931370286880 
-43904894634336 
-65350674731936
-"""
