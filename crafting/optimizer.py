@@ -195,8 +195,7 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min, times):
         scores[pos] = (r_score > score_min) * r_score
 
 
-def get_best_recipes_gpu(config: OptimalCrafterConfigBase) -> list[
-    recipe.Recipe]:
+def get_best_recipes_gpu(config: OptimalCrafterConfigBase) -> list[recipe.Recipe]:
     with _running:
         ingredients = config.ingredients
         min_score = config.min_score
