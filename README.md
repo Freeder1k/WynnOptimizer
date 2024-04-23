@@ -19,3 +19,10 @@ Installation info for the requirements can be found here (use pip or your prefer
 
 If you feel like it you can check out the optimizer code and adjust some parameters, but in my testing they don't have a big impact on performance. They are currently set to what works best for me (NVIDIA GTX 1080 GPU).
 The wynnbuilder links that get output are all the same item type but you can just change that in wynnbuilder.
+
+### What to do if the crafter is too slow?
+For me the example (1.5 billion combinations) takes about 17s to execute. You can use that as a benchmark to see how your pc compares to mine.
+
+Since for each combination the score and the constraint function get evaluated, processing speed can be heavily impacted by these. Try to keep them as simple as possible. Check out the [CUDA fastmath capability in Numba](https://numba.readthedocs.io/en/stable/cuda/fastmath.html) if you want to use more complicated expressions.
+
+Additionally, you can hand-pick ingredients to reduce the amount of combinations. The programm runs in O(n^6), where n is the number of ingredients.
