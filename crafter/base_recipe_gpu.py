@@ -1,4 +1,3 @@
-import inspect
 import math
 import time
 from threading import Lock
@@ -9,7 +8,8 @@ import numba
 import numpy as np
 from numba import cuda
 
-from crafter import ingredient, recipe
+from crafter import recipe
+from crafter.config.base import OptimalCrafterConfigBase
 
 # ingredient format:
 # charges,                      # 0
@@ -87,7 +87,7 @@ def apply_modifier(mod_vec, ingr, pos):
     mod_vec[pos] -= ingr[13]
 
 
-@cuda.jit(device=True)
+@cuda.jit(device=True, fastmath=True)
 def calc_recipe_score(ingredients, r, mods):
     charges = 0
     duration = 0
@@ -114,49 +114,52 @@ def calc_recipe_score(ingredients, r, mods):
         charges += ingr[0]
         duration += ingr[1]
         durability += ingr[2]
-        req_str += ingr[3] * mods[i] // 100
-        req_dex += ingr[4] * mods[i] // 100
-        req_int += ingr[5] * mods[i] // 100
-        req_def += ingr[6] * mods[i] // 100
-        req_agi += ingr[7] * mods[i] // 100
+        req_str += int(ingr[3] * mods[i])
+        req_dex += int(ingr[4] * mods[i])
+        req_int += int(ingr[5] * mods[i])
+        req_def += int(ingr[6] * mods[i])
+        req_agi += int(ingr[7] * mods[i])
         if mods[i] > 0:
-            id1_min += ingr[14] * mods[i] // 100
-            id1_max += ingr[15] * mods[i] // 100
-            id2_min += ingr[16] * mods[i] // 100
-            id2_max += ingr[17] * mods[i] // 100
-            id3_min += ingr[18] * mods[i] // 100
-            id3_max += ingr[19] * mods[i] // 100
-            id4_min += ingr[20] * mods[i] // 100
-            id4_max += ingr[21] * mods[i] // 100
-            id5_min += ingr[22] * mods[i] // 100
-            id5_max += ingr[23] * mods[i] // 100
+            id1_min += int(ingr[14] * mods[i])
+            id1_max += int(ingr[15] * mods[i])
+            id2_min += int(ingr[16] * mods[i])
+            id2_max += int(ingr[17] * mods[i])
+            id3_min += int(ingr[18] * mods[i])
+            id3_max += int(ingr[19] * mods[i])
+            id4_min += int(ingr[20] * mods[i])
+            id4_max += int(ingr[21] * mods[i])
+            id5_min += int(ingr[22] * mods[i])
+            id5_max += int(ingr[23] * mods[i])
         elif mods[i] < 0:
-            id1_min += ingr[15] * mods[i] // 100
-            id1_max += ingr[14] * mods[i] // 100
-            id2_min += ingr[17] * mods[i] // 100
-            id2_max += ingr[16] * mods[i] // 100
-            id3_min += ingr[19] * mods[i] // 100
-            id3_max += ingr[18] * mods[i] // 100
-            id4_min += ingr[21] * mods[i] // 100
-            id4_max += ingr[20] * mods[i] // 100
-            id5_min += ingr[23] * mods[i] // 100
-            id5_max += ingr[22] * mods[i] // 100
+            id1_min += int(ingr[15] * mods[i])
+            id1_max += int(ingr[14] * mods[i])
+            id2_min += int(ingr[17] * mods[i])
+            id2_max += int(ingr[16] * mods[i])
+            id3_min += int(ingr[19] * mods[i])
+            id3_max += int(ingr[18] * mods[i])
+            id4_min += int(ingr[21] * mods[i])
+            id4_max += int(ingr[20] * mods[i])
+            id5_min += int(ingr[23] * mods[i])
+            id5_max += int(ingr[22] * mods[i])
 
     passes = constraints(charges, duration, durability, req_str, req_dex, req_int, req_def,
-                       req_agi, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
-                       id5_max)
+                         req_agi, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
+                         id5_max)
 
     return passes * score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
-                 id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
+                          id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
 
 
-@cuda.jit(device=True)
+@cuda.jit(device=True, fastmath=True)
 def calc_mods(ingredients, r, mod_arr):
     for i in range(6):
-        mod_arr[i] = 100
+        mod_arr[i] = 100.
 
     for i in range(6):
         apply_modifier(mod_arr, ingredients[r[i]], i)
+        
+    for i in range(6):
+        mod_arr[i] /= 100.
 
 
 def get_permutation(base, pos, r_arr):
@@ -185,7 +188,7 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
         r_arr = cuda.local.array(shape=6, dtype=numba.intc)
         get_permutation_cuda(len(ingredients), pos + offset, r_arr)
 
-        mod_arr = cuda.local.array(shape=6, dtype=numba.intc)
+        mod_arr = cuda.local.array(shape=6, dtype=numba.float32)
         calc_mods(ingredients, r_arr, mod_arr)
 
         r_score = calc_recipe_score(ingredients, r_arr, mod_arr)
@@ -193,16 +196,16 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
         scores[pos] = (r_score > score_min) * r_score
 
 
-def get_best_recipes_gpu(ingredients: list[ingredient.Ingredient], score_fun: Callable, constraint_fun: Callable, ids: list[str], min_score: int) -> list[
+def get_best_recipes_gpu(config: OptimalCrafterConfigBase) -> list[
     recipe.Recipe]:
     with _running:
-        # check if the score and constraint functions have the right signature
-        sig = inspect.signature(score_fun)
-        if len(sig.parameters) != 18:
-            raise ValueError("Score function must have 24 parameters")
-        sig = inspect.signature(constraint_fun)
-        if len(sig.parameters) != 18:
-            raise ValueError("Constraint function must have 24 parameters")
+        ingredients = config.ingredients
+        min_score = config.min_score
+        ids = config.ids
+        score_fun = config.score
+        constraint_fun = config.constraints
+
+        print(f"Calculating optimal recipe with {len(ingredients)} ingredients...")
 
         global _score_fun, _constraint_fun
         _score_fun = cuda.jit(score_fun, device=True)

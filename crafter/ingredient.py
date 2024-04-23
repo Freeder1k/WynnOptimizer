@@ -242,7 +242,7 @@ NO_INGREDIENT = Ingredient("No Ingredient", 0, 0, 0, IdentificationList(), Modif
 
 
 @alru_cache(ttl=3600)
-async def get_all_ingredients():
+async def get_all_ingredients() -> dict[str, Ingredient]:
     items = await item.database()
 
     return {k: Ingredient.from_api_json(k, v) for k, v in items.items()
