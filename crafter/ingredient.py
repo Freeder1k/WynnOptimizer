@@ -88,6 +88,10 @@ class Modifier:
     touching: int = 0
     notTouching: int = 0
 
+    def abs_total(self):
+        return abs(self.left) + abs(self.right) + abs(self.above) + abs(self.under) + abs(self.touching) + abs(
+            self.notTouching)
+
 
 class Skill(StrEnum):
     WEAPONSMITHING = "weaponsmithing"
