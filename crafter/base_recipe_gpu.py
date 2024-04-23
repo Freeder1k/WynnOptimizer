@@ -39,52 +39,11 @@ from crafter.config.base import OptimalCrafterConfigBase
 
 
 BATCH_SIZE = 2 ** 24
-THREADSPERBLOCK = 128
+THREADSPERBLOCK = 32
 _running = Lock()
 
 _score_fun: Callable = None
 _constraint_fun: Callable = None
-
-
-@cuda.jit(device=True)
-def score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
-          id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
-    return max(0, _score_fun(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
-                             id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max))
-
-
-@cuda.jit(device=True)
-def constraints(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
-                id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
-    return _constraint_fun(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
-                           id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
-
-
-@cuda.jit(device=True)
-def add_maybe(vec, x, y, val):
-    if x < 0 or y < 0 or x >= 2 or y >= 3:
-        return
-    vec[(y << 1) + x] += val
-
-
-@cuda.jit(device=True)
-def apply_modifier(mod_vec, ingr, pos):
-    for i in range(6):
-        mod_vec[i] += ingr[13]
-
-    x = pos & 1
-    y = pos >> 1
-
-    add_maybe(mod_vec, x - 1, y, ingr[8] + ingr[12] - ingr[13])
-    add_maybe(mod_vec, x + 1, y, ingr[9] + ingr[12] - ingr[13])
-
-    add_maybe(mod_vec, x, y - 1, ingr[10] + ingr[12] - ingr[13])
-    add_maybe(mod_vec, x, y - 2, ingr[10])
-
-    add_maybe(mod_vec, x, y + 1, ingr[11] + ingr[12] - ingr[13])
-    add_maybe(mod_vec, x, y + 2, ingr[11])
-
-    mod_vec[pos] -= ingr[13]
 
 
 @cuda.jit(device=True, fastmath=True)
@@ -142,24 +101,34 @@ def calc_recipe_score(ingredients, r, mods):
             id5_min += int(ingr[23] * mods[i])
             id5_max += int(ingr[22] * mods[i])
 
-    passes = constraints(charges, duration, durability, req_str, req_dex, req_int, req_def,
-                         req_agi, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
-                         id5_max)
+    passes = _constraint_fun(charges, duration, durability, req_str, req_dex, req_int, req_def,
+                             req_agi, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
+                             id5_max)
 
-    return passes * score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
-                          id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
+    return passes * _score_fun(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
+                               id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
 
 
 @cuda.jit(device=True, fastmath=True)
 def calc_mods(ingredients, r, mod_arr):
-    for i in range(6):
-        mod_arr[i] = 100.
-
-    for i in range(6):
-        apply_modifier(mod_arr, ingredients[r[i]], i)
-        
-    for i in range(6):
-        mod_arr[i] /= 100.
+    mod_arr[0] = ((100 + ingredients[r[1]][8] + ingredients[r[1]][12] + ingredients[r[2]][10] + ingredients[r[2]][12]
+                   + ingredients[r[3]][13] + ingredients[r[4]][10] + ingredients[r[4]][13] + ingredients[r[5]][13])
+                  / 100.)
+    mod_arr[1] = ((100 + ingredients[r[0]][9] + ingredients[r[0]][12] + ingredients[r[2]][13] + ingredients[r[3]][10]
+                   + ingredients[r[3]][12] + ingredients[r[4]][13] + ingredients[r[5]][10] + ingredients[r[5]][13])
+                  / 100.)
+    mod_arr[2] = ((100 + ingredients[r[0]][11] + ingredients[r[0]][12] + ingredients[r[1]][13] + ingredients[r[3]][8]
+                   + ingredients[r[3]][12] + ingredients[r[4]][10] + ingredients[r[4]][12] + ingredients[r[5]][13])
+                  / 100.)
+    mod_arr[3] = ((100 + ingredients[r[0]][13] + ingredients[r[1]][11] + ingredients[r[1]][12] + ingredients[r[2]][9]
+                   + ingredients[r[2]][12] + ingredients[r[4]][13] + ingredients[r[5]][10] + ingredients[r[5]][12])
+                  / 100.)
+    mod_arr[4] = ((100 + ingredients[r[0]][11] + ingredients[r[0]][13] + ingredients[r[1]][13] + ingredients[r[2]][11]
+                   + ingredients[r[2]][12] + ingredients[r[3]][13] + ingredients[r[5]][8] + ingredients[r[5]][12])
+                  / 100.)
+    mod_arr[5] = ((100 + ingredients[r[0]][13] + ingredients[r[1]][11] + ingredients[r[1]][13] + ingredients[r[2]][13]
+                   + ingredients[r[3]][11] + ingredients[r[3]][12] + ingredients[r[4]][9] + ingredients[r[4]][12])
+                  / 100.)
 
 
 def get_permutation(base, pos, r_arr):
@@ -176,22 +145,52 @@ def get_permutation_py(base, pos):
 
 get_permutation_cuda = cuda.jit(get_permutation, device=True)
 
+from numba.cuda.extending import intrinsic
+from llvmlite import ir
 
-@cuda.jit
-def scoring_kernel(ingredients, scores, offset, perm_amt, score_min):
+
+@intrinsic
+def cuda_clock64(typingctx):
+    sig = numba.types.uint64()
+
+    def codegen(context, builder, sig, args):
+        function_type = ir.FunctionType(ir.IntType(64), [])
+        instruction = "mov.u64 $0, %clock64;"
+        clock64 = ir.InlineAsm(function_type, instruction, "=l",
+                               side_effect=True)
+        return builder.call(clock64, [])
+
+    return sig, codegen
+
+
+@cuda.jit(fastmath=True)
+def scoring_kernel(ingredients, scores, offset, perm_amt, score_min, times):
     pos = cuda.grid(1)
     if pos < scores.shape[0]:
         if pos + offset >= perm_amt:
             scores[pos] = 0
             return
 
+        t1 = cuda_clock64()
+
         r_arr = cuda.local.array(shape=6, dtype=numba.intc)
         get_permutation_cuda(len(ingredients), pos + offset, r_arr)
+
+        t2 = cuda_clock64()
+        numba.cuda.atomic.add(times, 0, t2 - t1)
+        t1 = cuda_clock64()
 
         mod_arr = cuda.local.array(shape=6, dtype=numba.float32)
         calc_mods(ingredients, r_arr, mod_arr)
 
+        t2 = cuda_clock64()
+        numba.cuda.atomic.add(times, 1, t2 - t1)
+        t1 = cuda_clock64()
+
         r_score = calc_recipe_score(ingredients, r_arr, mod_arr)
+
+        t2 = cuda_clock64()
+        numba.cuda.atomic.add(times, 2, t2 - t1)
 
         scores[pos] = (r_score > score_min) * r_score
 
@@ -208,8 +207,8 @@ def get_best_recipes_gpu(config: OptimalCrafterConfigBase) -> list[
         print(f"Calculating optimal recipe with {len(ingredients)} ingredients...")
 
         global _score_fun, _constraint_fun
-        _score_fun = cuda.jit(score_fun, device=True)
-        _constraint_fun = cuda.jit(constraint_fun, device=True)
+        _score_fun = cuda.jit(score_fun, device=True, fastmath=True)
+        _constraint_fun = cuda.jit(constraint_fun, device=True, fastmath=True)
 
         permutation_amt = len(ingredients) ** 6
         batch_size = min(BATCH_SIZE, permutation_amt)
@@ -221,7 +220,10 @@ def get_best_recipes_gpu(config: OptimalCrafterConfigBase) -> list[
         ingredients_array = np.array([i.to_np_array(*ids[:5]) for i in ingredients], dtype=np.intc)
         device_ingreds = cuda.to_device(ingredients_array)
 
-        scores = cupy.empty(batch_size, dtype=np.uint)
+        scores = cupy.empty(batch_size, dtype=cupy.float32)
+
+        kernel_times = np.zeros(3, dtype=np.uint64)
+        kernel_times = cuda.to_device(kernel_times)
 
         batch_count = math.ceil(permutation_amt / batch_size)
         blockspergrid = math.ceil(batch_size / THREADSPERBLOCK)
@@ -242,7 +244,8 @@ def get_best_recipes_gpu(config: OptimalCrafterConfigBase) -> list[
                 end="")
 
             t = time.time()
-            scoring_kernel[blockspergrid, THREADSPERBLOCK](device_ingreds, scores, offset, permutation_amt, score_min)
+            scoring_kernel[blockspergrid, THREADSPERBLOCK](device_ingreds, scores, offset, permutation_amt, score_min,
+                                                           kernel_times)
             cuda.synchronize()
             scoring_time += time.time() - t
 
@@ -284,6 +287,9 @@ def get_best_recipes_gpu(config: OptimalCrafterConfigBase) -> list[
         print(f"Unique time: {unique_time:.2f}s")
         print(f"Sort time: {sort_time:.2f}s")
         print(f"Select time: {select_time:.2f}s")
+
+        kernel_times = kernel_times.copy_to_host()
+        print(f"Kernel times: {kernel_times}")
 
         return [recipe.Recipe(*[ingredients[p] for p in get_permutation_py(len(ingredients), i)]) for s, i in
                 total_best]

@@ -19,10 +19,10 @@ async def craft():
 
 
 async def main():
-    print(f" ∧,,∧\n"
-          "( `•ω•) 。•。︵\n"
-          "/　 　ο—ヽ二二ラ))\n"
-          "し———J\n")
+    # print(f" ∧,,∧\n"
+    #       "( `•ω•) 。•。︵\n"
+    #       "/　 　ο—ヽ二二ラ))\n"
+    #       "し———J\n")
     try:
         await core.managers.httpSessionManager.HTTPSessionManager().start()
 

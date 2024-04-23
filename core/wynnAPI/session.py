@@ -20,7 +20,7 @@ async def get(url: str, **params: str) -> JsonType:
     """
     with _rate_limit:
         session = HTTPSessionManager().get_session(_session_id)
-        async with session.get(f"/v3{url}", params=params, raise_for_status=True) as resp:
+        async with session.get(f"/v3{url}", params=params, raise_for_status=True, timeout=5) as resp:
             global _rl_reset, _last_req_time
             _last_req_time = time.time()
             _rl_reset = resp.headers.get("ratelimit-reset")

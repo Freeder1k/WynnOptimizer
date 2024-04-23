@@ -1,3 +1,5 @@
+import cupy
+
 from ..base import OptimalCrafterConfigBase
 from ... import ingredient
 
@@ -24,12 +26,12 @@ class SpellRingConfig(OptimalCrafterConfigBase):
 
     @staticmethod
     def score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi, id1_min, id1_max, id2_min,
-              id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
-        return int(
+              id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max) -> cupy.float32:
+        return (
             100 * id1_max
             + 56 * id2_max
             + 35 * id3_max
-            + min((durability + 735000) // 10000, 25)
+            + round(min((durability + 735000) / 10000, 25.))
         )
 
     @classmethod

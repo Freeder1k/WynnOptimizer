@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+import cupy
+
 from crafter import ingredient
 
 
@@ -11,12 +13,12 @@ class OptimalCrafterConfigBase(ABC):
 
     @staticmethod
     @abstractmethod
-    def constraints(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
-                    id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
+    def constraints(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi, id1_min, id1_max,
+                    id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
         pass
 
     @staticmethod
     @abstractmethod
-    def score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
-              id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
+    def score(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi, id1_min, id1_max, id2_min,
+              id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max) -> cupy.float32:
         pass
