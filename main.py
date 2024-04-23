@@ -6,7 +6,7 @@ from numba import cuda
 import core.managers.httpSessionManager
 import crafter.base_recipe
 import crafter.crafter
-import crafter.gpu.base_recipe_gpu
+import crafter.base_recipe_gpu
 import crafter.ingredient
 import crafter.recipe
 
@@ -78,16 +78,23 @@ def score(item: crafter.ingredient.Ingredient):
 def score_cuda(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
                id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
     return int(100 * id1_max
-               + 125 * (id2_max + id3_max - max(0, req_str - 4) - max(0, req_dex - 30))
-               + 5 * min((durability + 735000) // 1000, 250))
+               + 56 * id2_max
+               + 35 * id3_max
+               #+ 5 * min((durability + 735000) // 1000, 250)
+               )
 
 
 def constraints_cuda(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
                      id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
-    free_sp = 22
+    free_sp = 0
     return (
-            durability > -735000 + 150000 and id1_max > 0
-            and max(req_str, 4) + max(req_dex, 30) + max(req_int, 120) + max(req_def, 4) + max(req_agi, 60) <= 4 + 30 + 120 + 4 + 60 + free_sp
+            durability > -735000 + 50000 and id1_max > 0 and id4_max >= 0 and id5_max >= 0
+            and req_str <= 100
+            and req_dex <= 120
+            and req_int <= 65
+            and req_def <= 0
+            and req_agi <= 0
+            #and max(req_str, 4) + max(req_dex, 30) + max(req_int, 120) + max(req_def, 4) + max(req_agi, 60) <= 4 + 30 + 120 + 4 + 60 + free_sp
     )
 
 
@@ -104,23 +111,22 @@ def fast_sigmoid(x: float):
 
 
 async def craft():
-    eff_ings = [await crafter.ingredient.get_ingredient(name) for name in armouring_base]
-    water_ings = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if
-                  abs(ingr.identifications["waterDamage"].max) > 4]
-    def_ings = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if
-                abs(ingr.identifications["rawDefence"].max) > 2]
-    agi_ings = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if
-                abs(ingr.identifications["rawAgility"].max) > 2]
-    ingredients = {i.name for i in eff_ings + water_ings + def_ings + agi_ings}
+    eff_ings = [await crafter.ingredient.get_ingredient(name) for name in jeweling_base]
+    ings1 = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if
+                  abs(ingr.identifications["spellDamage"].max) > 0]
+    ings2 = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if
+                abs(ingr.identifications["thunderDamage"].max) > 0]
+    ings3 = [ingr for ingr in (await crafter.ingredient.get_all_ingredients()).values() if
+                abs(ingr.identifications["earthDamage"].max) > 0]
+    ingredients = {i.name for i in eff_ings + ings1 + ings2 + ings3}
     ingredients = [await crafter.ingredient.get_ingredient(name) for name in [
     ] + list(ingredients)]
-    ingredients = [ingr for ingr in ingredients if "armouring" in ingr.requirements.skills]
+    ingredients = [ingr for ingr in ingredients if "jeweling" in ingr.requirements.skills]
 
-    print(len(ingredients))
     t = time.time()
     print(f"Calculating optimal recipe with {len(ingredients)} ingredients...")
-    res = crafter.gpu.base_recipe_gpu.get_best_recipes_gpu(ingredients, score_cuda, constraints_cuda,
-                                                           ["waterDamage", "rawDefence", "rawAgility"], 5000)
+    res = crafter.base_recipe_gpu.get_best_recipes_gpu(ingredients, score_cuda, constraints_cuda,
+                                                       ["spellDamage", "thunderDamage", "earthDamage", "manaRegen", "rawIntelligence"], 2000)
     print(f"Time taken: {time.time() - t:.2f}s")
     print('\n'.join(map(print_recipe, res)))
 
@@ -140,11 +146,14 @@ async def main():
 
 def print_recipe(r: crafter.recipe.Recipe) -> str:
     item = r.build()
-    return (f"https://hppeng-wynn.github.io/crafter/#1{r.b64_hash()}9g91 "
-            f"{item.identifications['waterDamage'].max} wd "
-            f"{eff_defagi(item)} def+agi "
+    return (f"https://hppeng-wynn.github.io/crafter/#1{r.b64_hash()}9m91 "
+            f"{item.identifications['spellDamage'].max} sd "
+            f"{item.identifications['thunderDamage'].max} td "
+            f"{item.identifications['earthDamage'].max} ed "
+            #f"{eff_defagi(item)} def+agi "
             f"{(item.durability + 735000) // 1000} dura   "
-            f"{r}")
+            #f"{r}"
+            )
 
 
 if __name__ == '__main__':

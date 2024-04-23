@@ -81,7 +81,7 @@ class Recipe:
         return result
 
     def b64_hash(self):
-        return "".join([Base64.fromInt(crafter.ingredient.get_ing_id(i.name)) for i in self.ingredients])
+        return "".join([Base64.fromInt(crafter.ingredient.get_ing_id(i.name)).rjust(2, "0") for i in self.ingredients])
 
     @classmethod
     async def from_ingredient_strings(cls, i1: str, i2: str, i3: str, i4: str, i5: str, i6: str):
