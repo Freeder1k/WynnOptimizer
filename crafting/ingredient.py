@@ -181,7 +181,7 @@ class Ingredient:
             print(name)
             raise e
 
-    def to_np_array(self, id1: str, id2: str, id3: str, id4: str, id5: str):
+    def to_np_array(self, *ids):
         return np.array([self.charges,
                          self.duration,
                          self.durability,
@@ -197,7 +197,7 @@ class Ingredient:
                          self.modifiers.touching,
                          self.modifiers.notTouching,
                          *itertools.chain(*((self.identifications[i].min, self.identifications[i].max)
-                                            for i in [id1, id2, id3, id4, id5]))
+                                            for i in ids))
                          ],
                         dtype=np.intc
                         )
