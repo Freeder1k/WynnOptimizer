@@ -17,10 +17,6 @@ async def craft():
     print(f"Time taken: {time.time() - t:.2f}s")
     print('\n'.join(map(print_recipe, res)))
 
-async def craft2():
-    t = time.time()
-    await crafting.base_recipes.get_base_recipes_gpu('jeweling')
-    print(f"Time taken: {time.time() - t:.2f}s")
 
 
 async def main():
@@ -31,7 +27,7 @@ async def main():
     try:
         await core.managers.httpSessionManager.HTTPSessionManager().start()
 
-        await craft2()
+        await craft()
     finally:
         await core.managers.httpSessionManager.HTTPSessionManager().close()
 
