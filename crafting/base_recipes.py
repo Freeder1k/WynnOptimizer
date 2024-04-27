@@ -145,15 +145,11 @@ def _mods_kernel(nonzero_indx, nonzero_res, mods):
         mods[pos][0] = j
 
 
-async def get_base_recipes_gpu(profession: str):
-    """
-    No more than 15 ingredients should be used.
-    """
+async def get_base_recipes_gpu(skill: str):
     with _running:
-        ingredients = [ingr for ingr in (await ingredient.get_all_ingredients()).values() if
-                       ingr.modifiers.abs_total() > 0]
-        ingredients = [ingr for ingr in ingredients if profession in ingr.requirements.skills]
-        ingredients = [ingredient.NO_INGREDIENT] + ingredients
+        ingredients = [ingredient.NO_INGREDIENT]
+        ingredients += [ingr for ingr in (await ingredient.get_all_ingredients()).values()
+                        if ingr.modifiers.abs_total() > 0 and skill in ingr.requirements.skills]
 
         ids = []
 
@@ -166,14 +162,12 @@ async def get_base_recipes_gpu(profession: str):
         permutation_amt = len(ingredients) ** 6
         print(f"Total permutation amount: {permutation_amt}")
 
-        ingredients_array = np.array([i.to_np_array(*ids) for i in ingredients], dtype=np.intc)
-        device_ingreds = cuda.to_device(ingredients_array)
+        device_ingreds = cuda.to_device(np.array([i.to_np_array(*ids) for i in ingredients], dtype=np.intc))
 
-        recipes = cupy.empty((permutation_amt, ingredients_array.shape[1]), dtype=cupy.short)
+        recipes = cupy.empty((permutation_amt, device_ingreds.shape[1]), dtype=cupy.short)
         viable = cupy.empty(permutation_amt, dtype=cupy.bool_)
 
-        kernel_times = np.zeros(3, dtype=np.uint64)
-        kernel_times = cuda.to_device(kernel_times)
+        kernel_times = cuda.device_array(3, dtype=np.uint64)
 
         blockspergrid = math.ceil(permutation_amt / THREADSPERBLOCK)
 
@@ -185,7 +179,8 @@ async def get_base_recipes_gpu(profession: str):
         t = time.time()
         nonzero_indx = cupy.nonzero(viable)[0]
         nonzero_res = cupy.take(recipes, nonzero_indx, axis=0)
-        print(len(nonzero_indx))
+        print("Found", len(nonzero_indx), "viable base recipes.")
+        res_len = len(nonzero_indx)
 
         zero_time = time.time() - t
         t = time.time()
@@ -202,18 +197,30 @@ async def get_base_recipes_gpu(profession: str):
         for i in range(len(nonzero_indx)):
             mods = tuple(sorted(mods_array[i][j] for j in range(1, mods_array[i][0])))
             if mods in res:
-                good = True
-                for i_other in res[mods]:
-                    if is_worse(nonzero_res[i], nonzero_res[i_other], profession):
-                        good = False
-                        break
-                if good:
-                    res[mods].append(i)
+                res[mods].append(i)
             else:
                 res[mods] = [i]
 
-        print(sum(len(v) for v in res.values()))
+        dict_time = time.time() - t
+        t = time.time()
+
+        for mods, option in res.items():
+            new_options = []
+            for recipe_indx1 in option:
+                passes = True
+                for recipe_indx2 in option:
+                    if recipe_indx1 == recipe_indx2:
+                        continue
+                    if is_worse(nonzero_res[recipe_indx1], nonzero_res[recipe_indx2], skill):
+                        passes = False
+                        break
+                if passes:
+                    new_options.append(recipe_indx1)
+            res[mods] = new_options
+
         unique_time = time.time() - t
+        print(f"Filtered out {res_len - sum(len(v) for v in res.values())} worse equivalent recipes.")
+        res_len = sum(len(v) for v in res.values())
         t = time.time()
 
         for mods, options in res.items():
@@ -222,7 +229,7 @@ async def get_base_recipes_gpu(profession: str):
                 for recipe_indx1 in res.get(sub_combo, []):
                     passes = True
                     for recipe_indx2 in options:
-                        if is_worse(nonzero_res[recipe_indx1], nonzero_res[recipe_indx2], profession):
+                        if is_worse(nonzero_res[recipe_indx1], nonzero_res[recipe_indx2], skill):
                             passes = False
                             break
                     if passes:
@@ -231,7 +238,7 @@ async def get_base_recipes_gpu(profession: str):
                     res[sub_combo] = new_options
 
         res = {k: res[k] for k in res if len(res[k]) > 0}
-        print(sum(len(v) for v in res.values()))
+        print(f"Filtered out {res_len - sum(len(v) for v in res.values())} worse sub-recipes.")
         subset_time = time.time() - t
         t = time.time()
 
@@ -240,11 +247,12 @@ async def get_base_recipes_gpu(profession: str):
 
         _to_csv(res)
 
-        print("Finished.")
+        print(f"Finished. Total unique recipes: {len(res)}.")
 
         print(f"Scoring time: {scoring_time:.2f}s")
         print(f"Zero time: {zero_time:.2f}s")
         print(f"Mods time: {mods_time:.2f}s")
+        print(f"Dict time: {dict_time:.2f}s")
         print(f"Unique time: {unique_time:.2f}s")
         print(f"Subset time: {subset_time:.2f}s")
 
