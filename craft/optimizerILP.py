@@ -3,8 +3,8 @@ import time
 import numpy as np
 import scipy.optimize as opt
 
-from crafting import ingredient, base_recipes
-from crafting.config.base import LinearOptimizerConfigBase
+from craft import ingredient, base_recipes
+from craft.config.base import LinearOptimizerConfigBase
 
 
 def sp_req_sum(ingr: ingredient.Ingredient):

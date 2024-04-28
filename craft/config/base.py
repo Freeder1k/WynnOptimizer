@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from crafting import ingredient
+from craft import ingredient
 
 
 class OptimalCrafterConfigBase(ABC):

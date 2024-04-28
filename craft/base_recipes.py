@@ -8,9 +8,9 @@ import numpy as np
 from numba import cuda
 
 from core.optimizer import bruteForce
-from crafting import ingredient, optimizer, recipe
-from crafting.old.base_recipe import _pad_r
-from crafting.optimizer import get_permutation_py
+from craft import ingredient, optimizer, recipe
+from craft.old.base_recipe import _pad_r
+from craft.optimizer import get_permutation_py
 
 # ingredient format:
 # charges,                      # 0

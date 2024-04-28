@@ -1,4 +1,4 @@
-import crafting.ingredient
+import craft.ingredient
 from utils.integer import Base64
 from .ingredient import Ingredient, Modifier, NO_INGREDIENT
 
@@ -81,11 +81,11 @@ class Recipe:
         return result
 
     def b64_hash(self):
-        return "".join([Base64.fromInt(crafting.ingredient.get_ing_id(i.name)).rjust(2, "0") for i in self.ingredients])
+        return "".join([Base64.fromInt(craft.ingredient.get_ing_id(i.name)).rjust(2, "0") for i in self.ingredients])
 
     @classmethod
     async def from_ingredient_strings(cls, i1: str, i2: str, i3: str, i4: str, i5: str, i6: str):
-        return cls(*(await crafting.ingredient.get_ingredient(ing) for ing in (i1, i2, i3, i4, i5, i6)))
+        return cls(*(await craft.ingredient.get_ingredient(ing) for ing in (i1, i2, i3, i4, i5, i6)))
 
     def __str__(self):
         return f"Recipe({', '.join(str(i) for i in self.ingredients)})"
