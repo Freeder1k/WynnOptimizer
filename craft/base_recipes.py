@@ -10,7 +10,7 @@ from numba import cuda
 import craft.cuda_utils
 from core.optimizer import bruteForce
 from craft import ingredient, recipe
-from craft.cuda_utils import calc_recipe_cuda
+from craft.cuda_utils import calc_recipe_cuda_function_factory
 from craft.old.base_recipe import _pad_r
 from craft.utils import get_permutation_py, item_profs, consu_profs
 
@@ -40,7 +40,7 @@ _running = Lock()
 _id_count = 0
 _ingr_count = 0
 
-_calc_recipe_cuda = calc_recipe_cuda[_id_count]
+_calc_recipe_cuda = calc_recipe_cuda_function_factory(_id_count)
 
 
 @cuda.jit(fastmath=True)
@@ -122,7 +122,7 @@ async def get_base_recipes_gpu(skill: str):
         global _id_count, _ingr_count, _calc_recipe_cuda
         _id_count = len(ids)
         _ingr_count = len(ingredients)
-        _calc_recipe_cuda = calc_recipe_cuda[_id_count]
+        _calc_recipe_cuda = calc_recipe_cuda_function_factory(_id_count)
 
         print(f"Calculating base recipes with {len(ingredients)} ingredients...")
 

@@ -10,7 +10,7 @@ from numba import cuda
 
 from craft import recipe
 from craft.config.base import OptimalCrafterConfigBase
-from craft.cuda_utils import calc_mods, get_permutation_cuda, cuda_clock64, calc_recipe_cuda
+from craft.cuda_utils import calc_mods, get_permutation_cuda, cuda_clock64, calc_recipe_cuda_function_factory
 from craft.utils import get_permutation_py
 
 # ingredient format:
@@ -46,7 +46,7 @@ _running = Lock()
 
 _score_fun: Callable = None
 _constraint_fun: Callable = None
-_calc_recipe_cuda = calc_recipe_cuda[5]
+_calc_recipe_cuda = calc_recipe_cuda_function_factory(5)
 
 
 @cuda.jit(fastmath=True)

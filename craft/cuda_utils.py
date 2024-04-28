@@ -21,38 +21,31 @@ MOD_TOUCH = 12
 MOD_NOT_TOUCH = 13
 IDS = 14
 
-# TODO just make factory
-class _CalcRecipeCudaTemplate:
-    def __getitem__(self, id_count: int):
-        if not isinstance(id_count, int):
-            raise TypeError("id_count must be an integer")
 
-        def calc_recipe(ingredients, recipe_args, mods, res_recipe):
-            for i in range(6):
-                ingr = ingredients[recipe_args[i]]
-                # TODO compare speed between float multiplication and // 100
+def calc_recipe_cuda_function_factory(id_count: int):
+    def calc_recipe(ingredients, recipe_args, mods, res_recipe):
+        for i in range(6):
+            ingr = ingredients[recipe_args[i]]
+            # TODO compare speed between float multiplication and // 100
 
-                res_recipe[CHARGES] += ingr[CHARGES]
-                res_recipe[DURATION] += ingr[DURATION]
-                res_recipe[DURABILITY] += ingr[DURABILITY] // 1000
-                res_recipe[REQ_STR] += ingr[REQ_STR] * mods[i] // 100
-                res_recipe[REQ_DEX] += ingr[REQ_DEX] * mods[i] // 100
-                res_recipe[REQ_INT] += ingr[REQ_INT] * mods[i] // 100
-                res_recipe[REQ_DEF] += ingr[REQ_DEF] * mods[i] // 100
-                res_recipe[REQ_AGI] += ingr[REQ_AGI] * mods[i] // 100
-                for k in range(id_count):
-                    j = (k * 2) + IDS
-                    if mods[i] > 0:
-                        res_recipe[j] += ingr[j] * mods[i] // 100
-                        res_recipe[j + 1] += ingr[j + 1] * mods[i] // 100
-                    elif mods[i] < 0:
-                        res_recipe[j] += ingr[j + 1] * mods[i] // 100
-                        res_recipe[j + 1] += ingr[j] * mods[i] // 100
+            res_recipe[CHARGES] += ingr[CHARGES]
+            res_recipe[DURATION] += ingr[DURATION]
+            res_recipe[DURABILITY] += ingr[DURABILITY] // 1000
+            res_recipe[REQ_STR] += ingr[REQ_STR] * mods[i] // 100
+            res_recipe[REQ_DEX] += ingr[REQ_DEX] * mods[i] // 100
+            res_recipe[REQ_INT] += ingr[REQ_INT] * mods[i] // 100
+            res_recipe[REQ_DEF] += ingr[REQ_DEF] * mods[i] // 100
+            res_recipe[REQ_AGI] += ingr[REQ_AGI] * mods[i] // 100
+            for k in range(id_count):
+                j = (k * 2) + IDS
+                if mods[i] > 0:
+                    res_recipe[j] += ingr[j] * mods[i] // 100
+                    res_recipe[j + 1] += ingr[j + 1] * mods[i] // 100
+                elif mods[i] < 0:
+                    res_recipe[j] += ingr[j + 1] * mods[i] // 100
+                    res_recipe[j + 1] += ingr[j] * mods[i] // 100
 
-        return cuda.jit(calc_recipe, device=True, fastmath=True)
-
-
-calc_recipe_cuda = _CalcRecipeCudaTemplate()
+    return cuda.jit(calc_recipe, device=True, fastmath=True)
 
 
 @cuda.jit(device=True, fastmath=True)
@@ -110,13 +103,3 @@ def cuda_clock64(typingctx):
         return builder.call(clock64, [])
 
     return sig, codegen
-
-
-@cuda.jit(device=True, fastmath=True)
-def calc_recipe_score(ingredients, r, mods):
-    res_recipe = cuda.local.array(shape=24, dtype=numba.int32)
-    calc_recipe_cuda[5](ingredients, r, mods, res_recipe)
-
-    passes = _constraint_fun(*res_recipe)
-
-    return passes * _score_fun(*res_recipe)
