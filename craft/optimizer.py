@@ -10,6 +10,8 @@ from numba import cuda
 
 from craft import recipe
 from craft.config.base import OptimalCrafterConfigBase
+from craft.cuda_utils import calc_mods, get_permutation_cuda, cuda_clock64, calc_recipe_cuda
+from craft.utils import get_permutation_py
 
 # ingredient format:
 # charges,                      # 0
@@ -44,123 +46,7 @@ _running = Lock()
 
 _score_fun: Callable = None
 _constraint_fun: Callable = None
-
-
-@cuda.jit(device=True, fastmath=True)
-def calc_recipe_score(ingredients, r, mods):
-    charges = 0
-    duration = 0
-    durability = 0
-    req_str = 0
-    req_dex = 0
-    req_int = 0
-    req_def = 0
-    req_agi = 0
-    id1_min = 0
-    id1_max = 0
-    id2_min = 0
-    id2_max = 0
-    id3_min = 0
-    id3_max = 0
-    id4_min = 0
-    id4_max = 0
-    id5_min = 0
-    id5_max = 0
-
-    for i in range(6):
-        ingr = ingredients[r[i]]
-
-        charges += ingr[0]
-        duration += ingr[1]
-        durability += ingr[2]
-        req_str += int(ingr[3] * mods[i])
-        req_dex += int(ingr[4] * mods[i])
-        req_int += int(ingr[5] * mods[i])
-        req_def += int(ingr[6] * mods[i])
-        req_agi += int(ingr[7] * mods[i])
-        if mods[i] > 0:
-            id1_min += int(ingr[14] * mods[i])
-            id1_max += int(ingr[15] * mods[i])
-            id2_min += int(ingr[16] * mods[i])
-            id2_max += int(ingr[17] * mods[i])
-            id3_min += int(ingr[18] * mods[i])
-            id3_max += int(ingr[19] * mods[i])
-            id4_min += int(ingr[20] * mods[i])
-            id4_max += int(ingr[21] * mods[i])
-            id5_min += int(ingr[22] * mods[i])
-            id5_max += int(ingr[23] * mods[i])
-        elif mods[i] < 0:
-            id1_min += int(ingr[15] * mods[i])
-            id1_max += int(ingr[14] * mods[i])
-            id2_min += int(ingr[17] * mods[i])
-            id2_max += int(ingr[16] * mods[i])
-            id3_min += int(ingr[19] * mods[i])
-            id3_max += int(ingr[18] * mods[i])
-            id4_min += int(ingr[21] * mods[i])
-            id4_max += int(ingr[20] * mods[i])
-            id5_min += int(ingr[23] * mods[i])
-            id5_max += int(ingr[22] * mods[i])
-
-    passes = _constraint_fun(charges, duration, durability, req_str, req_dex, req_int, req_def,
-                             req_agi, id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min,
-                             id5_max)
-
-    return passes * _score_fun(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi,
-                               id1_min, id1_max, id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max)
-
-
-@cuda.jit(device=True, fastmath=True)
-def calc_mods(ingredients, r, mod_arr):
-    mod_arr[0] = ((100 + ingredients[r[1]][8] + ingredients[r[1]][12] + ingredients[r[2]][10] + ingredients[r[2]][12]
-                   + ingredients[r[3]][13] + ingredients[r[4]][10] + ingredients[r[4]][13] + ingredients[r[5]][13])
-                  / 100.)
-    mod_arr[1] = ((100 + ingredients[r[0]][9] + ingredients[r[0]][12] + ingredients[r[2]][13] + ingredients[r[3]][10]
-                   + ingredients[r[3]][12] + ingredients[r[4]][13] + ingredients[r[5]][10] + ingredients[r[5]][13])
-                  / 100.)
-    mod_arr[2] = ((100 + ingredients[r[0]][11] + ingredients[r[0]][12] + ingredients[r[1]][13] + ingredients[r[3]][8]
-                   + ingredients[r[3]][12] + ingredients[r[4]][10] + ingredients[r[4]][12] + ingredients[r[5]][13])
-                  / 100.)
-    mod_arr[3] = ((100 + ingredients[r[0]][13] + ingredients[r[1]][11] + ingredients[r[1]][12] + ingredients[r[2]][9]
-                   + ingredients[r[2]][12] + ingredients[r[4]][13] + ingredients[r[5]][10] + ingredients[r[5]][12])
-                  / 100.)
-    mod_arr[4] = ((100 + ingredients[r[0]][11] + ingredients[r[0]][13] + ingredients[r[1]][13] + ingredients[r[2]][11]
-                   + ingredients[r[2]][12] + ingredients[r[3]][13] + ingredients[r[5]][8] + ingredients[r[5]][12])
-                  / 100.)
-    mod_arr[5] = ((100 + ingredients[r[0]][13] + ingredients[r[1]][11] + ingredients[r[1]][13] + ingredients[r[2]][13]
-                   + ingredients[r[3]][11] + ingredients[r[3]][12] + ingredients[r[4]][9] + ingredients[r[4]][12])
-                  / 100.)
-
-
-def get_permutation(base, pos, r_arr):
-    for i in range(6):
-        r_arr[i] = pos % base
-        pos //= base
-
-
-def get_permutation_py(base, pos):
-    res = [0] * 6
-    get_permutation(base, pos, res)
-    return res
-
-
-get_permutation_cuda = cuda.jit(get_permutation, device=True)
-
-from numba.cuda.extending import intrinsic
-from llvmlite import ir
-
-
-@intrinsic
-def cuda_clock64(typingctx):
-    sig = numba.types.uint64()
-
-    def codegen(context, builder, sig, args):
-        function_type = ir.FunctionType(ir.IntType(64), [])
-        instruction = "mov.u64 $0, %clock64;"
-        clock64 = ir.InlineAsm(function_type, instruction, "=l",
-                               side_effect=True)
-        return builder.call(clock64, [])
-
-    return sig, codegen
+_calc_recipe_cuda = calc_recipe_cuda[5]
 
 
 @cuda.jit(fastmath=True)
@@ -187,7 +73,18 @@ def scoring_kernel(ingredients, scores, offset, perm_amt, score_min, times):
         numba.cuda.atomic.add(times, 1, t2 - t1)
         t1 = cuda_clock64()
 
-        r_score = calc_recipe_score(ingredients, r_arr, mod_arr)
+        res_recipe = cuda.local.array(shape=24, dtype=numba.int32)
+        _calc_recipe_cuda(ingredients, r_arr, mod_arr, res_recipe)
+
+        passes = _constraint_fun(res_recipe[0], res_recipe[1], res_recipe[2], res_recipe[3], res_recipe[4],
+                                 res_recipe[5], res_recipe[6], res_recipe[7], res_recipe[14], res_recipe[15],
+                                 res_recipe[16], res_recipe[17], res_recipe[18], res_recipe[19], res_recipe[20],
+                                 res_recipe[21], res_recipe[22], res_recipe[23])
+
+        r_score = passes * _score_fun(res_recipe[0], res_recipe[1], res_recipe[2], res_recipe[3], res_recipe[4],
+                                      res_recipe[5], res_recipe[6], res_recipe[7], res_recipe[14], res_recipe[15],
+                                      res_recipe[16], res_recipe[17], res_recipe[18], res_recipe[19], res_recipe[20],
+                                      res_recipe[21], res_recipe[22], res_recipe[23])
 
         t2 = cuda_clock64()
         numba.cuda.atomic.add(times, 2, t2 - t1)

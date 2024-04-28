@@ -3,6 +3,7 @@ import time
 import numpy as np
 import scipy.optimize as opt
 
+import craft.utils
 from craft import ingredient, base_recipes
 from craft.config.base import LinearOptimizerConfigBase
 
@@ -24,7 +25,7 @@ def optimize(cfg: LinearOptimizerConfigBase):
     c = [-cfg.score(ingr) for ingr in ingrs_flat]
     A_ub = []
     b_ub = []
-    if cfg.profession in base_recipes.item_profs:
+    if cfg.profession in craft.utils.item_profs:
         A_ub.append([-ingr.durability // 1000 for ingr in ingrs_flat])
         b_ub.append(-(cfg.min_durability - 735))
     else:

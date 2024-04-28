@@ -7,10 +7,12 @@ import numba
 import numpy as np
 from numba import cuda
 
+import craft.cuda_utils
 from core.optimizer import bruteForce
-from craft import ingredient, optimizer, recipe
+from craft import ingredient, recipe
+from craft.cuda_utils import calc_recipe_cuda
 from craft.old.base_recipe import _pad_r
-from craft.optimizer import get_permutation_py
+from craft.utils import get_permutation_py, item_profs, consu_profs
 
 # ingredient format:
 # charges,                      # 0
@@ -31,7 +33,6 @@ from craft.optimizer import get_permutation_py
 # id[k].min,                      # k * 2 + 15
 # ...
 
-
 BATCH_SIZE = 2 ** 24
 THREADSPERBLOCK = 128
 _running = Lock()
@@ -39,47 +40,26 @@ _running = Lock()
 _id_count = 0
 _ingr_count = 0
 
-
-@cuda.jit(device=True, fastmath=True)
-def _calc_recipe(ingredients, r, mods, res_recipe):
-    for i in range(6):
-        ingr = ingredients[r[i]]
-
-        res_recipe[0] += ingr[0]
-        res_recipe[1] += ingr[1]
-        res_recipe[2] += ingr[2] // 1000
-        res_recipe[3] += int(ingr[3] * mods[i])
-        res_recipe[4] += int(ingr[4] * mods[i])
-        res_recipe[5] += int(ingr[5] * mods[i])
-        res_recipe[6] += int(ingr[6] * mods[i])
-        res_recipe[7] += int(ingr[7] * mods[i])
-        for k in range(_id_count):
-            j = 2 * k + 14
-            if mods[i] > 0:
-                res_recipe[j] += int(ingr[j] * mods[i])
-                res_recipe[j + 1] += int(ingr[j + 1] * mods[i])
-            elif mods[i] < 0:
-                res_recipe[j] += int(ingr[j + 1] * mods[i])
-                res_recipe[j + 1] += int(ingr[j] * mods[i])
+_calc_recipe_cuda = calc_recipe_cuda[_id_count]
 
 
 @cuda.jit(fastmath=True)
 def _kernel(ingredients, recipes, viable, times):
     pos = cuda.grid(1)
     if pos < len(recipes):
-        t1 = optimizer.cuda_clock64()
+        t1 = craft.cuda_utils.cuda_clock64()
 
         r_arr = cuda.local.array(shape=6, dtype=numba.intc)
-        optimizer.get_permutation_cuda(len(ingredients), pos, r_arr)
+        craft.cuda_utils.get_permutation_cuda(len(ingredients), pos, r_arr)
 
-        t2 = optimizer.cuda_clock64()
+        t2 = craft.cuda_utils.cuda_clock64()
         numba.cuda.atomic.add(times, 0, t2 - t1)
-        t1 = optimizer.cuda_clock64()
+        t1 = craft.cuda_utils.cuda_clock64()
 
         mod_arr = cuda.local.array(shape=6, dtype=numba.float32)
-        optimizer.calc_mods(ingredients, r_arr, mod_arr)
+        craft.cuda_utils.calc_mods(ingredients, r_arr, mod_arr)
 
-        t2 = optimizer.cuda_clock64()
+        t2 = craft.cuda_utils.cuda_clock64()
         numba.cuda.atomic.add(times, 1, t2 - t1)
 
         abs_mod = 0
@@ -87,39 +67,24 @@ def _kernel(ingredients, recipes, viable, times):
             if r_arr[i] == 0:
                 abs_mod += abs(mod_arr[i])
 
-        if abs_mod < 3.:
+        if abs_mod < 300:
             viable[pos] = False
             return
         else:
             viable[pos] = True
-            recipes[pos][8] = round(mod_arr[0] * 100)
-            recipes[pos][9] = round(mod_arr[1] * 100)
-            recipes[pos][10] = round(mod_arr[2] * 100)
-            recipes[pos][11] = round(mod_arr[3] * 100)
-            recipes[pos][12] = round(mod_arr[4] * 100)
-            recipes[pos][13] = round(mod_arr[5] * 100)
+            recipes[pos][8] = mod_arr[0]
+            recipes[pos][9] = mod_arr[1]
+            recipes[pos][10] = mod_arr[2]
+            recipes[pos][11] = mod_arr[3]
+            recipes[pos][12] = mod_arr[4]
+            recipes[pos][13] = mod_arr[5]
 
-        t1 = optimizer.cuda_clock64()
+        t1 = craft.cuda_utils.cuda_clock64()
 
-        _calc_recipe(ingredients, r_arr, mod_arr, recipes[pos])
+        _calc_recipe_cuda(ingredients, r_arr, mod_arr, recipes[pos])
 
-        t2 = optimizer.cuda_clock64()
+        t2 = craft.cuda_utils.cuda_clock64()
         numba.cuda.atomic.add(times, 2, t2 - t1)
-
-
-item_profs = [
-    'armouring',
-    'tailoring',
-    'weaponsmithing',
-    'woodworking',
-    'jeweling',
-]
-
-consu_profs = [
-    'cooking',
-    'alchemism',
-    'scribing',
-]
 
 
 def is_worse(a, b, profession: str):
@@ -136,7 +101,7 @@ def _mods_kernel(nonzero_indx, nonzero_res, mods):
         p_num = nonzero_indx[pos]
 
         r_arr = cuda.local.array(shape=6, dtype=numba.intc)
-        optimizer.get_permutation_cuda(_ingr_count, p_num, r_arr)
+        craft.cuda_utils.get_permutation_cuda(_ingr_count, p_num, r_arr)
         j = 1
         for k in range(6):
             if r_arr[k] == 0:
@@ -154,9 +119,10 @@ async def get_base_recipes_gpu(skill: str):
 
         ids = ["manaRegen"]
 
-        global _id_count, _ingr_count
+        global _id_count, _ingr_count, _calc_recipe_cuda
         _id_count = len(ids)
         _ingr_count = len(ingredients)
+        _calc_recipe_cuda = calc_recipe_cuda[_id_count]
 
         print(f"Calculating base recipes with {len(ingredients)} ingredients...")
 
