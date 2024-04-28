@@ -26,8 +26,8 @@ from crafting.old.base_recipe import _pad_r
 # modifiers.under,              # 11
 # modifiers.touching,           # 12
 # modifiers.notTouching,        # 13
-# idk.max,                      # k * 2 + 14
-# idk.min,                      # k * 2 + 15
+# id[k].max,                      # k * 2 + 14
+# id[k].min,                      # k * 2 + 15
 # ...
 
 
@@ -151,7 +151,7 @@ async def get_base_recipes_gpu(skill: str):
         ingredients += [ingr for ingr in (await ingredient.get_all_ingredients()).values()
                         if ingr.modifiers.abs_total() > 0 and skill in ingr.requirements.skills]
 
-        ids = []
+        ids = ["manaRegen"]
 
         global _id_count, _ingr_count
         _id_count = len(ids)
@@ -219,7 +219,7 @@ async def get_base_recipes_gpu(skill: str):
             res[mods] = new_options
 
         unique_time = time.time() - t
-        print(f"Filtered out {res_len - sum(len(v) for v in res.values())} worse equivalent recipes.")
+        print(f"Filtered out {res_len - sum(len(v) for v in res.values())} worse recipes with same modifiers.")
         res_len = sum(len(v) for v in res.values())
         t = time.time()
 
@@ -238,7 +238,7 @@ async def get_base_recipes_gpu(skill: str):
                     res[sub_combo] = new_options
 
         res = {k: res[k] for k in res if len(res[k]) > 0}
-        print(f"Filtered out {res_len - sum(len(v) for v in res.values())} worse sub-recipes.")
+        print(f"Filtered out {res_len - sum(len(v) for v in res.values())} worse recipes with a subset of modifiers.")
         subset_time = time.time() - t
         t = time.time()
 
@@ -264,7 +264,7 @@ async def get_base_recipes_gpu(skill: str):
 
 def _to_csv(combos: dict[tuple[int, ...], list]):
     with open("combos2.csv", "w", encoding='utf8') as f:
-        f.write("Combo,,,,,,Charges,Duration,Durability,Str,Dex,Int,Def,Agi,mods,,,,,,id0_max,id0_min,...\n")
+        f.write("Combo,,,,,,Charges,Duration,Durability,Str,Dex,Int,Def,Agi,mods,...,,,,,id0_max,id0_min,...\n")
         for k, v in combos.items():
             for res in v:
                 res[2] += 735

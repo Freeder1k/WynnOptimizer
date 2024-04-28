@@ -8,11 +8,12 @@ import crafting.optimizer
 import crafting.recipe
 import crafting.config.example.base_recipe
 import crafting.base_recipes
+import crafting.config.example.hp_ring
 
 
 async def craft():
     t = time.time()
-    config = await crafting.config.example.spell_ring2.SpellRingConfig.load()
+    config = await crafting.config.example.hp_ring.SpellRingConfig.load()
     res = crafting.optimizer.get_best_recipes_gpu(config)
     print(f"Time taken: {time.time() - t:.2f}s")
     print('\n'.join(map(print_recipe, res)))
