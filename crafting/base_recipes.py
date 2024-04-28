@@ -8,8 +8,9 @@ import numpy as np
 from numba import cuda
 
 from core.optimizer import bruteForce
-from crafting import ingredient, optimizer
+from crafting import ingredient, optimizer, recipe
 from crafting.old.base_recipe import _pad_r
+from crafting.optimizer import get_permutation_py
 
 # ingredient format:
 # charges,                      # 0
@@ -243,9 +244,11 @@ async def get_base_recipes_gpu(skill: str):
         t = time.time()
 
         res = sorted(((k, v) for k, v in res.items()), key=lambda x: sum(x[0]), reverse=True)
-        res = {k: [nonzero_res[i] for i in v] for k, v in res}
+        res = {k: [nonzero_indx[i].item() for i in v] for k, v in res}
+        res = [(k, recipe.Recipe(*[ingredients[p] for p in get_permutation_py(_ingr_count, i)]))
+               for k, v in res.items() for i in v]
 
-        _to_csv(res)
+        # _to_csv(res)
 
         print(f"Finished. Total unique recipes: {len(res)}.")
 
@@ -259,7 +262,7 @@ async def get_base_recipes_gpu(skill: str):
         kernel_times = kernel_times.copy_to_host()
         print(f"Kernel times: {kernel_times}")
 
-        return
+        return res
 
 
 def _to_csv(combos: dict[tuple[int, ...], list]):

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from crafting import ingredient
 
@@ -33,5 +34,40 @@ class OptimalCrafterConfigBase(ABC):
         """
         Function to determine the score of a craft. Should return values > 0 for viable crafts.
         Make sure it is compilable by numba.
+        """
+        pass
+
+
+@dataclass
+class MaxSPReqs:
+    strength: int
+    dexterity: int
+    intelligence: int
+    defence: int
+    agility: int
+    total: int
+
+
+class LinearOptimizerConfigBase(ABC):
+    def __init__(self, ingredients: list[ingredient.Ingredient], mods: list[int], profession: str, min_charges: int,
+                 min_duration: int, min_durability: int, sp_constr: MaxSPReqs, id_reqs: dict[str, int]):
+        """
+        Class that contains relevant config information for the ILP optimizer to run.
+        """
+        self.ingredients = ingredients
+        self.mods = mods
+        self.profession = profession
+        self.min_charges = min_charges
+        self.min_duration = min_duration
+        self.min_durability = min_durability
+        self.sp_constr = sp_constr
+        self.id_reqs = id_reqs
+
+    @staticmethod
+    @abstractmethod
+    def score(ingr: ingredient.Ingredient) -> float:
+        """
+        Function to determine the score of a single ingredient.
+        Higher = better. Can return any positive or negative value.
         """
         pass
