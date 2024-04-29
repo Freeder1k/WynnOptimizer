@@ -11,6 +11,7 @@ import craft.cuda_utils
 from core.optimizer import bruteForce
 from craft import ingredient, recipe
 from craft.cuda_utils import calc_recipe_cuda_function_factory
+from craft.ingredient import IdentificationType
 from craft.old.base_recipe import _pad_r
 from craft.utils import get_permutation_py, item_profs, consu_profs
 
@@ -44,47 +45,26 @@ _calc_recipe_cuda = calc_recipe_cuda_function_factory(_id_count)
 
 
 @cuda.jit(fastmath=True)
-def _kernel(ingredients, recipes, viable, times):
+def _kernel(ingredients, recipes, viable):
     pos = cuda.grid(1)
     if pos < len(recipes):
-        t1 = craft.cuda_utils.cuda_clock64()
+        recipe_args = cuda.local.array(shape=6, dtype=numba.intc)
+        craft.cuda_utils.get_permutation_cuda(len(ingredients), pos, recipe_args)
 
-        r_arr = cuda.local.array(shape=6, dtype=numba.intc)
-        craft.cuda_utils.get_permutation_cuda(len(ingredients), pos, r_arr)
-
-        t2 = craft.cuda_utils.cuda_clock64()
-        numba.cuda.atomic.add(times, 0, t2 - t1)
-        t1 = craft.cuda_utils.cuda_clock64()
-
-        mod_arr = cuda.local.array(shape=6, dtype=numba.float32)
-        craft.cuda_utils.calc_mods(ingredients, r_arr, mod_arr)
-
-        t2 = craft.cuda_utils.cuda_clock64()
-        numba.cuda.atomic.add(times, 1, t2 - t1)
+        craft.cuda_utils.calc_mods(ingredients, recipe_args, recipes[pos][8:14])
 
         abs_mod = 0
         for i in range(6):
-            if r_arr[i] == 0:
-                abs_mod += abs(mod_arr[i])
+            if recipe_args[i] == 0:
+                abs_mod += abs(recipes[pos][i + 8])
 
         if abs_mod < 300:
             viable[pos] = False
             return
         else:
             viable[pos] = True
-            recipes[pos][8] = mod_arr[0]
-            recipes[pos][9] = mod_arr[1]
-            recipes[pos][10] = mod_arr[2]
-            recipes[pos][11] = mod_arr[3]
-            recipes[pos][12] = mod_arr[4]
-            recipes[pos][13] = mod_arr[5]
 
-        t1 = craft.cuda_utils.cuda_clock64()
-
-        _calc_recipe_cuda(ingredients, r_arr, mod_arr, recipes[pos])
-
-        t2 = craft.cuda_utils.cuda_clock64()
-        numba.cuda.atomic.add(times, 2, t2 - t1)
+        _calc_recipe_cuda(ingredients, recipe_args, recipes[pos][8:14], recipes[pos])
 
 
 def is_worse(a, b, profession: str):
@@ -111,13 +91,13 @@ def _mods_kernel(nonzero_indx, nonzero_res, mods):
         mods[pos][0] = j
 
 
-def get_base_recipes_gpu(skill: str):
+def get_base_recipes_gpu(skill: str, ids: list[IdentificationType]):
     with _running:
         ingredients = [ingredient.NO_INGREDIENT]
         ingredients += [ingr for ingr in ingredient.get_all_ingredients().values()
                         if ingr.modifiers.abs_total() > 0 and skill in ingr.requirements.skills]
 
-        ids = ["manaRegen"]
+        ids = [i.value for i in ids]
 
         global _id_count, _ingr_count, _calc_recipe_cuda
         _id_count = len(ids)
@@ -134,12 +114,10 @@ def get_base_recipes_gpu(skill: str):
         recipes = cupy.empty((permutation_amt, device_ingreds.shape[1]), dtype=cupy.short)
         viable = cupy.empty(permutation_amt, dtype=cupy.bool_)
 
-        kernel_times = cuda.device_array(3, dtype=np.uint64)
-
         blockspergrid = math.ceil(permutation_amt / THREADSPERBLOCK)
 
         t = time.time()
-        _kernel[blockspergrid, THREADSPERBLOCK](device_ingreds, recipes, viable, kernel_times)
+        _kernel[blockspergrid, THREADSPERBLOCK](device_ingreds, recipes, viable)
         cuda.synchronize()
         scoring_time = time.time() - t
 
@@ -224,9 +202,6 @@ def get_base_recipes_gpu(skill: str):
         print(f"Dict time: {dict_time:.2f}s")
         print(f"Unique time: {unique_time:.2f}s")
         print(f"Subset time: {subset_time:.2f}s")
-
-        kernel_times = kernel_times.copy_to_host()
-        print(f"Kernel times: {kernel_times}")
 
         return res
 
