@@ -111,7 +111,7 @@ def _mods_kernel(nonzero_indx, nonzero_res, mods):
         mods[pos][0] = j
 
 
-async def get_base_recipes_gpu(skill: str):
+def get_base_recipes_gpu(skill: str):
     with _running:
         ingredients = [ingredient.NO_INGREDIENT]
         ingredients += [ingr for ingr in ingredient.get_all_ingredients().values()
