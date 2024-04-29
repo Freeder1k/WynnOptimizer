@@ -1,36 +1,27 @@
-import asyncio
 import time
 
-import core.managers.httpSessionManager
-import craft.config.example.spell_ring2
+import craft.base_recipes
+import craft.config.example.base_recipe
+import craft.config.example.spell_ring
 import craft.ingredient
 import craft.optimizer
 import craft.recipe
-import craft.config.example.base_recipe
-import craft.base_recipes
-import craft.config.example.hp_ring
 
 
-async def craft_fun():
+def craft_fun():
     t = time.time()
-    config = await craft.config.example.hp_ring.SpellRingConfig.load()
+    config = craft.config.example.spell_ring.SpellRingConfig.load()
     res = craft.optimizer.get_best_recipes_gpu(config)
     print(f"Time taken: {time.time() - t:.2f}s")
     print('\n'.join(map(print_recipe, res)))
 
 
-
-async def main():
+def main():
     print(f" ∧,,∧\n"
           "( `•ω•) 。•。︵\n"
           "/　 　ο—ヽ二二ラ))\n"
           "し———J\n")
-    try:
-        await core.managers.httpSessionManager.HTTPSessionManager().start()
-
-        await craft_fun()
-    finally:
-        await core.managers.httpSessionManager.HTTPSessionManager().close()
+    craft_fun()
 
 
 def print_recipe(r: craft.recipe.Recipe) -> str:
@@ -46,4 +37,4 @@ def print_recipe(r: craft.recipe.Recipe) -> str:
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()

@@ -35,18 +35,18 @@ class SpellRingConfig(OptimalCrafterConfigBase):
         )
 
     @classmethod
-    async def load(cls):
-        eff_ings = [ingr for ingr in (await ingredient.get_all_ingredients()).values() if
+    def load(cls):
+        eff_ings = [ingr for ingr in ingredient.get_all_ingredients().values() if
                     ingr.modifiers.abs_total() > 0]
-        ings1 = [ingr for ingr in (await ingredient.get_all_ingredients()).values() if
+        ings1 = [ingr for ingr in ingredient.get_all_ingredients().values() if
                  abs(ingr.identifications["spellDamage"].max) > 0]
-        ings2 = [ingr for ingr in (await ingredient.get_all_ingredients()).values() if
+        ings2 = [ingr for ingr in ingredient.get_all_ingredients().values() if
                  abs(ingr.identifications["thunderDamage"].max) > 0]
-        ings3 = [ingr for ingr in (await ingredient.get_all_ingredients()).values() if
+        ings3 = [ingr for ingr in ingredient.get_all_ingredients().values() if
                  abs(ingr.identifications["earthDamage"].max) > 0]
         ingredients = {i.name for i in eff_ings + ings1 + ings2 + ings3}
         ingredients.add("Stolen Pearls")
-        ingredients = [await ingredient.get_ingredient(name) for name in [
+        ingredients = [ingredient.get_ingredient(name) for name in [
         ] + list(ingredients)]
 
         ingredients = [ingr for ingr in ingredients if "jeweling" in ingr.requirements.skills]

@@ -133,7 +133,7 @@ async def from_csv():
             parts = line.strip().split(',')
             combo = tuple([int(val) for val in parts[:6] if val != ''])
             # durability = int(parts[6])
-            ings = [ingredient.NO_INGREDIENT if name == 'No Ingredient' else await ingredient.get_ingredient(name) for
+            ings = [ingredient.NO_INGREDIENT if name == 'No Ingredient' else ingredient.get_ingredient(name) for
                     name in parts[7:]]
             combos[combo] = recipe.Recipe(*ings)
     return combos

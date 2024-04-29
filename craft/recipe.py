@@ -84,8 +84,8 @@ class Recipe:
         return "".join([Base64.fromInt(craft.ingredient.get_ing_id(i.name)).rjust(2, "0") for i in self.ingredients])
 
     @classmethod
-    async def from_ingredient_strings(cls, i1: str, i2: str, i3: str, i4: str, i5: str, i6: str):
-        return cls(*(await craft.ingredient.get_ingredient(ing) for ing in (i1, i2, i3, i4, i5, i6)))
+    def from_ingredient_strings(cls, i1: str, i2: str, i3: str, i4: str, i5: str, i6: str):
+        return cls(*(craft.ingredient.get_ingredient(ing) for ing in (i1, i2, i3, i4, i5, i6)))
 
     def __str__(self):
         return f"Recipe({', '.join(str(i) for i in self.ingredients)})"

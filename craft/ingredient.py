@@ -9,6 +9,7 @@ import numpy as np
 from async_lru import alru_cache
 
 from core.wynnAPI import item
+from utils.ttl_decorator import ttl
 
 
 class IdentificationType(StrEnum):
@@ -332,19 +333,19 @@ NO_INGREDIENT = Ingredient("No Ingredient", 0, 0, 0, IdentificationList(), Modif
                            Requirements(set(Skill(s) for s in Skill), 0, 0, 0, 0, 0, 0))
 
 
-@alru_cache(ttl=3600)
-async def get_all_ingredients() -> dict[str, Ingredient]:
+@ttl(3600)
+def get_all_ingredients() -> dict[str, Ingredient]:
     try:
-        items = await item.database()
+        items = item.database()
     except TimeoutError:
-        items = await item.database()
+        items = item.database()
 
     return {k: Ingredient.from_api_json(k, v) for k, v in items.items()
             if 'itemOnlyIDs' in v or 'consumableOnlyIDs' in v}
 
 
-async def get_ingredient(name: str):
-    ingredients = await get_all_ingredients()
+def get_ingredient(name: str):
+    ingredients = get_all_ingredients()
     return ingredients.get(name, None)
 
 

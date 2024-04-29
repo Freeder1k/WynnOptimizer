@@ -114,7 +114,7 @@ def _mods_kernel(nonzero_indx, nonzero_res, mods):
 async def get_base_recipes_gpu(skill: str):
     with _running:
         ingredients = [ingredient.NO_INGREDIENT]
-        ingredients += [ingr for ingr in (await ingredient.get_all_ingredients()).values()
+        ingredients += [ingr for ingr in ingredient.get_all_ingredients().values()
                         if ingr.modifiers.abs_total() > 0 and skill in ingr.requirements.skills]
 
         ids = ["manaRegen"]
