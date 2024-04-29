@@ -16,7 +16,7 @@ class SpellRingConfig(OptimalCrafterConfigBase):
     def constraints(charges, duration, durability, req_str, req_dex, req_int, req_def, req_agi, id1_min, id1_max,
                     id2_min, id2_max, id3_min, id3_max, id4_min, id4_max, id5_min, id5_max):
         return (
-                durability > -735000 + 50000 and id1_max > 0 and id4_max >= 0 and id5_max >= 0
+                durability > -735 + 50 and id1_max > 0 and id4_max >= 0 and id5_max >= 0
                 and req_str <= 100
                 and req_dex <= 120
                 and req_int <= 65
@@ -31,7 +31,7 @@ class SpellRingConfig(OptimalCrafterConfigBase):
             100 * id1_max
             + 56 * id2_max
             + 35 * id3_max
-            + round(min((durability + 735000) / 10000, 25.))
+            + round(min((durability + 735) * 0.1, 25.))
         )
 
     @classmethod

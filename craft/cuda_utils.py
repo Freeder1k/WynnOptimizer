@@ -26,24 +26,24 @@ def calc_recipe_cuda_function_factory(id_count: int):
     def calc_recipe(ingredients, recipe_args, mods, res_recipe):
         for i in range(6):
             ingr = ingredients[recipe_args[i]]
-            # TODO compare speed between float multiplication and // 100
+            mod = mods[i] * 0.01
 
             res_recipe[CHARGES] += ingr[CHARGES]
             res_recipe[DURATION] += ingr[DURATION]
             res_recipe[DURABILITY] += ingr[DURABILITY] // 1000
-            res_recipe[REQ_STR] += ingr[REQ_STR] * mods[i] // 100
-            res_recipe[REQ_DEX] += ingr[REQ_DEX] * mods[i] // 100
-            res_recipe[REQ_INT] += ingr[REQ_INT] * mods[i] // 100
-            res_recipe[REQ_DEF] += ingr[REQ_DEF] * mods[i] // 100
-            res_recipe[REQ_AGI] += ingr[REQ_AGI] * mods[i] // 100
+            res_recipe[REQ_STR] += int(ingr[REQ_STR] * mod)
+            res_recipe[REQ_DEX] += int(ingr[REQ_DEX] * mod)
+            res_recipe[REQ_INT] += int(ingr[REQ_INT] * mod)
+            res_recipe[REQ_DEF] += int(ingr[REQ_DEF] * mod)
+            res_recipe[REQ_AGI] += int(ingr[REQ_AGI] * mod)
             for k in range(id_count):
                 j = (k * 2) + IDS
-                if mods[i] > 0:
-                    res_recipe[j] += ingr[j] * mods[i] // 100
-                    res_recipe[j + 1] += ingr[j + 1] * mods[i] // 100
-                elif mods[i] < 0:
-                    res_recipe[j] += ingr[j + 1] * mods[i] // 100
-                    res_recipe[j + 1] += ingr[j] * mods[i] // 100
+                if mod > 0:
+                    res_recipe[j] += int(ingr[j] * mod)
+                    res_recipe[j + 1] += int(ingr[j + 1] * mod)
+                elif mod < 0:
+                    res_recipe[j] += int(ingr[j + 1] * mod)
+                    res_recipe[j + 1] += int(ingr[j] * mod)
 
     return cuda.jit(calc_recipe, device=True, fastmath=True)
 
