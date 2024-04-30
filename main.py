@@ -4,7 +4,7 @@ import craft.base_recipes
 import craft.config.example.base_recipe
 import craft.config.example.spell_ring
 import craft.ingredient
-import craft.optimizer
+import craft.optimizerBruteForce
 import craft.recipe
 
 
