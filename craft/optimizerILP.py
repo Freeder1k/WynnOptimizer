@@ -62,9 +62,7 @@ class LPRecipeOptimizer(BinaryLinearProgramm):
         """
         Add a constraint that sum(ingr_lambda(i)) ≥ value for the weighted ingredients in the recipe.
         """
-        if value is not None:
-            self.A_ub.append([-ingr_lambda(ingr) for ingr in self.ingrs_weighted])
-            self.b_ub.append(-value)
+        self.add_max_constraint(-value, lambda i: -ingr_lambda(i))
 
     def set_min_charges(self, value: int):
         self.add_min_constraint(value - 3, lambda i: i.charges)
