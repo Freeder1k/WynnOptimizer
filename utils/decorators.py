@@ -30,10 +30,25 @@ def single_use(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        if decorated.__called:
-            raise RuntimeError("This function can only be called once.")
-        decorated.__called = True
+        is_method = False
+        method = None
+        if len(args) > 0:
+            method = getattr(args[0], f.__name__, False)
+            if method:
+                wrapped = getattr(method, "__wrapped__", False)
+                if wrapped and wrapped == f:
+                    is_method = True
+
+        if is_method:
+            if not getattr(args[0], "__called_methods", False):
+                args[0].__called_methods = set()
+            if f.__name__ in args[0].__called_methods:
+                raise RuntimeError("This method can only be called once.")
+            args[0].__called_methods.add(f.__name__)
+        else:
+            if getattr(f, "__called", False):
+                raise RuntimeError("This function can only be called once.")
+            f.__setattr__("__called", True)
         return f(*args, **kwargs)
 
-    decorated.__called = False
     return decorated
