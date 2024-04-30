@@ -12,29 +12,29 @@ T = TypeVar('T')
 class LPRecipeOptimizer(BinaryLinearProgramm):
     def __init__(self, ingredients: list[ingredient.Ingredient],
                  score_function: Callable[[ingredient.Ingredient], float],
-                 modifiers: tuple[int] = (100,) * 6):
+                 modifiers: tuple[int] = (100, 100, 100, 100, 100, 100)):
         """
         Create a linear programming optimizer for a recipe.
         :param ingredients: A list of ingredients to use in the recipe.
         :param score_function: A function that returns the score of an individual ingredient.
         :param modifiers: The modifier values of the recipe.
         """
-        self.ingredients = ingredients
-        self.modifiers = modifiers
-        self.ingr_count = len(ingredients)
-        self.mod_count = len(modifiers)
-        self.ingrs_weighted = [ingr * m for m in modifiers for ingr in ingredients]
-        self.score = score_function
+        self._ingredients = ingredients
+        self._modifiers = modifiers
+        self._ingr_count = len(ingredients)
+        self._mod_count = len(modifiers)
+        self._ingrs_weighted = [ingr * m for m in modifiers for ingr in ingredients]
+        self._score = score_function
 
-        A_eq = np.zeros((self.mod_count, self.ingr_count * self.mod_count), dtype=int)
-        for i in range(self.mod_count):
-            A_eq[i][i * self.ingr_count: (i + 1) * self.ingr_count] = 1
+        A_eq = np.zeros((self._mod_count, self._ingr_count * self._mod_count), dtype=int)
+        for i in range(self._mod_count):
+            A_eq[i][i * self._ingr_count: (i + 1) * self._ingr_count] = 1
         super().__init__(
-            c=[-self.score(ingr) for ingr in self.ingrs_weighted],
+            c=[-self._score(ingr) for ingr in self._ingrs_weighted],
             A_ub=[],
             b_ub=[],
             A_eq=A_eq,
-            b_eq=[1] * self.mod_count
+            b_eq=[1] * self._mod_count
         )
 
     def find_best(self):
@@ -47,7 +47,7 @@ class LPRecipeOptimizer(BinaryLinearProgramm):
         if not res.success:
             return 0, []
         res_score = -res.fun
-        res_ingrs = [self.ingredients[i % self.ingr_count] for i, x in enumerate(res.x) if x == 1]
+        res_ingrs = [self._ingredients[i % self._ingr_count] for i, x in enumerate(res.x) if x == 1]
         return res_score, res_ingrs
 
     def add_max_constraint(self, value: T, ingr_lambda: Callable[[ingredient.Ingredient], T]):
@@ -55,7 +55,7 @@ class LPRecipeOptimizer(BinaryLinearProgramm):
         Add a constraint that sum(ingr_lambda(i)) ≤ value for the weighted ingredients in the recipe.
         """
         if value is not None:
-            self.A_ub.append([ingr_lambda(ingr) for ingr in self.ingrs_weighted])
+            self.A_ub.append([ingr_lambda(ingr) for ingr in self._ingrs_weighted])
             self.b_ub.append(value)
 
     def add_min_constraint(self, value: T, ingr_lambda: Callable[[ingredient.Ingredient], T]):
