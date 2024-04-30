@@ -8,7 +8,7 @@ from enum import StrEnum
 import numpy as np
 
 from core.wynnAPI import item
-from utils.ttl_decorator import ttl
+from utils.decorators import ttl
 
 
 class IdentificationType(StrEnum):

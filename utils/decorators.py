@@ -21,3 +21,19 @@ def ttl(t: int):
         return decorated
 
     return decorator
+
+
+def single_use(f):
+    """
+    Decorator that ensures that a function can only be called once.
+    """
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if decorated.__called:
+            raise RuntimeError("This function can only be called once.")
+        decorated.__called = True
+        return f(*args, **kwargs)
+
+    decorated.__called = False
+    return decorated

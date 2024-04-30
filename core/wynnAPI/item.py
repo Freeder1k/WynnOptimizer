@@ -1,4 +1,4 @@
-from utils.ttl_decorator import ttl
+from utils.decorators import ttl
 
 from utils.type.jsonTypes import JsonType
 from . import session
