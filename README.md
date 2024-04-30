@@ -10,10 +10,13 @@ Installation info for the requirements can be found here (use pip or your prefer
 - [Numba](https://numba.readthedocs.io/en/stable/user/5minguide.html)
 - [Cupy](https://docs.cupy.dev/en/stable/install.html)
 
+### Optimizing a craft using the hybrid optimizer (fast but linear score function)
+check main.py for an example
+(better readme soonTM)
 
-### Optimizing a craft
+### Optimizing a craft using the brute force optimizer (slower but any score function)
 1) Create a Config object that implements crafting.config.base.OptimalCrafterConfigBase (see crafting.config.example.spell_ring for an example)
-2) Call crafting.optimizer.get_best_recipes_gpu(configObject)
+2) Call craft.optimizerBruteForce.get_best_recipes_gpu(configObject)
 3) Wait a bit depending on your gpu and how many Ingredients you include in your search.
 4) Enjoy your results!
 
@@ -21,7 +24,7 @@ If you feel like it you can check out the optimizer code and adjust some paramet
 The wynnbuilder links that get output are all the same item type but you can just change that in wynnbuilder.
 
 ### What to do if the crafter is too slow?
-The example (1.5 billion combinations) takes about 17s to execute on my laptop with a NVIDIA GeForce GTX 1050 GPU. You can use that as a benchmark to see how your pc compares to mine.
+The brute force example (1.5 billion combinations) takes about 17s to execute on my laptop with a NVIDIA GeForce GTX 1050 GPU. You can use that as a benchmark to see how your pc compares to mine.
 
 Since for each combination the score and the constraint function get evaluated, processing speed can be heavily impacted by these. Try to keep them as simple as possible. Check out the [CUDA fastmath capability in Numba](https://numba.readthedocs.io/en/stable/cuda/fastmath.html) if you want to use more complicated expressions.
 
