@@ -1,19 +1,19 @@
-import time
-
 import craft.base_recipes
 import craft.config.example.base_recipe
 import craft.config.example.spell_ring
+import craft.fastHybridOptimizer
 import craft.ingredient
 import craft.optimizerBruteForce
 import craft.recipe
+from craft.config.base import HybridOptimizerConfig
 
 
-def craft_fun():
-    t = time.time()
-    config = craft.config.example.spell_ring.SpellRingConfig.load()
-    res = craft.optimizer.get_best_recipes_gpu(config)
-    print(f"Time taken: {time.time() - t:.2f}s")
-    print('\n'.join(map(print_recipe, res)))
+def score(ingr: craft.ingredient.Ingredient) -> float:
+    return (
+            100 * ingr.identifications['spellDamage'].max
+            + 56 * ingr.identifications['thunderDamage'].max
+            + 35 * ingr.identifications['airDamage'].max
+            + ingr.durability / 100000)
 
 
 def main():
@@ -21,12 +21,33 @@ def main():
           "( `•ω•) 。•。︵\n"
           "/　 　ο—ヽ二二ラ))\n"
           "し———J\n")
-    craft_fun()
+
+    cfg = HybridOptimizerConfig(
+        ingredients=list(i for i in craft.ingredient.get_all_ingredients().values()
+                         if i.modifiers.abs_total() == 0 and 'jeweling' in i.requirements.skills),
+        score_function=score,
+        crafting_skill='jeweling',
+        relevant_ids=[craft.ingredient.IdentificationType.SPELL_DAMAGE,
+                      craft.ingredient.IdentificationType.THUNDER_DAMAGE,
+                      craft.ingredient.IdentificationType.AIR_DAMAGE]
+    )
+
+    cfg.set_min_durability(30)
+    cfg.set_max_str_req(100)
+    cfg.set_max_dex_req(120)
+    cfg.set_max_int_req(65)
+    cfg.set_max_def_req(0)
+    cfg.set_max_agi_req(0)
+    cfg.set_identification_min(craft.ingredient.IdentificationType.MANA_REGEN, 0)
+    cfg.set_identification_min(craft.ingredient.IdentificationType.RAW_INTELLIGENCE, 0)
+
+    res = craft.fastHybridOptimizer.optimize(cfg)
+    print_recipe(res)
 
 
 def print_recipe(r: craft.recipe.Recipe) -> str:
     item = r.build()
-    return (f"https://hppeng-wynn.github.io/crafter/#1{r.b64_hash()}9m91 "
+    print(f"https://hppeng-wynn.github.io/crafter/#1{r.b64_hash()}9m91 "
             f"{item.identifications['spellDamage'].max} sd "
             f"{item.identifications['thunderDamage'].max} td "
             f"{item.identifications['airDamage'].max} ad "

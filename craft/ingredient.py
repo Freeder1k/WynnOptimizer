@@ -120,6 +120,12 @@ class Identification:
         else:
             return cls(data.get('raw', 0.5 * (data['min'] + data['max'])), data['min'], data['max'])
 
+    @property
+    def pos_max(self):
+        if self.max < 0:
+            return self.min
+        return self.max
+
     def __add__(self, other: Identification):
         if other is None:
             return self
@@ -247,7 +253,8 @@ class Requirements:
 
     @property
     def total_sp(self):
-        return self.strength + self.dexterity + self.intelligence + self.defence + self.agility
+        return (max(0, self.strength) + max(0, self.dexterity) + max(0, self.intelligence) + max(0, self.defence)
+                + max(0, self.agility))
 
 
 @dataclass

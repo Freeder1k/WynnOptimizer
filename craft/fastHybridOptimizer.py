@@ -5,18 +5,37 @@ import craft.base_recipes
 import craft.ingredient
 import craft.optimizerLP
 import craft.recipe
-import main
-from craft.config.base import LinearOptimizerConfigBase
+from craft.config.base import HybridOptimizerConfig
 
 
 def _runLPOptimizer(mods, base_r, cfg):
     mods = tuple(int(m) for m in mods)
-    min_dura = cfg.min_durability + sum([-ingr.durability // 1000 for ingr in base_r.ingredients])
-    optimizer = craft.optimizerLP.LPRecipeOptimizer(cfg.ingredients, cfg.score, mods)
-    optimizer.set_min_durability(min_dura)
-    optimizer.set_max_str_req(0)
-    optimizer.set_max_dex_req(0)
-    optimizer.set_max_total_sp_req(200)
+    base = base_r.build()
+
+    optimizer = craft.optimizerLP.LPRecipeOptimizer(cfg.ingredients, cfg.score_function, mods)
+    if cfg.min_charges is not None:
+        optimizer.set_min_charges(cfg.min_charges - base.charges)
+    if cfg.min_duration is not None:
+        optimizer.set_min_duration(cfg.min_duration - base.duration)
+    if cfg.min_durability is not None:
+        optimizer.set_min_durability(cfg.min_durability - (base.durability // 1000))
+    if cfg.max_str_req is not None:
+        optimizer.set_max_str_req(cfg.max_str_req - base.requirements.strength)
+    if cfg.max_dex_req is not None:
+        optimizer.set_max_dex_req(cfg.max_dex_req - base.requirements.dexterity)
+    if cfg.max_int_req is not None:
+        optimizer.set_max_int_req(cfg.max_int_req - base.requirements.intelligence)
+    if cfg.max_def_req is not None:
+        optimizer.set_max_def_req(cfg.max_def_req - base.requirements.defence)
+    if cfg.max_agi_req is not None:
+        optimizer.set_max_agi_req(cfg.max_agi_req - base.requirements.agility)
+
+    for val, sp_types in cfg.max_sp_sum_req:
+        optimizer.add_max_sp_sum_req(val, **sp_types)
+    for id_type, value in cfg.max_id_reqs.items():
+        optimizer.set_identification_max(id_type, value - base.identifications[id_type].pos_max)
+    for id_type, value in cfg.min_id_reqs.items():
+        optimizer.set_identification_min(id_type, value - base.identifications[id_type].pos_max)
 
     res_score, res_ingrs = optimizer.find_best()
     if res_score <= 0:
@@ -34,17 +53,24 @@ def _runLPOptimizer(mods, base_r, cfg):
     return res_score, ingrs
 
 
-def optimize(cfg: LinearOptimizerConfigBase):
+def optimize(cfg: HybridOptimizerConfig, pool_size=4):
     t = time.time()
-    bases = craft.base_recipes.get_base_recipes_gpu(cfg.profession, cfg.relevant_ids)
+    bases = craft.base_recipes.get_base_recipes_gpu(cfg.crafting_skill, cfg.relevant_ids)
 
-    with Pool(7) as p:
+    print(f"Found {len(bases)} base recipes. Finding optimal recipes...")
+
+    with Pool(pool_size) as p:
         results = p.starmap(_runLPOptimizer, [(mods, base_r, cfg) for mods, base_r in bases])
         max_score, max_recipe = max(results, key=lambda x: x[0])
+
+    print(f"Total time taken: {time.time() - t:.2f}s")
+
+    if max_score <= 0:
+        print("No viable recipes found.")
+        return None
+
     max_recipe = craft.recipe.Recipe(*max_recipe)
 
-    print()
     print(f"Best score: {max_score}")
-    print(main.print_recipe(max_recipe))
 
-    print(f"Time taken: {time.time() - t:.2f}s")
+    return max_recipe

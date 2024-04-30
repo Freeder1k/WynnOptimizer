@@ -44,7 +44,7 @@ class LPRecipeOptimizer(BinaryLinearProgramm):
         are satisfied.
         :return: The score of the best recipe and the ingredients in that recipe.
         """
-        res = super().solve()
+        res = self.solve()
         if not res.success:
             return 0, []
         res_score = -res.fun
@@ -78,10 +78,6 @@ class LPRecipeOptimizer(BinaryLinearProgramm):
         self.add_min_constraint(value - 735, lambda i: i.durability // 1000)
 
     @single_use
-    def set_max_durability(self, value: int):
-        self.add_max_constraint(value - 735, lambda i: i.durability // 1000)
-
-    @single_use
     def set_max_str_req(self, value: int):
         self.add_max_constraint(value, lambda i: i.requirements.strength)
 
@@ -101,14 +97,26 @@ class LPRecipeOptimizer(BinaryLinearProgramm):
     def set_max_agi_req(self, value: int):
         self.add_max_constraint(value, lambda i: i.requirements.agility)
 
-    @single_use
-    def set_max_total_sp_req(self, value: int):
-        self.add_max_constraint(value, lambda i: i.requirements.total_sp)
+    def add_max_sp_sum_req(self, value: int, strength=False, dexterity=False, intelligence=False, defence=False,
+                           agility=False):
+        def sp_sum(ingr: ingredient.Ingredient):
+            val = 0
+            if strength:
+                val += ingr.requirements.strength
+            if dexterity:
+                val += ingr.requirements.dexterity
+            if intelligence:
+                val += ingr.requirements.intelligence
+            if defence:
+                val += ingr.requirements.defence
+            if agility:
+                val += ingr.requirements.agility
+            return val
 
-    @single_use
+        self.add_max_constraint(value, lambda i: sp_sum(i))
+
     def set_identification_max(self, identification: IdentificationType, value: int):
         self.add_max_constraint(value, lambda i: i.identifications[identification].max)
 
-    @single_use
     def set_identification_min(self, identification: IdentificationType, value: int):
         self.add_min_constraint(value, lambda i: i.identifications[identification].max)

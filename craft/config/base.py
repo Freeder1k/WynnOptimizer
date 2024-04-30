@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Callable
 
 from craft import ingredient
 from craft.ingredient import IdentificationType
@@ -74,3 +75,81 @@ class LinearOptimizerConfigBase(ABC):
         Higher = better. Can return any positive or negative value.
         """
         pass
+
+
+class HybridOptimizerConfig:
+
+    def __init__(self, ingredients: list[ingredient.Ingredient],
+                 score_function: Callable[[ingredient.Ingredient], float],
+                 crafting_skill: str, relevant_ids: list[IdentificationType]):
+        """
+        Class that contains relevant config information for the hybrid optimizer to run.
+        :param ingredients: The ingredients to include in the search.
+        :param score_function: A function that determines the score of a single ingredient. Higher = better.
+        :param crafting_skill: The crafting skill the craft is for.
+        :param relevant_ids: IDs that are used in the scoring function.
+        """
+        self.ingredients = [i for i in ingredients if crafting_skill in i.requirements.skills]
+        self.score_function = score_function
+        self.crafting_skill = crafting_skill
+        self.relevant_ids = relevant_ids
+        self.min_charges = None
+        self.min_duration = None
+        self.min_durability = None
+        self.max_str_req = None
+        self.max_dex_req = None
+        self.max_int_req = None
+        self.max_def_req = None
+        self.max_agi_req = None
+        self.max_sp_sum_req: list[tuple[int, dict[str, bool]]] = []
+        self.max_id_reqs = {}
+        self.min_id_reqs = {}
+
+    def set_min_charges(self, value: int):
+        self.min_charges = value
+        return self
+
+    def set_min_duration(self, value: int):
+        self.min_duration = value
+        return self
+
+    def set_min_durability(self, value: int):
+        self.min_durability = value
+        return self
+
+    def set_max_str_req(self, value: int):
+        self.max_str_req = value
+        return self
+
+    def set_max_dex_req(self, value: int):
+        self.max_dex_req = value
+        return self
+
+    def set_max_int_req(self, value: int):
+        self.max_int_req = value
+        return self
+
+    def set_max_def_req(self, value: int):
+        self.max_def_req = value
+        return self
+
+    def set_max_agi_req(self, value: int):
+        self.max_agi_req = value
+        return self
+
+    def add_max_sp_sum_req(self, value: int, strength=False, dexterity=False, intelligence=False, defence=False,
+                           agility=False):
+        self.max_sp_sum_req.append((value, {"strength": strength, "dexterity": dexterity, "intelligence": intelligence,
+                                            "defence": defence, "agility": agility}))
+
+    def set_identification_max(self, identification: IdentificationType, value: int):
+        self.max_id_reqs[identification] = value
+        if identification not in self.relevant_ids:
+            self.relevant_ids.append(identification)
+        return self
+
+    def set_identification_min(self, identification: IdentificationType, value: int):
+        self.min_id_reqs[identification] = value
+        if identification not in self.relevant_ids:
+            self.relevant_ids.append(identification)
+        return self
