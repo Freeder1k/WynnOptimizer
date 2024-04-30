@@ -3,7 +3,7 @@ import time
 from http import HTTPStatus
 from threading import Lock
 
-from aiohttp import ClientResponseError
+from requests import HTTPError
 
 
 class RateLimitException(Exception):
@@ -38,7 +38,7 @@ class RateLimit:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         with self._lock:
-            if exc_type is ClientResponseError and exc_val.status == HTTPStatus.TOO_MANY_REQUESTS:
+            if exc_type is HTTPError and exc_val.errno == HTTPStatus.TOO_MANY_REQUESTS:
                 usage = self.calculate_usage()
                 self._set_full()
                 raise RateLimitException(
