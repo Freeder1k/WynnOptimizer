@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from craft import ingredient
+from craft.ingredient import IdentificationType
 
 
 class OptimalCrafterConfigBase(ABC):
@@ -50,7 +51,8 @@ class MaxSPReqs:
 
 class LinearOptimizerConfigBase(ABC):
     def __init__(self, ingredients: list[ingredient.Ingredient], mods: list[int], profession: str, min_charges: int,
-                 min_duration: int, min_durability: int, sp_constr: MaxSPReqs, id_reqs: dict[str, int]):
+                 min_duration: int, min_durability: int, sp_constr: MaxSPReqs, id_reqs: dict[str, int],
+                 relevant_ids: list[IdentificationType]):
         """
         Class that contains relevant config information for the ILP optimizer to run.
         """
@@ -62,6 +64,7 @@ class LinearOptimizerConfigBase(ABC):
         self.min_durability = min_durability
         self.sp_constr = sp_constr
         self.id_reqs = id_reqs
+        self.relevant_ids = relevant_ids
 
     @staticmethod
     @abstractmethod
