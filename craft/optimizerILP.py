@@ -1,73 +1,103 @@
-import time
+from typing import Callable, TypeVar
 
 import numpy as np
-import scipy.optimize as opt
 
-import craft.utils
-from craft import ingredient, base_recipes
-from craft.config.base import LinearOptimizerConfigBase
+from core.optimizer.linearProgramming import BinaryLinearProgramm
+from craft import ingredient
+from craft.ingredient import IdentificationType
 
-
-def sp_req_sum(ingr: ingredient.Ingredient):
-    return (ingr.requirements.strength + ingr.requirements.dexterity + ingr.requirements.intelligence
-            + ingr.requirements.defence + ingr.requirements.agility)
+T = TypeVar('T')
 
 
-def true_indx(lst):
-    return [i for i, x in enumerate(lst) if x == 1][0]
+class LPRecipeOptimizer(BinaryLinearProgramm):
+    def __init__(self, ingredients: list[ingredient.Ingredient],
+                 score_function: Callable[[ingredient.Ingredient], float],
+                 modifiers: tuple[int] = (100,) * 6):
+        """
+        Create a linear programming optimizer for a recipe.
+        :param ingredients: A list of ingredients to use in the recipe.
+        :param score_function: A function that returns the score of an individual ingredient.
+        :param modifiers: The modifier values of the recipe.
+        """
+        self.ingredients = ingredients
+        self.modifiers = modifiers
+        self.ingr_count = len(ingredients)
+        self.mod_count = len(modifiers)
+        self.ingrs_weighted = [ingr * m for m in modifiers for ingr in ingredients]
+        self.score = score_function
 
+        A_eq = np.zeros((self.mod_count, self.ingr_count * self.mod_count), dtype=int)
+        for i in range(self.mod_count):
+            A_eq[i][i * self.ingr_count: (i + 1) * self.ingr_count] = 1
+        super().__init__(
+            c=[-self.score(ingr) for ingr in self.ingrs_weighted],
+            A_ub=[],
+            b_ub=[],
+            A_eq=A_eq,
+            b_eq=[1] * self.mod_count
+        )
 
-def optimize(cfg: LinearOptimizerConfigBase):
-    t = time.time()
-    mods = cfg.mods
-    mod_count = len(mods)
-    ingrs_flat = [ingr * m for m in mods for ingr in cfg.ingredients]
-    c = [-cfg.score(ingr) for ingr in ingrs_flat]
-    A_ub = []
-    b_ub = []
-    if cfg.profession in craft.utils.item_profs:
-        A_ub.append([-ingr.durability // 1000 for ingr in ingrs_flat])
-        b_ub.append(-(cfg.min_durability - 735))
-    else:
-        A_ub.append([-ingr.charges for ingr in ingrs_flat])
-        b_ub.append(-(cfg.min_charges - 0))
-        A_ub.append([-ingr.duration for ingr in ingrs_flat])
-        b_ub.append(-(cfg.min_duration - 1344))
+    def find_best(self):
+        """
+        Find the recipe where the sum of the scores of the ingredients in that recipe is maximized and the constraints
+        are satisfied.
+        :return: The score of the best recipe and the ingredients in that recipe.
+        """
+        res = super().solve()
+        if not res.success:
+            return 0, []
+        res_score = -res.fun
+        res_ingrs = [self.ingredients[i % self.ingr_count] for i, x in enumerate(res.x) if x == 1]
+        return res_score, res_ingrs
 
-    A_ub.append([ingr.requirements.strength for ingr in ingrs_flat])
-    b_ub.append(cfg.sp_constr.strength)
-    A_ub.append([ingr.requirements.dexterity for ingr in ingrs_flat])
-    b_ub.append(cfg.sp_constr.dexterity)
-    A_ub.append([ingr.requirements.intelligence for ingr in ingrs_flat])
-    b_ub.append(cfg.sp_constr.intelligence)
-    A_ub.append([ingr.requirements.defence for ingr in ingrs_flat])
-    b_ub.append(cfg.sp_constr.defence)
-    A_ub.append([ingr.requirements.agility for ingr in ingrs_flat])
-    b_ub.append(cfg.sp_constr.agility)
-    A_ub.append([sp_req_sum(ingr) for ingr in ingrs_flat])
-    b_ub.append(cfg.sp_constr.total)
+    def add_max_constraint(self, value: T, ingr_lambda: Callable[[ingredient.Ingredient], T]):
+        """
+        Add a constraint that sum(ingr_lambda(i)) ≤ value for the weighted ingredients in the recipe.
+        """
+        if value is not None:
+            self.A_ub.append([ingr_lambda(ingr) for ingr in self.ingrs_weighted])
+            self.b_ub.append(value)
 
-    for identification, req in cfg.id_reqs.items():
-        A_ub.append([-ingr.identifications[identification].max for ingr in ingrs_flat])
-        b_ub.append(-req)
+    def add_min_constraint(self, value: T, ingr_lambda: Callable[[ingredient.Ingredient], T]):
+        """
+        Add a constraint that sum(ingr_lambda(i)) ≥ value for the weighted ingredients in the recipe.
+        """
+        if value is not None:
+            self.A_ub.append([-ingr_lambda(ingr) for ingr in self.ingrs_weighted])
+            self.b_ub.append(-value)
 
-    ing_count = len(cfg.ingredients)
-    A_eq = np.zeros((mod_count, ing_count * mod_count), dtype=int)
-    for i in range(mod_count):
-        A_eq[i][i * ing_count: (i + 1) * ing_count] = 1
+    def set_min_charges(self, value: int):
+        self.add_min_constraint(value - 3, lambda i: i.charges)
 
-    b_eq = [1] * mod_count
+    def set_min_duration(self, value: int):
+        self.add_min_constraint(value - 1344, lambda i: i.duration)
 
-    # # print(time.time() - t)
-    # t = time.time()
-    # print("solving ilp")
-    res = opt.linprog(c, A_ub, b_ub, A_eq, b_eq, bounds=(0, 1), integrality=1)
-    # print(time.time() - t)
+    def set_min_durability(self, value: int):
+        self.add_min_constraint(value - 735, lambda i: i.durability // 1000)
 
-    # print([cfg.ingredients[i % ing_count].name for i, x in enumerate(res.x) if x == 1])
-    # print(res.fun)
+    def set_max_durability(self, value: int):
+        self.add_max_constraint(value - 735, lambda i: i.durability // 1000)
 
-    res_score = -res.fun if res.success else 0
-    res_ingrs = [cfg.ingredients[i % ing_count] for i, x in enumerate(res.x) if x == 1] if res.success else []
+    def set_max_str_req(self, value: int):
+        self.add_max_constraint(value, lambda i: i.requirements.strength)
 
-    return res_score, res_ingrs
+    def set_max_dex_req(self, value: int):
+        self.add_max_constraint(value, lambda i: i.requirements.dexterity)
+
+    def set_max_int_req(self, value: int):
+        self.add_max_constraint(value, lambda i: i.requirements.intelligence)
+
+    def set_max_def_req(self, value: int):
+        self.add_max_constraint(value, lambda i: i.requirements.defence)
+
+    def set_max_agi_req(self, value: int):
+        self.add_max_constraint(value, lambda i: i.requirements.agility)
+
+    def set_max_total_sp_req(self, value: int):
+        self.add_max_constraint(value, lambda i: i.requirements.total_sp)
+
+    def set_identification_max(self, identification: IdentificationType, value: int):
+        self.add_max_constraint(value, lambda i: i.identifications[identification].max)
+
+    def set_identification_min(self, identification: IdentificationType, value: int):
+        self.add_min_constraint(value, lambda i: i.identifications[identification].max)

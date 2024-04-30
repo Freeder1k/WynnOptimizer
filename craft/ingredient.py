@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 import numpy as np
-from async_lru import alru_cache
 
 from core.wynnAPI import item
 from utils.ttl_decorator import ttl
@@ -245,6 +244,10 @@ class Requirements:
             self.agility * scale // 100,
             self.level
         )
+
+    @property
+    def total_sp(self):
+        return self.strength + self.dexterity + self.intelligence + self.defence + self.agility
 
 
 @dataclass
