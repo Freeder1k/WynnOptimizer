@@ -5,6 +5,7 @@ import numpy as np
 from core.optimizer.linearProgramming import BinaryLinearProgramm
 from craft import ingredient
 from craft.ingredient import IdentificationType
+from utils.decorators import single_use
 
 T = TypeVar('T')
 
@@ -64,38 +65,50 @@ class LPRecipeOptimizer(BinaryLinearProgramm):
         """
         self.add_max_constraint(-value, lambda i: -ingr_lambda(i))
 
+    @single_use
     def set_min_charges(self, value: int):
         self.add_min_constraint(value - 3, lambda i: i.charges)
 
+    @single_use
     def set_min_duration(self, value: int):
         self.add_min_constraint(value - 1344, lambda i: i.duration)
 
+    @single_use
     def set_min_durability(self, value: int):
         self.add_min_constraint(value - 735, lambda i: i.durability // 1000)
 
+    @single_use
     def set_max_durability(self, value: int):
         self.add_max_constraint(value - 735, lambda i: i.durability // 1000)
 
+    @single_use
     def set_max_str_req(self, value: int):
         self.add_max_constraint(value, lambda i: i.requirements.strength)
 
+    @single_use
     def set_max_dex_req(self, value: int):
         self.add_max_constraint(value, lambda i: i.requirements.dexterity)
 
+    @single_use
     def set_max_int_req(self, value: int):
         self.add_max_constraint(value, lambda i: i.requirements.intelligence)
 
+    @single_use
     def set_max_def_req(self, value: int):
         self.add_max_constraint(value, lambda i: i.requirements.defence)
 
+    @single_use
     def set_max_agi_req(self, value: int):
         self.add_max_constraint(value, lambda i: i.requirements.agility)
 
+    @single_use
     def set_max_total_sp_req(self, value: int):
         self.add_max_constraint(value, lambda i: i.requirements.total_sp)
 
+    @single_use
     def set_identification_max(self, identification: IdentificationType, value: int):
         self.add_max_constraint(value, lambda i: i.identifications[identification].max)
 
+    @single_use
     def set_identification_min(self, identification: IdentificationType, value: int):
         self.add_min_constraint(value, lambda i: i.identifications[identification].max)
