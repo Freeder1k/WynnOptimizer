@@ -24,7 +24,7 @@ If you feel like it you can check out the optimizer code and adjust some paramet
 The wynnbuilder links that get output are all the same item type but you can just change that in wynnbuilder.
 
 ### What to do if the crafter is too slow?
-The example (1.5 billion combinations) takes about 17s to execute on my laptop with a NVIDIA GeForce GTX 1050 GPU. You can use that as a benchmark to see how your pc compares to mine.
+The brute force example (1.5 billion combinations) takes about 17s to execute on my laptop with a NVIDIA GeForce GTX 1050 GPU. You can use that as a benchmark to see how your pc compares to mine.
 
 Since for each combination the score and the constraint function get evaluated, processing speed can be heavily impacted by these. Try to keep them as simple as possible. Check out the [CUDA fastmath capability in Numba](https://numba.readthedocs.io/en/stable/cuda/fastmath.html) if you want to use more complicated expressions.
 
