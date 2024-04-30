@@ -21,21 +21,27 @@ class LPRecipeOptimizer(BinaryLinearProgramm):
         """
         self.ingredients = ingredients
         self.modifiers = modifiers
-        self.ingr_count = len(ingredients)
-        self.mod_count = len(modifiers)
         self.ingrs_weighted = [ingr * m for m in modifiers for ingr in ingredients]
         self.score = score_function
 
-        A_eq = np.zeros((self.mod_count, self.ingr_count * self.mod_count), dtype=int)
-        for i in range(self.mod_count):
-            A_eq[i][i * self.ingr_count: (i + 1) * self.ingr_count] = 1
         super().__init__(
             c=[-self.score(ingr) for ingr in self.ingrs_weighted],
             A_ub=[],
             b_ub=[],
-            A_eq=A_eq,
-            b_eq=[1] * self.mod_count
+            A_eq=None,
+            b_eq=None
         )
+
+    def solve(self):
+        mod_count = len(self.modifiers)
+        ingr_count = len(self.ingredients)
+        self.A_eq = np.zeros((mod_count, ingr_count * mod_count), dtype=int)
+        for i in range(mod_count):
+            self.A_eq[i][i * ingr_count: (i + 1) * ingr_count] = 1
+
+        self.b_eq = [1] * mod_count
+
+        return super().solve()
 
     def find_best(self):
         """
@@ -43,11 +49,11 @@ class LPRecipeOptimizer(BinaryLinearProgramm):
         are satisfied.
         :return: The score of the best recipe and the ingredients in that recipe.
         """
-        res = super().solve()
+        res = self.solve()
         if not res.success:
             return 0, []
         res_score = -res.fun
-        res_ingrs = [self.ingredients[i % self.ingr_count] for i, x in enumerate(res.x) if x == 1]
+        res_ingrs = [self.ingredients[i % len(self.ingredients)] for i, x in enumerate(res.x) if x == 1]
         return res_score, res_ingrs
 
     def add_max_constraint(self, value: T, ingr_lambda: Callable[[ingredient.Ingredient], T]):
