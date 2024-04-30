@@ -1,6 +1,6 @@
-aiohttp~=3.8.4
-yarl~=1.9.2
-numba~=0.59.1
-numpy~=1.24.1
-llvmlite~=0.42.0
-cupy-cuda12x
+numba
+numpy
+llvmlite
+requests
+scipy
+aiohttp
