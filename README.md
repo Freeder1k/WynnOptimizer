@@ -10,10 +10,13 @@ Installation info for the requirements can be found here (use pip or your prefer
 - [Numba](https://numba.readthedocs.io/en/stable/user/5minguide.html)
 - [Cupy](https://docs.cupy.dev/en/stable/install.html)
 
+### Optimizing a craft using the hybrid optimizer (fast but linear score function)
+check main.py for an example
+(better readme soonTM)
 
-### Optimizing a craft
+### Optimizing a craft using the brute force optimizer (slower but any score function)
 1) Create a Config object that implements crafting.config.base.OptimalCrafterConfigBase (see crafting.config.example.spell_ring for an example)
-2) Call crafting.optimizer.get_best_recipes_gpu(configObject)
+2) Call craft.optimizerBruteForce.get_best_recipes_gpu(configObject)
 3) Wait a bit depending on your gpu and how many Ingredients you include in your search.
 4) Enjoy your results!
 
