@@ -9,7 +9,7 @@ from build.item import IdentificationType
 from utils.decorators import single_use
 
 T = TypeVar('T')
-types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'ring', 'bracelet', 'necklace']
+types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'bracelet', 'necklace']
 
 
 class LPBuildOptimizer(BinaryLinearProgramm):
@@ -26,16 +26,25 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         self._items = []
         self._preitems = []
         item_count = []
-
+        b_eq = []
         for i, t in enumerate(types):
             t_items = [it for it in items if t in it.type]
             if len(t_items) == 0:
                 continue
-            if len(t_items) == 1:
-                self._preitems = self._preitems + t_items
+            if t == 'ring':
+                if len(t_items) <= 2:
+                    self._preitems = self._preitems + t_items
+                else:
+                    self._items = self._items + t_items
+                    b_eq.append(2)
+                    item_count.append(len(t_items))
             else:
-                self._items = self._items + t_items
-                item_count.append(len(t_items))
+                if len(t_items) == 1:
+                    self._preitems = self._preitems + t_items
+                else:
+                    self._items = self._items + t_items
+                    b_eq.append(1)
+                    item_count.append(len(t_items))
         print(item_count)
         self._score = score_function
 
@@ -54,7 +63,8 @@ class LPBuildOptimizer(BinaryLinearProgramm):
             A_ub=[],
             b_ub=[],
             A_eq=A_eq,
-            b_eq=[1] * len(item_count)
+            #b_eq=[1] * len(item_count)
+            b_eq=b_eq
         )
 
 
