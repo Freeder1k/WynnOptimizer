@@ -25,7 +25,7 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         """
         #self._weapon = weapon
         self._items = []
-        self._preitems = [] # TODO: add these
+        self._preitems = []  # TODO: add these
         item_count = []
         b_eq = []
         bounds = []
@@ -59,7 +59,7 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         for i, val in enumerate(item_count):
             A_eq[i, col:col + val] = 1
             col += val
-        c = [-self._score(it) for it in self._items]
+        c = [-round(self._score(it),4) for it in self._items]
         super().__init__(
             c=c,
             #A_ub=list(np.zeros((1, sum(item_count)), dtype=int)),
@@ -82,9 +82,42 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         res = self.solve()
         if not res.success:
             return 0, []
-        res_score = -res.fun
+        res_score = -round(res.fun,4)
         res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
         return res_score, res_items
+
+    def find_bestN2(self, n: int):
+        """
+        Find N builds where the sum of the scores of the items in that build is maximized and the constraints
+        are satisfied.
+        :return: The score of the best build and the items in that build.
+        """
+        results = []
+        spinner = ['|', '/', '-', '\\']
+        self.A_ub.append([-score for score in self.c])
+        self.b_ub.append(10000)
+        try:
+            for i in range(n):
+                res = self.solve()
+
+                sys.stdout.write(f"\r{spinner[(i//3)%4]}  Solving N={i}/{n}")
+                sys.stdout.flush()
+
+
+
+                if not res.success:
+                    break
+                res_score = -round(res.fun,4)
+                res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
+                results.append((res_score, res_items))
+                self.b_ub[-1] = res_score-0.001
+            sys.stdout.write("\r")
+            sys.stdout.flush()
+        except KeyboardInterrupt:
+            sys.stdout.write("\r")
+            sys.stdout.flush()
+            print(f"Interrupted at N={i}")
+        return results
 
     def find_bestN(self, n: int):
         """
@@ -105,7 +138,7 @@ class LPBuildOptimizer(BinaryLinearProgramm):
 
                 if not res.success:
                     break
-                res_score = -res.fun
+                res_score = -round(res.fun,4)
                 res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
                 results.append((res_score, res_items))
                 self.A_ub.append(res.x)
