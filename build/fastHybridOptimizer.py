@@ -47,11 +47,14 @@ def optimize(cfg: HybridOptimizerConfig, pool_size=4):
         print("No viable builds found.")
         return None
 
-    max_build = build.build.Build(*max_build)
+    for i, entry in enumerate(results):
+        b = build.build.Build(*entry[1])
+        results[i] = (entry[0], entry[1], cfg.score_function(b.build()))
+
     print(f"Number of builds found: {len(results)}")
     with open('array.txt', 'w') as f:
         for entry in results:
             f.write(f"{entry}\n")
-    print(f"Best score: {max_score}")
 
+    max_build = build.build.Build(*max_build)
     return max_build

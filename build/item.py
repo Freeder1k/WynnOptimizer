@@ -251,7 +251,7 @@ class Item:  # TODO: Add base stats (like base HP)
                          ],
                         dtype=np.intc
                         )
-    '''
+
     def __add__(self, other: Item):
         if not isinstance(other, Item):
             raise TypeError(f"unsupported operand type(s) for +: '{type(self)}' and '{type(other)}'")
@@ -261,7 +261,7 @@ class Item:  # TODO: Add base stats (like base HP)
             "merged",
             self.identifications + other.identifications,
             self.requirements + other.requirements
-        )'''
+        )
 
     def __str__(self):
         return self.name

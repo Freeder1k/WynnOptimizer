@@ -1,6 +1,6 @@
 # import craft.ingredient
 # from utils.integer import Base64
-from .item import Item, NO_ITEM
+from .item import Item, NO_ITEM, IdentificationList
 
 
 class Build:
@@ -9,25 +9,27 @@ class Build:
         Wynncraft build class.
         """
         self.items = (i1, i2, i3, i4, i5, i6, i7, i8)
-        self._built = False
         self._item = None
-    '''
+
     def build(self) -> Item:
         """
         Build from the items.
         :return: A new Item object representing the build.
         """
-        if self._built:
+        if self._item is not None:
             return self._item
 
+        name = "build"  # TODO: Come up with naming scheme
+
+        # calculate the build stats
         result = NO_ITEM
         for i in range(8):
             result = result + (self.items[i])
 
-        self._item = result
-        self._built = True
+        self._item = Item(name, "build", result.identifications, result.requirements)
 
-        return result'''
+        return self._item
+
 
     # Havent done this yet
     '''
