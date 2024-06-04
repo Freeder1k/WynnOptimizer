@@ -26,6 +26,7 @@ class DmgConfig(HybridOptimizerConfig):
         self.set_identification_min(build.item.IdentificationType.RAW_STRENGTH, 20)
         self.set_identification_min(build.item.IdentificationType.RAW_DEXTERITY, 20)
         self.set_identification_min(build.item.IdentificationType.RAW_INTELLIGENCE, 20)
+        self.set_num_builds(5)
         '''
         if weapon.requirements.strength > 0:
             self.set_identification_min(build.item.IdentificationType.RAW_STRENGTH, weapon.requirements.strength)

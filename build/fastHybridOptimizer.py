@@ -28,8 +28,8 @@ def _runLPOptimizer(cfg):
     for id_type, value in cfg.min_id_reqs.items():
         optimizer.set_identification_min(id_type, value)
 
-    #result = [optimizer.find_best()]
-    result = optimizer.find_bestN(4000)
+    result = optimizer.find_bestN2(cfg.N)
+    #result = optimizer.find_bestN(cfg.N)
 
     return result
 

@@ -12,10 +12,8 @@ class HybridOptimizerConfig:
                  score_function: Callable[[item.Item], float]):
         """
         Class that contains relevant config information for the hybrid optimizer to run.
-        :param ingredients: The ingredients to include in the search.
-        :param score_function: A function that determines the score of a single ingredient. Higher = better.
-        :param crafting_skill: The crafting skill the craft is for.
-        :param relevant_ids: IDs that are used in the scoring function.
+        :param item: The items to include in the search.
+        :param score_function: A function that determines the score of a single item. Higher = better.
         """
         self.items = items
         self.score_function = score_function
@@ -27,6 +25,7 @@ class HybridOptimizerConfig:
         self.max_sp_sum_req: list[tuple[int, dict[str, bool]]] = []
         self.max_id_reqs = {}
         self.min_id_reqs = {}
+        self.N = 1
 
     def set_max_str_req(self, value: int):
         self.max_str_req = value
@@ -59,4 +58,8 @@ class HybridOptimizerConfig:
 
     def set_identification_min(self, identification: IdentificationType, value: int):
         self.min_id_reqs[identification] = value
+        return self
+
+    def set_num_builds(self, value: int):
+        self.N = value
         return self
