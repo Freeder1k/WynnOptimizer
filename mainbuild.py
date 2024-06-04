@@ -12,7 +12,8 @@ def main():
 
     cfg = DmgConfig()
     res = build.fastHybridOptimizer.optimize(cfg)
-    print_build(res)
+    if res is not None:
+        print_build(res)
 
 
 def print_build(b: build.build.Build):

@@ -9,7 +9,7 @@ weapon = build.item.get_weapon("Nirvana")
 base_dmg = dmgcalc.base_dmg(weapon, ["w", "w", "w"], [0.3, 0, 0.15, 0.1, 0, 0])
 
 
-def score(item: build.item.Item) -> float:
+def score(item: build.item.Item, ) -> float:
     identifications = weapon.identifications + item.identifications
     return sum(dmgcalc.true_dmg(base_dmg, identifications, spellmodsum))
 

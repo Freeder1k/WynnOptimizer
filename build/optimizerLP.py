@@ -2,6 +2,7 @@ from typing import Callable, TypeVar
 import sys
 
 import numpy as np
+np.set_printoptions(threshold=sys.maxsize)
 
 from core.optimizer.linearProgramming import BinaryLinearProgramm
 from build import item
@@ -24,9 +25,10 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         """
         #self._weapon = weapon
         self._items = []
-        self._preitems = []
+        self._preitems = [] # TODO: add these
         item_count = []
         b_eq = []
+        bounds = []
         for i, t in enumerate(types):
             t_items = [it for it in items if t in it.type]
             if len(t_items) == 0:
@@ -38,6 +40,7 @@ class LPBuildOptimizer(BinaryLinearProgramm):
                     self._items = self._items + t_items
                     b_eq.append(2)
                     item_count.append(len(t_items))
+                    bounds.append((0, 2))
             else:
                 if len(t_items) == 1:
                     self._preitems = self._preitems + t_items
@@ -45,6 +48,7 @@ class LPBuildOptimizer(BinaryLinearProgramm):
                     self._items = self._items + t_items
                     b_eq.append(1)
                     item_count.append(len(t_items))
+                    bounds.append((0, 1))
         print(item_count)
         self._score = score_function
 
@@ -64,7 +68,8 @@ class LPBuildOptimizer(BinaryLinearProgramm):
             b_ub=[],
             A_eq=A_eq,
             #b_eq=[1] * len(item_count)
-            b_eq=b_eq
+            b_eq=b_eq,
+            bounds=bounds
         )
 
 
