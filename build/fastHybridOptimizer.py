@@ -5,6 +5,7 @@ import build.item
 import build.optimizerLP
 import build.build
 from build.config.base import HybridOptimizerConfig
+import utils.skillpoints as sp
 
 
 def _runLPOptimizer(cfg):
@@ -39,22 +40,30 @@ def optimize(cfg: HybridOptimizerConfig, pool_size=4):
     print(f"Finding optimal builds...")
 
     results = _runLPOptimizer(cfg)
-    max_score, max_build = results[0]
 
     print(f"Total time taken: {time.time() - t:.2f}s")
 
-    if max_score <= 0:
+    if results[0][0] <= 0:
         print("No viable builds found.")
         return None
 
-    for i, entry in enumerate(results):
-        b = build.build.Build(*entry[1])
-        results[i] = (entry[0], entry[1], cfg.score_function(b.build()))
-
     print(f"Number of builds found: {len(results)}")
+
+    print(f"Processing found builds")
+
+    valid_builds = []
+
+    for entry in results:
+        b = build.build.Build(cfg.weapon, *entry[1])
+        asp = sp.skillpoints(b)
+        if sum(asp) < 205:
+            valid_builds.append((entry[0], entry[1], cfg.score_function(b.build())))
+
+    valid_builds = sorted(valid_builds, key=lambda x: x[2], reverse=True)
+
     with open('array.txt', 'w') as f:
-        for entry in results:
+        for entry in valid_builds:
             f.write(f"{entry}\n")
 
-    max_build = build.build.Build(*max_build)
-    return max_build
+    max_build = valid_builds[0][1]
+    return build.build.Build(cfg.weapon, *max_build)

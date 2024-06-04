@@ -14,8 +14,8 @@ def skillpoints(build):
                 if req > req_sp[i]+bon_sp[i]:
                     req_sp[i] = req - bon_sp[i]
                 elif req < req_sp[i]:
-                    req_sp[i] = max(req, req_sp[i]-item.identifications[skillPoints[i]])
-                bon_sp[i] += item.identifications[skillPoints[i]]
+                    req_sp[i] = max(req, req_sp[i] - item.identifications[skillPoints[i]].max)
+                bon_sp[i] += item.identifications[skillPoints[i]].max
         else:
             for i, req in enumerate(item.requirements.get_requirements()):
                 if req > req_sp[i]+bon_sp[i]:

@@ -20,7 +20,7 @@ class Build:
         if self._item is not None:
             return self._item
 
-        name = "build"  # TODO: Come up with naming scheme
+        name = "build"  # Future: Come up with naming scheme
 
         # calculate the build stats
         result = self.weapon
