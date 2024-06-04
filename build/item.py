@@ -214,6 +214,9 @@ class Requirements:
         return (max(0, self.strength) + max(0, self.dexterity) + max(0, self.intelligence) + max(0, self.defence)
                 + max(0, self.agility))
 
+    def get_requirements(self):
+        return [self.strength, self.dexterity, self.intelligence, self.defence, self.agility]
+
 
 @dataclass
 class Item:  # TODO: Add base stats (like base HP)
