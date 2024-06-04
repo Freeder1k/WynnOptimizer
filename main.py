@@ -1,5 +1,4 @@
 import craft.base_recipes
-import craft.config.example.base_recipe
 import craft.config.example.spell_ring
 import craft.fastHybridOptimizer
 import craft.ingredient
@@ -45,9 +44,9 @@ def main():
     print_recipe(res)
 
 
-def print_recipe(r: craft.recipe.Recipe) -> str:
-    item = r.build()
-    print(f"https://hppeng-wynn.github.io/crafter/#1{r.b64_hash()}9m91 "
+def print_recipe(r: craft.recipe.Recipe):
+    item = r.build("a")
+    print(f"https://hppeng-wynn.github.io/crafter/#1{item.name}9m91 "
             f"{item.identifications['spellDamage'].max} sd "
             f"{item.identifications['thunderDamage'].max} td "
             f"{item.identifications['airDamage'].max} ad "

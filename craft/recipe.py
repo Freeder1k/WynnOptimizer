@@ -1,6 +1,7 @@
 import craft.ingredient
 from utils.integer import Base64
 from .ingredient import Ingredient, Modifier, NO_INGREDIENT
+from build.item import Crafted
 
 
 class ModifierMatrix:
@@ -48,7 +49,6 @@ class Recipe:
         i5 i6
         """
         self.ingredients = (i1, i2, i3, i4, i5, i6)
-        self._built = False
         self._item = None
 
     def calculate_modifiers(self):
@@ -62,13 +62,15 @@ class Recipe:
 
         return m.flatten()
 
-    def build(self) -> Ingredient:
+    def build(self, type) -> Crafted:
         """
         Build the item from the recipe.
         :return: A new Ingredient object representing the crafted item.
         """
-        if self._built:
+        if self._item is not None:
             return self._item
+
+        name = self.b64_hash()
 
         # calculate the recipe stats
         modifier_vector = self.calculate_modifiers()
@@ -76,9 +78,9 @@ class Recipe:
         for i in range(6):
             result = result + (self.ingredients[i] * modifier_vector[i])
 
-        self._item = result
+        self._item = Crafted(name, type, result.identifications, result.requirements, result.charges, result.duration, result.durability)
 
-        return result
+        return self._item
 
     def b64_hash(self):
         return "".join([Base64.fromInt(craft.ingredient.get_ing_id(i.name)).rjust(2, "0") for i in self.ingredients])

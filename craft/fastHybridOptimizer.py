@@ -10,7 +10,7 @@ from craft.config.base import HybridOptimizerConfig
 
 def _runLPOptimizer(mods, base_r, cfg):
     mods = tuple(int(m) for m in mods)
-    base = base_r.build()
+    base = base_r.build("a")
 
     optimizer = craft.optimizerLP.LPRecipeOptimizer(cfg.ingredients, cfg.score_function, mods)
     if cfg.min_charges is not None:
