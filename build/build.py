@@ -1,13 +1,14 @@
 # import craft.ingredient
 # from utils.integer import Base64
-from .item import Item, NO_ITEM, IdentificationList
+from .item import Item
 
 
 class Build:
-    def __init__(self, i1: Item, i2: Item, i3: Item, i4: Item, i5: Item, i6: Item, i7: Item, i8: Item):
+    def __init__(self, weapon: Item, i1: Item, i2: Item, i3: Item, i4: Item, i5: Item, i6: Item, i7: Item, i8: Item):
         """
         Wynncraft build class.
         """
+        self.weapon = weapon
         self.items = (i1, i2, i3, i4, i5, i6, i7, i8)
         self._item = None
 
@@ -22,7 +23,7 @@ class Build:
         name = "build"  # TODO: Come up with naming scheme
 
         # calculate the build stats
-        result = NO_ITEM
+        result = self.weapon
         for i in range(8):
             result = result + (self.items[i])
 

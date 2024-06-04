@@ -26,6 +26,7 @@ class HybridOptimizerConfig:
         self.max_id_reqs = {}
         self.min_id_reqs = {}
         self.N = 1
+        self.weapon = item.NO_ITEM
 
     def set_max_str_req(self, value: int):
         self.max_str_req = value
@@ -62,4 +63,8 @@ class HybridOptimizerConfig:
 
     def set_num_builds(self, value: int):
         self.N = value
+        return self
+
+    def set_weapon(self, i: item.Weapon):
+        self.weapon = i
         return self

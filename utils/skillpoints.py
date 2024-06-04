@@ -8,7 +8,7 @@ def skillpoints(build):
     req_sp = [0,0,0,0,0]
     bon_sp = [0,0,0,0,0]
 
-    for item in build.items:
+    for item in [build.weapon, build.items]:
         if not isinstance(item, Crafted):
             for i, req in enumerate(item.requirements.get_requirements()):
                 if req > req_sp[i]+bon_sp[i]:
