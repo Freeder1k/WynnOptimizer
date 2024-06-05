@@ -8,7 +8,6 @@ from build import item
 from build.item import IdentificationType, NO_ITEM
 from utils.decorators import single_use
 from build import build
-import utils.skillpoints as sp
 
 np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
@@ -101,26 +100,29 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         try:
             while len(results) < n:
                 res = self.solve()
-                i += 1
-                sys.stdout.write(f"\r{spinner[(i//3)%4]}  Solving {len(results)}/{i} valid builds!")
-                sys.stdout.flush()
 
                 if not res.success:
                     break
                 res_score = -round(res.fun,4)
                 res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
 
+                i += 1
+                sys.stdout.write(f"\r{spinner[(i//3)%4]}  Solving {len(results)}/{i} valid builds! Current score: {res_score}")
+                sys.stdout.flush()
+
                 b = build.Build(self._weapon, *res_items)
-                asp = sp.skillpoints(b)
-                if sum(asp) < 205:
+                reqsp, bonsp = b.calc_sp()
+                if sum(reqsp) < 205:
                     results.append((res_score, res_items))
                 self.b_ub[-1] = res_score-0.001
             sys.stdout.write("\r")
             sys.stdout.flush()
+            print(f"{len(results)} valid builds out of N={i} tested builds found!")
         except KeyboardInterrupt:
             sys.stdout.write("\r")
             sys.stdout.flush()
             print(f"Interrupted at N={i}")
+            print(f"{len(results)} valid builds found!")
         return results
 
     def find_bestn2(self, n: int):

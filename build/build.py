@@ -1,6 +1,7 @@
 # import craft.ingredient
 # from utils.integer import Base64
 from .item import Item
+import utils.skillpoints as sp
 
 
 class Build:
@@ -11,6 +12,8 @@ class Build:
         self.weapon = weapon
         self.items = (i1, i2, i3, i4, i5, i6, i7, i8)
         self._item = None
+        self._required_sp = None
+        self._bonus_sp = None
 
     def build(self) -> Item:
         """
@@ -30,6 +33,15 @@ class Build:
         self._item = Item(name, "build", result.identifications, result.requirements)
 
         return self._item
+
+    def calc_sp(self):
+        if self._required_sp is not None:
+            return self._required_sp, self._bonus_sp
+
+        self._required_sp, self._bonus_sp = sp.skillpoints(self)
+
+        return self._required_sp, self._bonus_sp
+
 
 
     # Havent done this yet

@@ -126,13 +126,15 @@ class Identification:
             return self.min
         return self.max
 
-    def __add__(self, other: Identification):
+    def __add__(self, other):
         if other is None:
             return self
-        if not isinstance(other, Identification):
-            raise TypeError(f"unsupported operand type(s) for +: '{type(self)}' and '{type(other)}'")
+        if isinstance(other, Identification):
+            return Identification(self.raw + other.raw, self.min + other.min, self.max + other.max)
+        if isinstance(other, int):
+            return Identification(self.raw + other, self.min + other, self.max + other)
 
-        return Identification(self.raw + other.raw, self.min + other.min, self.max + other.max)
+        raise TypeError(f"unsupported operand type(s) for +: '{type(self)}' and '{type(other)}'")
 
     def __radd__(self, other):
         return self + other
