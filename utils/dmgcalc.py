@@ -43,7 +43,7 @@ def true_dmg(base, ids, spellmodsum, crit=True):
     # add IDs for final damage
     damage = [0,0,0,0,0,0]
     for i, dmg in enumerate(base):
-        damage[i] = dmg * (1 + pct[0])  # multiply by dmg% ID
+        damage[i] = dmg * (1 + pct[i])  # multiply by dmg% ID
         damage[i] += dmg/sum(base) * spellmodsum * rawSD  # add raw dmg weighted by relative dmg
         damage[i] *= 1 + strePct + int(crit) * dexPct  # strength and dexterity modifier (since dex is crit chance, it's just an average)
 
