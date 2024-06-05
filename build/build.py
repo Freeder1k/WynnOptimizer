@@ -1,6 +1,6 @@
 # import craft.ingredient
 # from utils.integer import Base64
-from .item import Item
+from build.item import Item
 import utils.skillpoints as sp
 
 

@@ -6,9 +6,10 @@ import build.optimizerLP
 import build.build
 from build.config.base import HybridOptimizerConfig
 import utils.skillpoints as sp
+import build.ortoolssolver
 
 def _runLPOptimizer(cfg):
-
+    '''
     optimizer = build.optimizerLP.LPBuildOptimizer(cfg.items, cfg.score_function, cfg.weapon)
     if cfg.max_str_req is not None:
         optimizer.set_max_str_req(cfg.max_str_req)
@@ -30,9 +31,13 @@ def _runLPOptimizer(cfg):
 
     #result = optimizer.find_bestn2(cfg.N)
     #result = optimizer.find_bestn(cfg.N)
-    result = optimizer.find_best_validn(cfg.N)
+    result = optimizer.find_best_validn(cfg.N)'''
 
-    return result
+    solver = build.ortoolssolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
+
+    res_score, res_items = solver.find_bestn(100)
+
+    return [(res_score, res_items)]
 
 def optimize(cfg: HybridOptimizerConfig, pool_size=4):
     t = time.time()

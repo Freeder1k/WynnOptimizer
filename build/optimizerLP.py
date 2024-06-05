@@ -5,7 +5,6 @@ import numpy as np
 
 from core.optimizer.linearProgramming import BinaryLinearProgramm
 from build import item
-from build.item import IdentificationType, NO_ITEM
 from utils.decorators import single_use
 from build import build
 
@@ -60,15 +59,12 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         for i, val in enumerate(item_count):
             A_eq[i, col:col + val] = 1
             col += val
-        c = [-round(self._score(it),4) for it in self._items]
+        c = [-round(self._score(it),6) for it in self._items]
         super().__init__(
             c=c,
-            #A_ub=list(np.zeros((1, sum(item_count)), dtype=int)),
-            #b_ub=[0],
             A_ub=[],
             b_ub=[],
             A_eq=A_eq,
-            #b_eq=[1] * len(item_count)
             b_eq=b_eq,
             bounds=bounds
         )
@@ -95,15 +91,16 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         results = []
         spinner = ['|', '/', '-', '\\']
         self.A_ub.append([-score for score in self.c])
-        self.b_ub.append(7000)
+        self.b_ub.append(6695)
         i = 0
+        print(self._weapon)
         try:
             while len(results) < n:
                 res = self.solve()
 
                 if not res.success:
                     break
-                res_score = -round(res.fun,4)
+                res_score = -round(res.fun,6)
                 res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
 
                 i += 1
@@ -113,8 +110,8 @@ class LPBuildOptimizer(BinaryLinearProgramm):
                 b = build.Build(self._weapon, *res_items)
                 reqsp, bonsp = b.calc_sp()
                 if sum(reqsp) < 205:
-                    results.append((res_score, res_items))
-                self.b_ub[-1] = res_score-0.001
+                    results.append((res_score, res_items, sum(reqsp)))
+                self.b_ub[-1] = res_score-0.00001
             sys.stdout.write("\r")
             sys.stdout.flush()
             print(f"{len(results)} valid builds out of N={i} tested builds found!")
@@ -242,8 +239,8 @@ class LPBuildOptimizer(BinaryLinearProgramm):
 
         self.add_max_constraint(value, lambda i: sp_sum(i))
 
-    def set_identification_max(self, identification: IdentificationType, value: int):
+    def set_identification_max(self, identification: item.IdentificationType, value: int):
         self.add_max_constraint(value, lambda i: i.identifications[identification].max)
 
-    def set_identification_min(self, identification: IdentificationType, value: int):
+    def set_identification_min(self, identification: item.IdentificationType, value: int):
         self.add_min_constraint(value, lambda i: i.identifications[identification].max)
