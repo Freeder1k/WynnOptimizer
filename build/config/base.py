@@ -12,7 +12,7 @@ class HybridOptimizerConfig:
                  score_function: Callable[[item.Item], float]):
         """
         Class that contains relevant config information for the hybrid optimizer to run.
-        :param item: The items to include in the search.
+        :param items: The items to include in the search.
         :param score_function: A function that determines the score of a single item. Higher = better.
         """
         self.items = items

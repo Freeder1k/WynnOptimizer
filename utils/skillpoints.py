@@ -20,6 +20,5 @@ def skillpoints(build):
             for i, req in enumerate(item.requirements.get_requirements()):
                 if req > req_sp[i]+bon_sp[i]:
                     req_sp[i] = req - bon_sp[i]
-        print(item.name, req_sp, bon_sp)
 
     return req_sp

@@ -10,7 +10,7 @@ import utils.skillpoints as sp
 
 def _runLPOptimizer(cfg):
 
-    optimizer = build.optimizerLP.LPBuildOptimizer(cfg.items, cfg.score_function)
+    optimizer = build.optimizerLP.LPBuildOptimizer(cfg.items, cfg.score_function, cfg.weapon)
     if cfg.max_str_req is not None:
         optimizer.set_max_str_req(cfg.max_str_req)
     if cfg.max_dex_req is not None:
@@ -29,15 +29,16 @@ def _runLPOptimizer(cfg):
     for id_type, value in cfg.min_id_reqs.items():
         optimizer.set_identification_min(id_type, value)
 
-    result = optimizer.find_bestN2(cfg.N)
-    #result = optimizer.find_bestN(cfg.N)
+    #result = optimizer.find_bestn2(cfg.N)
+    #result = optimizer.find_bestn(cfg.N)
+    result = optimizer.find_best_validn(cfg.N)
 
     return result
 
 def optimize(cfg: HybridOptimizerConfig, pool_size=4):
     t = time.time()
 
-    print(f"Finding optimal builds...")
+    print(f"Finding top {cfg.N} optimal builds...")
 
     results = _runLPOptimizer(cfg)
 

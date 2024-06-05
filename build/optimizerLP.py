@@ -2,28 +2,30 @@ from typing import Callable, TypeVar
 import sys
 
 import numpy as np
-np.set_printoptions(threshold=sys.maxsize)
 
 from core.optimizer.linearProgramming import BinaryLinearProgramm
 from build import item
-from build.item import IdentificationType
+from build.item import IdentificationType, NO_ITEM
 from utils.decorators import single_use
+from build import build
+import utils.skillpoints as sp
 
+np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
 types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'bracelet', 'necklace']
 
 
 class LPBuildOptimizer(BinaryLinearProgramm):
     def __init__(self, items: list[item.Item],
-                 score_function: Callable[[item.Item], float]):
-        #weapon: item.Item):
+                 score_function: Callable[[item.Item], float],
+                 weapon: item.Item):
         """
         Create a linear programming optimizer for a Build.
         :param items: A list of ingredients to use in the Build.
         :param score_function: A function that returns the score of an individual ingredient.
         :weapon: The weapon used in the build.
         """
-        #self._weapon = weapon
+        self._weapon = weapon
         self._items = []
         self._preitems = []  # TODO: add these
         item_count = []
@@ -72,7 +74,6 @@ class LPBuildOptimizer(BinaryLinearProgramm):
             bounds=bounds
         )
 
-
     def find_best(self):
         """
         Find the build where the sum of the scores of the items in that build is maximized and the constraints
@@ -86,7 +87,43 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
         return res_score, res_items
 
-    def find_bestN2(self, n: int):
+    def find_best_validn(self, n: int):
+        """
+        Find N builds where the sum of the scores of the items in that build is maximized and the constraints
+        are satisfied.
+        :return: The score of the best build and the items in that build.
+        """
+        results = []
+        spinner = ['|', '/', '-', '\\']
+        self.A_ub.append([-score for score in self.c])
+        self.b_ub.append(10000)
+        i = 0
+        try:
+            while len(results) < n:
+                res = self.solve()
+                i += 1
+                sys.stdout.write(f"\r{spinner[(i//3)%4]}  Solving {len(results)}/{i} valid builds!")
+                sys.stdout.flush()
+
+                if not res.success:
+                    break
+                res_score = -round(res.fun,4)
+                res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
+
+                b = build.Build(self._weapon, *res_items)
+                asp = sp.skillpoints(b)
+                if sum(asp) < 205:
+                    results.append((res_score, res_items))
+                self.b_ub[-1] = res_score-0.001
+            sys.stdout.write("\r")
+            sys.stdout.flush()
+        except KeyboardInterrupt:
+            sys.stdout.write("\r")
+            sys.stdout.flush()
+            print(f"Interrupted at N={i}")
+        return results
+
+    def find_bestn2(self, n: int):
         """
         Find N builds where the sum of the scores of the items in that build is maximized and the constraints
         are satisfied.
@@ -119,7 +156,7 @@ class LPBuildOptimizer(BinaryLinearProgramm):
             print(f"Interrupted at N={i}")
         return results
 
-    def find_bestN(self, n: int):
+    def find_bestn(self, n: int):
         """
         Find N builds where the sum of the scores of the items in that build is maximized and the constraints
         are satisfied.
