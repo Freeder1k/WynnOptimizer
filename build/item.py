@@ -162,6 +162,9 @@ class IdentificationList:
             return self.identifications[key]
         return Identification(0)
 
+    def __setitem__(self, key, value):
+        self.identifications[key] = value
+
     def __add__(self, other: IdentificationList):
         if other is None:
             return self

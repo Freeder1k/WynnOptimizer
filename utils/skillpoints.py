@@ -39,7 +39,7 @@ def add_sp(item, req_sp, bon_sp):
         req_sp[0] += math.ceil(sdr/2) - s
         req_sp[1] += math.floor(sdr/2) - d
 
-    for i in range(6):
+    for i in range(5):
         item.identifications[skillPoints[i]] += req_sp[i]
 
     return item

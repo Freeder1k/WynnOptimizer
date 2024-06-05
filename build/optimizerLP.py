@@ -95,7 +95,7 @@ class LPBuildOptimizer(BinaryLinearProgramm):
         results = []
         spinner = ['|', '/', '-', '\\']
         self.A_ub.append([-score for score in self.c])
-        self.b_ub.append(10000)
+        self.b_ub.append(7000)
         i = 0
         try:
             while len(results) < n:

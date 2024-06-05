@@ -5,7 +5,7 @@ import build.item
 import build.optimizerLP
 import build.build
 from build.config.base import HybridOptimizerConfig
-
+import utils.skillpoints as sp
 
 def _runLPOptimizer(cfg):
 
@@ -55,9 +55,8 @@ def optimize(cfg: HybridOptimizerConfig, pool_size=4):
 
     for entry in results:
         b = build.build.Build(cfg.weapon, *entry[1])
-        reqsp, bonsp = b.calc_sp()
-        if sum(reqsp) < 205:
-            valid_builds.append((entry[0], entry[1], cfg.score_function(b.build())))
+        builditem = sp.add_sp(b.build(), *b.calc_sp())
+        valid_builds.append((entry[0], entry[1], cfg.score_function(builditem)))
 
     valid_builds = sorted(valid_builds, key=lambda x: x[2], reverse=True)
 
