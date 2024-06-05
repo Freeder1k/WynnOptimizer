@@ -1,6 +1,6 @@
 from build.item import Crafted
 
-skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
+skillPoints = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
 
 
 def skillpoints(build):
@@ -8,7 +8,7 @@ def skillpoints(build):
     req_sp = [0,0,0,0,0]
     bon_sp = [0,0,0,0,0]
 
-    for item in [build.weapon, build.items]:
+    for item in [build.weapon] + list(build.items):
         if not isinstance(item, Crafted):
             for i, req in enumerate(item.requirements.get_requirements()):
                 if req > req_sp[i]+bon_sp[i]:
@@ -20,5 +20,6 @@ def skillpoints(build):
             for i, req in enumerate(item.requirements.get_requirements()):
                 if req > req_sp[i]+bon_sp[i]:
                     req_sp[i] = req - bon_sp[i]
+        print(item.name, req_sp, bon_sp)
 
-    return bon_sp
+    return req_sp

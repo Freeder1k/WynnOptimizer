@@ -61,6 +61,8 @@ def optimize(cfg: HybridOptimizerConfig, pool_size=4):
 
     valid_builds = sorted(valid_builds, key=lambda x: x[2], reverse=True)
 
+    print(f"Number of valid builds found: {len(valid_builds)}")
+
     with open('array.txt', 'w') as f:
         for entry in valid_builds:
             f.write(f"{entry}\n")
