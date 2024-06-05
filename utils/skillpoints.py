@@ -52,27 +52,14 @@ def uncrafted_sp(items):
         for j, (req, bon, name) in enumerate(sorted_list):  # on last item do negative skillpoints
             if j == len(sorted_list) - 1:
                 bon_sp[i] += nbon_sp[i]
-                if req > 0:
-                    diff = req - bon_sp[i]
-                    req_sp[i] = max(req_sp[i], diff)
-
-                    #print(bon_sp[i], bon, req_sp[i], nbon_sp[i])
-                    #if bon_sp[i] > 0:
-                        #req_sp[i] += -bon - min(0, bon_sp[i]+bon)
-                        #req_sp[i] -= bon_sp[i]
-                bon_sp[i] = bon_sp[i]+bon
+            if req > 0:
+                req_sp[i] = max(req_sp[i], req - bon_sp[i])
+                bon_sp[i] += bon
             else:
-                if req > 0:
-                    req_sp[i] = max(req_sp[i], req - bon_sp[i])
-                    if bon_sp[i] < 0:
-                        req_sp[i] -= bon
+                if bon > 0:
                     bon_sp[i] += bon
                 else:
-                    if bon > 0:
-                        bon_sp[i] += bon
-                    else:
-                        nbon_sp[i] += bon
-            #print(skillPoints[i], name, req, bon, req_sp, bon_sp, nbon_sp)
+                    nbon_sp[i] += bon
 
     return req_sp, bon_sp
 
@@ -89,33 +76,6 @@ def crafted_sp(items, req_sp, bon_sp):
     bon_sp = [bon_sp[i] + _bon_sp[i] for i in range(5)]
 
     return req_sp, bon_sp
-
-
-''' Doesnt work sadly
-def skillpoints(build):
-
-    req_sp = [0,0,0,0,0]
-    bon_sp = [0,0,0,0,0]
-
-    for i, req in enumerate(build.weapon.requirements.get_requirements()):
-        req_sp[i] = req
-    for item in build.items:
-        if not isinstance(item, Crafted):
-            for i, req in enumerate(item.requirements.get_requirements()):
-                if req > req_sp[i]+bon_sp[i]:
-                    req_sp[i] = req - bon_sp[i]
-                elif req < req_sp[i]:
-                    print(skillPoints[i], req)
-                    req_sp[i] = max(req, req_sp[i] - item.identifications[skillPoints[i]].max)
-                bon_sp[i] += item.identifications[skillPoints[i]].max
-        else:
-            for i, req in enumerate(item.requirements.get_requirements()):
-                if req > req_sp[i]+bon_sp[i]:
-                    req_sp[i] = req - bon_sp[i]
-
-        print(req_sp, bon_sp)
-
-    return req_sp, bon_sp'''
 
 
 def add_sp(item, req_sp, bon_sp):
