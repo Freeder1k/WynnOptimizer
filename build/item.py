@@ -222,6 +222,22 @@ class Requirements:
     def get_requirements(self):
         return [self.strength, self.dexterity, self.intelligence, self.defence, self.agility]
 
+    def __getitem__(self, key):
+        if key == 'strength' or key == 'str':
+            return self.strength
+        elif key == 'dexterity' or key == 'dex':
+            return self.dexterity
+        elif key == 'intelligence' or key == 'int':
+            return self.intelligence
+        elif key == 'defence' or key == 'def':
+            return self.defence
+        elif key == 'agility' or key == 'agi':
+            return self.agility
+        elif key == 'level':
+            return self.level
+        else:
+            raise KeyError(key)
+
 
 @dataclass
 class Item:  # TODO: Add base stats (like base HP)
