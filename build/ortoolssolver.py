@@ -29,7 +29,7 @@ class CPModelSolver:
         self.model = cp_model.CpModel()
 
         self._items = []
-        self.variables = []
+        self.item_variables = []
 
         for item_type in types:
             t_items = [itm for itm in items if item_type in itm.type]
@@ -48,10 +48,28 @@ class CPModelSolver:
                 t_vars = [self.model.new_bool_var(f"x[{item_type},{itm.name}]") for itm in t_items]
                 self.model.add_exactly_one(t_vars)
 
-            self.variables += t_vars
+            self.item_variables += t_vars
 
-        self._objective = [score_function(itm) * x for itm, x in zip(self._items, self.variables)]
+        self._objective = [score_function(itm) * x for itm, x in zip(self._items, self.item_variables)]
         self.model.maximize(sum(self._objective))
+
+        # Satisfy skill point constraints
+        sp_vars = [self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']]
+        self.model.add(sum(sp_vars) <= 200)
+
+        self._sp_bonuses = [[]*5]
+        for itm, x in zip(self._items, self.item_variables):
+            for sp_bonus, bonus_sp in zip(self._sp_bonuses, [itm.identifications.rawStrength, itm.identifications.rawDexterity,
+                                                              itm.identifications.rawIntelligence, itm.identifications.rawDefence,
+                                                              itm.identifications.rawAgility]):
+                if bonus_sp.raw != 0:
+                    sp_bonus.append(x * bonus_sp.raw)
+        for itm, x in zip(self._items, self.item_variables):
+            for sp_var, req_sp, sp_bonus in zip(sp_vars, [itm.requirements.strength, itm.requirements.dexterity,
+                                            itm.requirements.intelligence, itm.requirements.defence,
+                                            itm.requirements.agility]), self._sp_bonuses:
+                if req_sp != 0:
+                    self.model.add(sp_var >= req_sp - sum(sp_bonus)).only_enforce_if(x)
 
         print(item_count)
 
@@ -69,7 +87,7 @@ class CPModelSolver:
         res_score = 0
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             res_score = solver.objective_value
-            for itm, x in zip(self._items, self.variables):
+            for itm, x in zip(self._items, self.item_variables):
                 if solver.value(x) == 1:
                     res_items.append(itm)
                 elif solver.value(x) == 2:
@@ -85,7 +103,7 @@ class CPModelSolver:
         :return: The score of the best build and the items in that build.
         """
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.variables, self._items)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
         # TODO find the best n solutions
@@ -95,7 +113,7 @@ class CPModelSolver:
         res_score = 0
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             res_score = solver.objective_value
-            for itm, x in zip(self._items, self.variables):
+            for itm, x in zip(self._items, self.item_variables):
                 if solver.value(x) == 1:
                     res_items.append(itm)
                 elif solver.value(x) == 2:
