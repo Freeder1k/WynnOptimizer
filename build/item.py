@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 import numpy as np
-from attr import attr
 
 from core.wynnAPI import item
 from utils.decorators import ttl
