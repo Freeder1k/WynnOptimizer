@@ -41,7 +41,7 @@ class CPModelSolver:
                 # TODO append item reqs
                 continue
 
-            positems = [i for i in t_items if score_function(i) > 0]
+            positems = [i for i in t_items if score_function(i) > score_function(item.NO_ITEM)]
             self._items += positems
             item_count.append(len(positems))
 
