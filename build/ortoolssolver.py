@@ -161,5 +161,8 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         if sum(reqsp) <= 204:
             self.results.append((b, [self.value(s) for s in self.spa]))
 
-        sys.stdout.write(f"\r{spinner[(self.solution_count // 3) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds!")
+        sys.stdout.write(f"\r{spinner[(int(self.UserTime()) // 3) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds!")
         sys.stdout.flush()
+
+        if self.UserTime() > 60:
+            self.StopSearch()
