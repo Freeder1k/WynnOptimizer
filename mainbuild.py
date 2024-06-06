@@ -3,7 +3,8 @@ import build.item
 import build.build
 from build.config.dmg import DmgConfig
 import build.ortoolssolver
-
+import faulthandler
+faulthandler.enable()
 
 def main():
     print(f" ∧,,∧\n"

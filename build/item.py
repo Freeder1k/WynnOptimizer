@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -9,8 +10,7 @@ from attr import attr
 
 from core.wynnAPI import item
 from utils.decorators import ttl
-from collections import namedtuple
-SkillpointsTuple = namedtuple('SkillpointsTuple', ['str', 'dex', 'int', 'defe', 'agi'])
+
 
 class IdentificationType(StrEnum):
     NEUTRAL_DAMAGE = "damage"
@@ -363,3 +363,6 @@ def get_weapon(name: str):
     if "base" not in it:
         raise ValueError(f"{name} not a weapon")
     return Weapon.from_api_json(name, it)
+
+
+SkillpointsTuple = namedtuple('SkillpointsTuple', ['str', 'dex', 'int', 'defe', 'agi'])

@@ -4,6 +4,7 @@ import math
 skillPoints = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefence", "rawAgility"]
 sp = ["str","dex","int","def","agi"]
 
+
 def skillpoints(build):
 
     uncrafteds = []

@@ -11,7 +11,7 @@ base_dmg = dmgcalc.base_dmg(weapon, ["w", "w", "w"], [0.3, 0, 0.15, 0.1, 0, 0])
 
 def score(item: build.item.Item, ) -> float:
     identifications = weapon.identifications + item.identifications
-    return sum(dmgcalc.true_dmg(base_dmg, identifications, spellmodsum))
+    return int(sum(dmgcalc.true_dmg(base_dmg, identifications, spellmodsum)))
 
 
 items = list(build.item.get_all_items().values())

@@ -1,12 +1,11 @@
 """Solves a simple assignment problem."""
 import sys
 from typing import Callable, TypeVar
-
+from build.item import SkillpointsTuple
 import numpy as np
 from ortools.sat.python import cp_model
 
-from build import item
-from build import build
+from build import item, build
 
 np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
@@ -16,7 +15,7 @@ spinner = ['|', '/', '-', '\\']
 
 class CPModelSolver:
     def __init__(self, items: list[item.Item],
-                 score_function: Callable[[item.Item], float],
+                 score_function: Callable[[item.Item], int],
                  weapon: item.Item):
         """
         Create a linear programming optimizer for a Build.
@@ -30,7 +29,7 @@ class CPModelSolver:
 
         self.model = cp_model.CpModel()
 
-        self._items = []
+        self._items: list[item.Item] = []
         self.item_variables = []
 
         for item_type in types:
@@ -53,25 +52,25 @@ class CPModelSolver:
             self.item_variables += t_vars
 
         self._objective = [score_function(itm) * x for itm, x in zip(self._items, self.item_variables)]
-        self.model.maximize(sum(self._objective))
+        self.model.add(sum(self._objective) > 7500)
 
         # Satisfy skill point constraints
-        sp_vars = [self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']]
-        self.model.add(sum(sp_vars) <= 200)
-
-        self._sp_bonuses = [[]*5]
-        for itm, x in zip(self._items, self.item_variables):
-            for sp_bonus, bonus_sp in zip(self._sp_bonuses, [itm.identifications.skillpoints.str, itm.identifications.skillpoints.dex,
-                                                              itm.identifications.skillpoints.int, itm.identifications.skillpoints.defe,
-                                                              itm.identifications.skillpoints.agi]):
-                if bonus_sp != 0:
-                    sp_bonus.append(x * bonus_sp)
-        for itm, x in zip(self._items, self.item_variables):
-            for sp_var, req_sp, sp_bonus in zip(sp_vars, [itm.requirements.strength, itm.requirements.dexterity,
-                                            itm.requirements.intelligence, itm.requirements.defence,
-                                            itm.requirements.agility]), self._sp_bonuses:
-                if req_sp != 0:
-                    self.model.add(sp_var >= req_sp - sum(sp_bonus)).only_enforce_if(x)
+        # sp_assignment_vars = SkillpointsTuple(*(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        # self.model.add(sum(sp_assignment_vars) <= 200)
+        #
+        # sp_bonuses = SkillpointsTuple([], [], [], [], [])
+        # for itm, x in zip(self._items, self.item_variables):
+        #     for sp_bonuses, sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
+        #         if sp_bonus != 0:
+        #             sp_bonuses.append(sp_bonus * x)
+        #
+        # for itm, x in zip(self._items, self.item_variables):
+        #     for sp_assign, sp_req, sp_bonuses, sp_bonus in zip(sp_assignment_vars,
+        #                                                        itm.requirements.skillpoints,
+        #                                                        sp_bonuses,
+        #                                                        itm.identifications.skillpoints):
+        #         if sp_req != 0:
+        #             self.model.add(sp_assign >= sp_req - sum(sp_bonuses) + sp_bonus * x).only_enforce_if(x != 0)
 
         print(item_count)
 
@@ -107,27 +106,19 @@ class CPModelSolver:
         solver = cp_model.CpSolver()
         solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon)
         solver.parameters.enumerate_all_solutions = True
-
-        try:
-            status = solver.solve(self.model, solution_printer)
-            print()
-        except KeyboardInterrupt:
-            print()
-            print(f"Solver interrupted")
-
+        status = solver.solve(self.model, solution_printer)
 
         print(f"Status = {solver.status_name(status)}")
         print(f"Number of solutions found: {solution_printer.solution_count}")
 
         return solution_printer.results
 
-
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, variables, items, weapon):
+    def __init__(self, x, items, weapon):
         cp_model.CpSolverSolutionCallback.__init__(self)
-        self._variables = variables
+        self._x = x
         self._items = items
         self.solution_count = 0
         self.results = []
@@ -136,16 +127,20 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self) -> None:
         self.solution_count += 1
         res_items = []
-        for itm, x in zip(self._items, self._variables):
-            if self.value(x) == 1:
-                res_items.append(itm)
-            if self.value(x) == 2:
-                res_items.append(itm)
-                res_items.append(itm)
+        for t_items in self._items:
+            for i in t_items:
+                val = self.value(self._x[i.type, i.name])
+                if val == 1:
+                    res_items.append(i)
+                if val == 2:
+                    res_items.append(i)
+                    res_items.append(i)
+
         b = build.Build(self._weapon, *res_items)
         reqsp, bonsp = b.calc_sp()
         if sum(reqsp) < 400:
             self.results.append(b)
 
-        sys.stdout.write(f"\r{spinner[(self.solution_count//3)%4]}  Solving {len(self.results)}/{self.solution_count} valid builds!")
+        sys.stdout.write(
+            f"\r{spinner[(self.solution_count // 3) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds!")
         sys.stdout.flush()
