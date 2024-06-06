@@ -79,18 +79,20 @@ def crafted_sp(items, req_sp, bon_sp):
 
 
 def add_sp(item, req_sp, bon_sp):
+    req_str = req_sp[0]
+    req_dex = req_sp[1]
     extra = 200-sum(req_sp)
-    s = req_sp[0] + bon_sp[0]
-    d = req_sp[1] + bon_sp[1]
+    s = req_str + bon_sp[0]
+    d = req_dex + bon_sp[1]
 
     if d+extra < s:
-        req_sp[1] += extra
+        req_dex += extra
     elif s+extra < d:
-        req_sp[0] += extra
+        req_str += extra
     else:
         sdr = s + d + extra
-        req_sp[0] += math.ceil(sdr/2) - s
-        req_sp[1] += math.floor(sdr/2) - d
+        req_str += math.ceil(sdr/2) - s
+        req_dex += math.floor(sdr/2) - d
 
     for i in range(5):
         item.identifications[skillPoints[i]] += req_sp[i]

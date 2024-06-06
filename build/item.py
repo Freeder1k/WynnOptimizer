@@ -305,7 +305,7 @@ class Item:  # TODO: Add base stats (like base HP)
         return self.name
 
     def __repr__(self):
-        return self.name
+        return f"\"{self.name}\""
 
 
 NO_ITEM = Item("No Item", "none", IdentificationList(), Requirements(0, 0, 0, 0, 0, 0))

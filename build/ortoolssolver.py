@@ -55,17 +55,13 @@ class CPModelSolver:
             self.item_variables += t_vars
             t_var_dict[item_type] = t_vars
 
-        self.sp_assignment_vars = SkillpointsTuple(
-            *(self.model.new_int_var(0, 104, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
-
-        free_sp = 204 - sum(self.sp_assignment_vars)
-        self.model.add(free_sp >= 0)
-
         sp_bonuses = SkillpointsTuple([], [], [], [], [])
         for itm, x in zip(self._items, self.item_variables):
             for sp_bonus, itm_sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
                 if itm_sp_bonus != 0:
                     sp_bonus.append(itm_sp_bonus * x)
+        ## Anselm
+        sp_maxs = SkillpointsTuple(70, 70, 150, 10, 10)
 
         for item_type in types:
             t_items = [itm for itm in items if item_type in itm.type]
@@ -80,18 +76,51 @@ class CPModelSolver:
             for itm, x in zip(positems, t_vars):
                 for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
                     if itm_sp_req != 0:
-                        sp_req.append((itm_sp_bonus + itm_sp_req + 1000) * x)
+                        sp_req.append((itm_sp_bonus + itm_sp_req) * x)
+                        # sp_req.append(itm_sp_req * x)
+            if item_type != 'ring':
+                # for sp_req, sp_max in zip(sp_reqs, sp_maxs):
+                #     self.model.add(sp_max >= sum(sp_bonus) - sum(sp_req))
+                for sp_req, sp_bonus, sp_max in zip(sp_reqs, sp_bonuses, sp_maxs):
+                    self.model.add(sp_max >= sum(sp_req) - sum(sp_bonus))
+            else:
+                for sp_req, sp_bonus, sp_max in zip(sp_reqs, sp_bonuses, sp_maxs):
+                    self.model.add(2*sp_max >= sum(sp_req) - sum(sp_bonus))
 
-            for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, sp_reqs, sp_bonuses):
-                self.model.add(sp_assign >= sum(sp_req) - 1000 - sum(sp_bonus))
-
-        for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses):
-            if sp_req != 0:
-                self.model.add(sp_assign >= sp_req - sum(sp_bonus))
+        ## Frederik
+        # self.sp_assignment_vars = SkillpointsTuple(
+        #     *(self.model.new_int_var(0, 104, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        #
+        # free_sp = 204 - sum(self.sp_assignment_vars)
+        # self.model.add(free_sp >= 0)
+        # for item_type in types:
+        #     t_items = [itm for itm in items if item_type in itm.type]
+        #     if len(t_items) <= 1:
+        #         continue
+        #
+        #     positems = [i for i in t_items if score_function(i) > score_function(item.NO_ITEM)]
+        #
+        #     t_vars = t_var_dict[item_type]
+        #
+        #     sp_reqs = SkillpointsTuple([], [], [], [], [])
+        #     for itm, x in zip(positems, t_vars):
+        #         for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
+        #             if itm_sp_req != 0:
+        #                 sp_req.append((itm_sp_bonus + itm_sp_req + 1000) * x)
+        #
+        #     for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, sp_reqs, sp_bonuses):
+        #         self.model.add(sp_assign >= sum(sp_req) - 1000 - sum(sp_bonus))
+        #
+        # for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses):
+        #     if sp_req != 0:
+        #         self.model.add(sp_assign >= sp_req - sum(sp_bonus))
+        #
 
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
-        #print(self._objective)
-        self.model.maximize(sum(self._objective))
+        # #print(self._objective)
+        self.model.add(sum(self._objective) > 5500) # 5925
+        # #self.model.add(sum(self._objective) < 1650)
+        # #self.model.maximize(free_sp)
 
         print(item_count)
 
@@ -116,8 +145,9 @@ class CPModelSolver:
                 elif solver.value(x) == 2:
                     res_items.append(itm)
                     res_items.append(itm)
+        b = build.Build(self._weapon, *res_items)
 
-        return res_score, res_items
+        return [(b,res_score)]
 
     def find_allbest(self):
         """
@@ -126,7 +156,7 @@ class CPModelSolver:
         :return: The score of the best build and the items in that build.
         """
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.sp_assignment_vars)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, [0])# self.sp_assignment_vars)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
         print()
@@ -159,11 +189,11 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 
         b = build.Build(self._weapon, *res_items)
         reqsp, bonsp = b.calc_sp()
-        if sum(reqsp) <= 204:
-            self.results.append((b, [self.value(s) for s in self.spa]))
+        if sum(reqsp) <= 205:
+            self.results.append((b, reqsp))
 
-        sys.stdout.write(f"\r{spinner[(int(self.UserTime()) // 3) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds!")
+        sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds! {reqsp}")
         sys.stdout.flush()
 
-        if self.UserTime() > 60:
-            self.StopSearch()
+        #if self.UserTime() > 60:
+        #    self.StopSearch()
