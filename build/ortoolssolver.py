@@ -1,15 +1,11 @@
 """Solves a simple assignment problem."""
-from ortools.sat.python import cp_model
-from typing import Callable, TypeVar
 import sys
+from typing import Callable, TypeVar
 
 import numpy as np
+from ortools.sat.python import cp_model
 
-from core.optimizer.linearProgramming import IntegerLinearProgramm
 from build import item
-from build.item import IdentificationType, NO_ITEM
-from utils.decorators import single_use
-from build import build
 
 np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
@@ -46,7 +42,7 @@ class CPModelSolver:
             item_count.append(len(t_items))
 
             if item_type == 'ring':  # build has 2 rings
-                t_vars = [self.model.new_int_var(0,2,f"x[{item_type},{itm.name}]") for itm in t_items]
+                t_vars = [self.model.new_int_var(0, 2, f"x[{item_type},{itm.name}]") for itm in t_items]
                 self.model.add(sum(t_vars) == 2)
             else:
                 t_vars = [self.model.new_bool_var(f"x[{item_type},{itm.name}]") for itm in t_items]
