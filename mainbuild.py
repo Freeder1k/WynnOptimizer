@@ -22,7 +22,7 @@ def main():
         builditem = sp.add_sp(b.build(), *b.calc_sp())
         buildscore = cfg.score_function(builditem)
         objectivevalue = sum(cfg.score_function(it) for it in b.items)
-        results[i] = (b, buildscore, objectivevalue)
+        results[i] = (b, buildscore, objectivevalue, entry[1])
 
     results = sorted(results, key=lambda x: x[2], reverse=True)
 
@@ -30,7 +30,7 @@ def main():
 
     with open('array.txt', 'w') as f:
         for entry in results:
-            f.write(f"{entry[0].items} {entry[1]} {entry[2]}\n")
+            f.write(f"{entry[0].items} {entry[1]} {entry[2]} {entry[3]}\n")
             #f.write(f"{entry.items}\n")
 
 
