@@ -55,23 +55,27 @@ class CPModelSolver:
         self.model.add(sum(self._objective) > 7500)
 
         # Satisfy skill point constraints
-        self.sp_assignment_vars = SkillpointsTuple(*(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
-        self.model.add(sum(self.sp_assignment_vars) <= 200)
-
-        sp_bonuses = SkillpointsTuple([], [], [], [], [])
-        for itm, x in zip(self._items, self.item_variables):
-            for sp_bonuses, sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
-                if sp_bonus != 0:
-                    sp_bonuses.append(sp_bonus * x)
-
-        for itm, x in zip(self._items, self.item_variables):
-            for sp_assign, sp_req, sp_bonuses, sp_bonus in zip(self.sp_assignment_vars,
-                                                               itm.requirements.skillpoints,
-                                                               sp_bonuses,
-                                                               itm.identifications.skillpoints):
-                if sp_req != 0:
-                    self.model.add(sp_assign >= sp_req - sum(sp_bonuses) + sp_bonus * x).only_enforce_if(x != 0)
-
+        # self.sp_assignment_vars = SkillpointsTuple(*(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        # self.model.add(sum(self.sp_assignment_vars) <= 200)
+        #
+        # sp_bonuses = SkillpointsTuple([], [], [], [], [])
+        # for itm, x in zip(self._items, self.item_variables):
+        #     for sp_bonus, spbon in zip(sp_bonuses, itm.identifications.skillpoints):
+        #         if spbon != 0:
+        #             sp_bonus.append(spbon * x)
+        #
+        # print(self.sp_assignment_vars,weapon.requirements.skillpoints,sp_bonuses)
+        # for itm, x in zip(self._items, self.item_variables):
+        #     for sp_assign, sp_req, sp_bonus, spbon in zip(self.sp_assignment_vars,
+        #                                                        itm.requirements.skillpoints,
+        #                                                        sp_bonuses,
+        #                                                        itm.identifications.skillpoints):
+        #         if sp_req != 0:
+        #             #self.model.add(sp_assign >= sp_req - sum(sp_bonuses) + sp_bonus * x)
+        #             self.model.add(sp_assign >= x*sp_req - sum(sp_bonus) + spbon * x)
+        # print(self.sp_assignment_vars,weapon.requirements.skillpoints,sp_bonuses)
+        #
+        # self.model.add(self.sp_assignment_vars.str > 5)
         print(item_count)
 
     def find_best(self):
@@ -104,7 +108,7 @@ class CPModelSolver:
         :return: The score of the best build and the items in that build.
         """
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.sp_assignment_vars)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon)#, self.sp_assignment_vars)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
 
@@ -116,14 +120,14 @@ class CPModelSolver:
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, x, items, weapon, spass):
+    def __init__(self, x, items, weapon):#, spass):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self._x = x
         self._items = items
         self.solution_count = 0
         self.results = []
         self._weapon = weapon
-        self.spa = spass
+        #self.spa = spass
 
     def on_solution_callback(self) -> None:
         self.solution_count += 1
@@ -138,7 +142,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         b = build.Build(self._weapon, *res_items)
         reqsp, bonsp = b.calc_sp()
         if sum(reqsp) < 500:
-            self.results.append((b, [self.value(s) for s in self.spa]))
+            self.results.append(b)#(b, [self.value(s) for s in self.spa]))
 
         sys.stdout.write(
             f"\r{spinner[(self.solution_count // 3) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds!")
