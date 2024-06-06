@@ -24,7 +24,7 @@ def main():
         objectivevalue = sum(cfg.score_function(it) for it in b.items)
         results[i] = (b, buildscore, objectivevalue, entry[1])
 
-    results = sorted(results, key=lambda x: x[2], reverse=True)
+    results = sorted(results, key=lambda x: x[1], reverse=True)
 
 
 
