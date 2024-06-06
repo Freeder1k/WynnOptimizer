@@ -18,7 +18,7 @@ def main():
 
     with open('array.txt', 'w') as f:
         for entry in results:
-            f.write(f"{entry.items}\n")
+            f.write(f"{entry[0].items} {entry[1]}\n")
 
 
     '''cfg = DmgConfig()

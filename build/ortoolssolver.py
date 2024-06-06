@@ -55,8 +55,8 @@ class CPModelSolver:
         self.model.add(sum(self._objective) > 7500)
 
         # Satisfy skill point constraints
-        sp_assignment_vars = SkillpointsTuple(*(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
-        self.model.add(sum(sp_assignment_vars) <= 200)
+        self.sp_assignment_vars = SkillpointsTuple(*(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        self.model.add(sum(self.sp_assignment_vars) <= 200)
 
         sp_bonuses = SkillpointsTuple([], [], [], [], [])
         for itm, x in zip(self._items, self.item_variables):
@@ -65,7 +65,7 @@ class CPModelSolver:
                     sp_bonuses.append(sp_bonus * x)
 
         for itm, x in zip(self._items, self.item_variables):
-            for sp_assign, sp_req, sp_bonuses, sp_bonus in zip(sp_assignment_vars,
+            for sp_assign, sp_req, sp_bonuses, sp_bonus in zip(self.sp_assignment_vars,
                                                                itm.requirements.skillpoints,
                                                                sp_bonuses,
                                                                itm.identifications.skillpoints):
@@ -104,7 +104,7 @@ class CPModelSolver:
         :return: The score of the best build and the items in that build.
         """
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.sp_assignment_vars)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
 
@@ -116,13 +116,14 @@ class CPModelSolver:
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, x, items, weapon):
+    def __init__(self, x, items, weapon, spass):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self._x = x
         self._items = items
         self.solution_count = 0
         self.results = []
         self._weapon = weapon
+        self.spa = spass
 
     def on_solution_callback(self) -> None:
         self.solution_count += 1
@@ -137,7 +138,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         b = build.Build(self._weapon, *res_items)
         reqsp, bonsp = b.calc_sp()
         if sum(reqsp) < 500:
-            self.results.append(b)
+            self.results.append((b, [self.value(s) for s in self.spa]))
 
         sys.stdout.write(
             f"\r{spinner[(self.solution_count // 3) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds!")
