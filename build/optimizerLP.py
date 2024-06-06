@@ -79,7 +79,7 @@ class LPBuildOptimizer(IntegerLinearProgramm):
         if not res.success:
             return 0, []
         res_score = -round(res.fun,4)
-        res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
+        res_items = [self._items[i] for i, x in enumerate(res.variables) if x >= 0.999] + self._preitems
         return res_score, res_items
 
     def find_best_validn(self, n: int):
@@ -101,7 +101,7 @@ class LPBuildOptimizer(IntegerLinearProgramm):
                 if not res.success:
                     break
                 res_score = -round(res.fun,6)
-                res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
+                res_items = [self._items[i] for i, x in enumerate(res.variables) if x >= 0.999] + self._preitems
 
                 i += 1
                 sys.stdout.write(f"\r{spinner[(i//3)%4]}  Solving {len(results)}/{i} valid builds! Current score: {res_score}")
@@ -144,7 +144,7 @@ class LPBuildOptimizer(IntegerLinearProgramm):
                 if not res.success:
                     break
                 res_score = -round(res.fun,4)
-                res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
+                res_items = [self._items[i] for i, x in enumerate(res.variables) if x >= 0.999] + self._preitems
                 results.append((res_score, res_items))
                 self.b_ub[-1] = res_score-0.001
             sys.stdout.write("\r")
@@ -175,9 +175,9 @@ class LPBuildOptimizer(IntegerLinearProgramm):
                 if not res.success:
                     break
                 res_score = -round(res.fun,4)
-                res_items = [self._items[i] for i, x in enumerate(res.x) if x >= 0.999] + self._preitems
+                res_items = [self._items[i] for i, x in enumerate(res.variables) if x >= 0.999] + self._preitems
                 results.append((res_score, res_items))
-                self.A_ub.append(res.x)
+                self.A_ub.append(res.variables)
                 self.b_ub.append(7)
             sys.stdout.write("\r")
             sys.stdout.flush()

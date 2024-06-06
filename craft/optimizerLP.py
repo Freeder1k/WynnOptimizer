@@ -48,7 +48,7 @@ class LPRecipeOptimizer(IntegerLinearProgramm):
         if not res.success:
             return 0, []
         res_score = -res.fun
-        res_ingrs = [self._ingredients[i % self._ingr_count] for i, x in enumerate(res.x) if x >= 0.999]
+        res_ingrs = [self._ingredients[i % self._ingr_count] for i, x in enumerate(res.variables) if x >= 0.999]
         return res_score, res_ingrs
 
     def add_max_constraint(self, value: T, ingr_lambda: Callable[[ingredient.Ingredient], T]):

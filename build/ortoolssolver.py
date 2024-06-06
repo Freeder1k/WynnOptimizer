@@ -26,14 +26,15 @@ class CPModelSolver:
         :param score_function: A function that returns the score of an individual item.
         :param weapon: The weapon used in the build.
         """
-        self._items = []
-        self._objective = []
         self._weapon = weapon
         self._preitems = []  # TODO: add these
         item_count = []
 
         self.model = cp_model.CpModel()
-        self.x = {}     # TODO this doesn't have to be a dictionary
+
+        self._items = []
+        self.variables = []
+        self._objective = []
 
         for item_type in types:
             t_items = [itm for itm in items if item_type in itm.type]
@@ -42,19 +43,21 @@ class CPModelSolver:
                 item_count.append(0)
                 continue
 
-            self._items.append(t_items)
+            self._items += t_items
             item_count.append(len(t_items))
 
             if item_type != 'ring':
                 for itm in t_items:
-                    self.x[item_type, itm.name] = self.model.new_bool_var(f"x[{item_type},{itm.name}]")
-                    self._objective.append(score_function(itm) * self.x[item_type, itm.name])
-                self.model.add_exactly_one(self.x[item_type, i.name] for i in t_items)
+                    x = self.model.new_bool_var(f"x[{item_type},{itm.name}]")
+                    self.variables.append(x)
+                    self._objective.append(score_function(itm) * x)
+                self.model.add_exactly_one(self.variables[-len(t_items):])
             else:  # build has 2 rings
                 for itm in t_items:
-                    self.x[item_type, itm.name] = self.model.new_int_var(0,2,f"x[{item_type},{itm.name}]")
-                    self._objective.append(score_function(itm) * self.x[item_type, itm.name])
-                self.model.add(sum([self.x[item_type, i.name] for i in t_items]) == 2)
+                    x = self.model.new_int_var(0,2,f"x[{item_type},{itm.name}]")
+                    self.variables.append(x)
+                    self._objective.append(score_function(itm) * x)
+                self.model.add(sum(self.variables[-len(t_items):]) == 2)
 
         print(item_count)
 
@@ -74,14 +77,12 @@ class CPModelSolver:
         res_score = 0
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             res_score = solver.objective_value
-            for t_items in self._items:
-                for itm in t_items:
-                    val = solver.value(self.x[itm.type, itm.name])
-                    if val == 1:
-                        res_items.append(itm)
-                    if val == 2:
-                        res_items.append(itm)
-                        res_items.append(itm)
+            for itm, x in zip(self._items, self.variables):
+                if solver.value(x) == 1:
+                    res_items.append(itm)
+                elif solver.value(x) == 2:
+                    res_items.append(itm)
+                    res_items.append(itm)
 
         return res_score, res_items
 
@@ -92,7 +93,7 @@ class CPModelSolver:
         :return: The score of the best build and the items in that build.
         """
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.x, self._items)
+        solution_printer = VarArraySolutionPrinter(self.variables, self._items)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
         # TODO find the best n solutions
@@ -102,14 +103,12 @@ class CPModelSolver:
         res_score = 0
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             res_score = solver.objective_value
-            for t_items in self._items:
-                for i in t_items:
-                    val = solver.value(self.x[i.type, i.name])
-                    if val == 1:
-                        res_items.append(i)
-                    if val == 2:
-                        res_items.append(i)
-                        res_items.append(i)
+            for itm, x in zip(self._items, self.variables):
+                if solver.value(x) == 1:
+                    res_items.append(itm)
+                elif solver.value(x) == 2:
+                    res_items.append(itm)
+                    res_items.append(itm)
 
         return res_score, res_items
 
@@ -117,9 +116,9 @@ class CPModelSolver:
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, x, items):
+    def __init__(self, variables, items):
         cp_model.CpSolverSolutionCallback.__init__(self)
-        self._x = x
+        self._variables = variables
         self._items = items
         self.__solution_count = 0
 
@@ -129,14 +128,12 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
         print("solution")
         res_items = []
-        for t_items in self._items:
-            for i in t_items:
-                val = self.value(self._x[i.type, i.name])
-                if val == 1:
-                    res_items.append(i)
-                if val == 2:
-                    res_items.append(i)
-                    res_items.append(i)
+        for itm, x in zip(self._items, self._variables):
+            if self.value(x) == 1:
+                res_items.append(itm)
+            if self.value(x) == 2:
+                res_items.append(itm)
+                res_items.append(itm)
         print(res_items)
 
     @property
