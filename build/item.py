@@ -5,10 +5,11 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 import numpy as np
+from attr import attr
 
 from core.wynnAPI import item
 from utils.decorators import ttl
-
+from utils.skillpoints import SkillpointsTuple
 
 class IdentificationType(StrEnum):
     NEUTRAL_DAMAGE = "damage"
@@ -180,6 +181,15 @@ class IdentificationList:
 
         return IdentificationList({k: v * scale for k, v in self.identifications.items()})
 
+    @property
+    def skillpoints(self):
+        str = self['rawStrength'].raw
+        dex = self['rawDexterity'].raw
+        int = self['rawIntelligence'].raw
+        def_ = self['rawDefence'].raw
+        agi = self['rawAgility'].raw
+        return SkillpointsTuple(str, dex, int, def_, agi)
+
 
 @dataclass
 class Requirements:
@@ -213,6 +223,10 @@ class Requirements:
             max(self.agility, other.agility),
             max(self.level, other.level)
         )
+
+    @property
+    def skillpoints(self):
+        return SkillpointsTuple(self.strength, self.dexterity, self.intelligence, self.defence, self.agility)
 
     @property
     def total_sp(self):
