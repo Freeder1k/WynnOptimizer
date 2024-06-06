@@ -41,14 +41,15 @@ class CPModelSolver:
                 # TODO append item reqs
                 continue
 
-            self._items += t_items
-            item_count.append(len(t_items))
+            positems = [i for i in t_items if score_function(i) > 0]
+            self._items += positems
+            item_count.append(len(positems))
 
             if item_type == 'ring':  # build has 2 rings
-                t_vars = [self.model.new_int_var(0, 2, f"x[{item_type},{itm.name}]") for itm in t_items]
+                t_vars = [self.model.new_int_var(0, 2, f"x[{item_type},{itm.name}]") for itm in positems]
                 self.model.add(sum(t_vars) == 2)
             else:
-                t_vars = [self.model.new_bool_var(f"x[{item_type},{itm.name}]") for itm in t_items]
+                t_vars = [self.model.new_bool_var(f"x[{item_type},{itm.name}]") for itm in positems]
                 self.model.add_exactly_one(t_vars)
 
             self.item_variables += t_vars
@@ -86,11 +87,11 @@ class CPModelSolver:
             if sp_req != 0:
                 self.model.add(sp_assign >= sp_req - sum(sp_bonus))
 
-        self._objective = [score_function(itm) * x for itm, x in zip(self._items, self.item_variables)]
+        self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
         #print(self._objective)
-        self.model.add(sum(self._objective) + 5 * free_sp > 5700)
-        # self.model.add(sum(self._objective) < 5800)
-        #self.model.maximize(sum(self._objective) + 10 * free_sp)
+        self.model.add(sum(self._objective) > 1600)
+        self.model.add(sum(self._objective) < 1650)
+        # # self.model.maximize(sum(self._objective))
 
         print(item_count)
 
@@ -157,10 +158,8 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 
         b = build.Build(self._weapon, *res_items)
         reqsp, bonsp = b.calc_sp()
-        if sum(reqsp) <= 200:
+        if sum(reqsp) <= 204:
             self.results.append((b, [self.value(s) for s in self.spa]))
-        else:
-            print(f"Invalid build: {b.items}")
 
         sys.stdout.write(f"\r{spinner[(self.solution_count // 3) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds!")
         sys.stdout.flush()

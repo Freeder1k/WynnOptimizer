@@ -7,11 +7,11 @@ spellmod = [0.3, 0, 0.15, 0.1, 0, 0]  # multihit https://wynnbuilder.github.io/b
 spellmodsum = sum(spellmod)
 weapon = build.item.get_weapon("Nirvana")
 base_dmg = dmgcalc.base_dmg(weapon, ["w", "w", "w"], [0.3, 0, 0.15, 0.1, 0, 0])
-
+base_score = sum(dmgcalc.true_dmg(base_dmg, weapon.identifications, spellmodsum))
 
 def score(item: build.item.Item, ) -> float:
     identifications = weapon.identifications + item.identifications
-    return int(sum(dmgcalc.true_dmg(base_dmg, identifications, spellmodsum)))
+    return sum(dmgcalc.true_dmg(base_dmg, identifications, spellmodsum)) - base_score
 
 
 items = list(build.item.get_all_items().values())
