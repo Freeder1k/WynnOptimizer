@@ -127,14 +127,12 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     def on_solution_callback(self) -> None:
         self.solution_count += 1
         res_items = []
-        for t_items in self._items:
-            for i in t_items:
-                val = self.value(self._x[i.type, i.name])
-                if val == 1:
-                    res_items.append(i)
-                if val == 2:
-                    res_items.append(i)
-                    res_items.append(i)
+        for itm, x in zip(self._items, self._x):
+            if self.Value(x) == 1:
+                res_items.append(itm)
+            elif self.Value(x) == 2:
+                res_items.append(itm)
+                res_items.append(itm)
 
         b = build.Build(self._weapon, *res_items)
         reqsp, bonsp = b.calc_sp()
