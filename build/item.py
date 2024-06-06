@@ -9,7 +9,8 @@ from attr import attr
 
 from core.wynnAPI import item
 from utils.decorators import ttl
-from utils.skillpoints import SkillpointsTuple
+from collections import namedtuple
+SkillpointsTuple = namedtuple('SkillpointsTuple', ['str', 'dex', 'int', 'defe', 'agi'])
 
 class IdentificationType(StrEnum):
     NEUTRAL_DAMAGE = "damage"

@@ -61,11 +61,11 @@ class CPModelSolver:
 
         self._sp_bonuses = [[]*5]
         for itm, x in zip(self._items, self.item_variables):
-            for sp_bonus, bonus_sp in zip(self._sp_bonuses, [itm.identifications.rawStrength, itm.identifications.rawDexterity,
-                                                              itm.identifications.rawIntelligence, itm.identifications.rawDefence,
-                                                              itm.identifications.rawAgility]):
-                if bonus_sp.raw != 0:
-                    sp_bonus.append(x * bonus_sp.raw)
+            for sp_bonus, bonus_sp in zip(self._sp_bonuses, [itm.identifications.skillpoints.str, itm.identifications.skillpoints.dex,
+                                                              itm.identifications.skillpoints.int, itm.identifications.skillpoints.defe,
+                                                              itm.identifications.skillpoints.agi]):
+                if bonus_sp != 0:
+                    sp_bonus.append(x * bonus_sp)
         for itm, x in zip(self._items, self.item_variables):
             for sp_var, req_sp, sp_bonus in zip(sp_vars, [itm.requirements.strength, itm.requirements.dexterity,
                                             itm.requirements.intelligence, itm.requirements.defence,
