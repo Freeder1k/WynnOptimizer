@@ -69,7 +69,7 @@ class CPModelSolver:
                     if itm_sp_bonus != 0:
                         sp_req.append((itm_sp_bonus + itm_sp_req) * x)
 
-            for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, sp_reqs, sp_bonuses):
+            for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, reqs, sp_bonuses):
                 self.model.add(sp_assign >= sum(sp_req) - sum(sp_bonus))
 
             sp_reqs.append(reqs)
