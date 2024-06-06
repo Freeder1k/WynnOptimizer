@@ -61,13 +61,13 @@ class CPModelSolver:
 
             self.item_variables += t_vars
 
-            reqs = SkillpointsTuple([], [], [], [], [])
+            sp_reqs = SkillpointsTuple([], [], [], [], [])
             for itm, x in zip(t_items, t_vars):
-                for sp_req, itm_sp_bonus, itm_sp_req in zip(reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
+                for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
                     if itm_sp_bonus != 0:
                         sp_req.append((itm_sp_bonus + itm_sp_req) * x)
 
-            for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, reqs, sp_bonuses):
+            for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, sp_reqs, sp_bonuses):
                 self.model.add(sp_assign >= sum(sp_req) - sum(sp_bonus))
 
         self._objective = [score_function(itm) * x for itm, x in zip(self._items, self.item_variables)]
