@@ -22,7 +22,6 @@ def main():
         builditem = sp.add_sp(b.build(), *b.calc_sp())
         buildscore = cfg.score_function(builditem)
         objectivevalue = sum(cfg.score_function(it) for it in b.items)
-        print(entry[1])
         results[i] = (b, buildscore, objectivevalue, entry[1])
 
     results = sorted(results, key=lambda x: x[1], reverse=True)
