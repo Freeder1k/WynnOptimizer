@@ -3,6 +3,7 @@ import build.item
 import build.build
 from build.config.dmg import DmgConfig
 import build.ortoolssolver
+import utils.skillpoints as sp
 import faulthandler
 faulthandler.enable()
 
@@ -16,9 +17,20 @@ def main():
     solver = build.ortoolssolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
     results = solver.find_allbest()
 
+    for i, entry in enumerate(results):
+        b = entry[0]
+        builditem = sp.add_sp(b.build(), *b.calc_sp())
+        buildscore = cfg.score_function(builditem)
+        objectivevalue = sum(cfg.score_function(it) for it in b.items)
+        results[i] = (b, buildscore, objectivevalue)
+
+    results = sorted(results, key=lambda x: x[2], reverse=True)
+
+
+
     with open('array.txt', 'w') as f:
         for entry in results:
-            f.write(f"{entry[0].items} {entry[1]}\n")
+            f.write(f"{entry[0].items} {entry[1]} {entry[2]}\n")
             #f.write(f"{entry.items}\n")
 
 
