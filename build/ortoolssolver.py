@@ -56,9 +56,9 @@ class CPModelSolver:
             t_var_dict[item_type] = t_vars
 
         self.sp_assignment_vars = SkillpointsTuple(
-            *(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+            *(self.model.new_int_var(0, 104, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
 
-        free_sp = 200 - sum(self.sp_assignment_vars)
+        free_sp = 204 - sum(self.sp_assignment_vars)
         self.model.add(free_sp >= 0)
 
         sp_bonuses = SkillpointsTuple([], [], [], [], [])
@@ -72,10 +72,12 @@ class CPModelSolver:
             if len(t_items) <= 1:
                 continue
 
+            positems = [i for i in t_items if score_function(i) > score_function(item.NO_ITEM)]
+
             t_vars = t_var_dict[item_type]
 
             sp_reqs = SkillpointsTuple([], [], [], [], [])
-            for itm, x in zip(t_items, t_vars):
+            for itm, x in zip(positems, t_vars):
                 for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
                     if itm_sp_req != 0:
                         sp_req.append((itm_sp_bonus + itm_sp_req + 1000) * x)
@@ -89,9 +91,7 @@ class CPModelSolver:
 
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
         #print(self._objective)
-        self.model.add(sum(self._objective) > 1600)
-        self.model.add(sum(self._objective) < 1650)
-        # # self.model.maximize(sum(self._objective))
+        self.model.maximize(sum(self._objective))
 
         print(item_count)
 
