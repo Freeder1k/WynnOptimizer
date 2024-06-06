@@ -101,6 +101,7 @@ class CPModelSolver:
         are satisfied.
         :return: The score of the best build and the items in that build.
         """
+        self.model.maximize(sum(self._objective))
         solver = cp_model.CpSolver()
         status = solver.solve(self.model)
 
