@@ -16,15 +16,15 @@ T = TypeVar('T')
 types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'bracelet', 'necklace']
 
 
-class CPModelSolver():
+class CPModelSolver:
     def __init__(self, items: list[item.Item],
                  score_function: Callable[[item.Item], float],
                  weapon: item.Item):
         """
         Create a linear programming optimizer for a Build.
-        :param items: A list of ingredients to use in the Build.
-        :param score_function: A function that returns the score of an individual ingredient.
-        :weapon: The weapon used in the build.
+        :param items: A list of items to use in the Build.
+        :param score_function: A function that returns the score of an individual item.
+        :param weapon: The weapon used in the build.
         """
         self._items = []
         self._objective = []
@@ -33,32 +33,29 @@ class CPModelSolver():
         item_count = []
 
         self.model = cp_model.CpModel()
-        self.x = {}
+        self.x = {}     # TODO this doesn't have to be a dictionary
 
-        for t in types:
-            t_items = [it for it in items if t in it.type]
-            if len(t_items) == 0:
+        for item_type in types:
+            t_items = [itm for itm in items if item_type in itm.type]
+            if len(t_items) <= 1:
+                self._preitems = self._preitems + t_items
+                item_count.append(0)
                 continue
-            if t != 'ring':
-                if len(t_items) == 1:
-                    self._preitems = self._preitems + t_items
-                else:
-                    self._items.append(t_items)
-                    for i in t_items:
-                        self.x[t, i.name] = self.model.new_bool_var(f"x[{t},{i.name}]")
-                        self._objective.append(score_function(i) * self.x[t, i.name])
-                    self.model.add_exactly_one(self.x[t, i.name] for i in t_items)
-                    item_count.append(len(t_items))
+
+            self._items.append(t_items)
+            item_count.append(len(t_items))
+
+            if item_type != 'ring':
+                for itm in t_items:
+                    self.x[item_type, itm.name] = self.model.new_bool_var(f"x[{item_type},{itm.name}]")
+                    self._objective.append(score_function(itm) * self.x[item_type, itm.name])
+                self.model.add_exactly_one(self.x[item_type, i.name] for i in t_items)
             else:  # build has 2 rings
-                if len(t_items) <= 2:
-                    self._preitems = self._preitems + t_items
-                else:
-                    self._items.append(t_items)
-                    for i in t_items:
-                        self.x[t, i.name] = self.model.new_int_var(0,2,f"x[{t},{i.name}]")
-                        self._objective.append(score_function(i) * self.x[t, i.name])
-                    self.model.add(sum([self.x[t, i.name] for i in t_items]) == 2)
-                    item_count.append(len(t_items))
+                for itm in t_items:
+                    self.x[item_type, itm.name] = self.model.new_int_var(0,2,f"x[{item_type},{itm.name}]")
+                    self._objective.append(score_function(itm) * self.x[item_type, itm.name])
+                self.model.add(sum([self.x[item_type, i.name] for i in t_items]) == 2)
+
         print(item_count)
 
         self.model.maximize(sum(self._objective))
@@ -78,13 +75,13 @@ class CPModelSolver():
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             res_score = solver.objective_value
             for t_items in self._items:
-                for i in t_items:
-                    val = solver.value(self.x[i.type, i.name])
+                for itm in t_items:
+                    val = solver.value(self.x[itm.type, itm.name])
                     if val == 1:
-                        res_items.append(i)
+                        res_items.append(itm)
                     if val == 2:
-                        res_items.append(i)
-                        res_items.append(i)
+                        res_items.append(itm)
+                        res_items.append(itm)
 
         return res_score, res_items
 
@@ -98,7 +95,7 @@ class CPModelSolver():
         solution_printer = VarArraySolutionPrinter(self.x, self._items)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
-
+        # TODO find the best n solutions
 
         # Print solution.
         res_items = []
