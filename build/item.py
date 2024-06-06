@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 from collections import namedtuple
 from dataclasses import dataclass, field
-from enum import StrEnum
+from enum import Enum
 
 import numpy as np
 
@@ -11,7 +11,7 @@ from core.wynnAPI import item
 from utils.decorators import ttl
 
 
-class IdentificationType(StrEnum):
+class IdentificationType(Enum):
     NEUTRAL_DAMAGE = "damage"
     MAIN_ATTACK_DAMAGE = "mainAttackDamage"
     LOOT_BONUS = "lootBonus"
