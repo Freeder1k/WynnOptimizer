@@ -55,22 +55,22 @@ class CPModelSolver:
         self.model.add(sum(self._objective) > 7500)
 
         # Satisfy skill point constraints
-        # sp_assignment_vars = SkillpointsTuple(*(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
-        # self.model.add(sum(sp_assignment_vars) <= 200)
-        #
-        # sp_bonuses = SkillpointsTuple([], [], [], [], [])
-        # for itm, x in zip(self._items, self.item_variables):
-        #     for sp_bonuses, sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
-        #         if sp_bonus != 0:
-        #             sp_bonuses.append(sp_bonus * x)
-        #
-        # for itm, x in zip(self._items, self.item_variables):
-        #     for sp_assign, sp_req, sp_bonuses, sp_bonus in zip(sp_assignment_vars,
-        #                                                        itm.requirements.skillpoints,
-        #                                                        sp_bonuses,
-        #                                                        itm.identifications.skillpoints):
-        #         if sp_req != 0:
-        #             self.model.add(sp_assign >= sp_req - sum(sp_bonuses) + sp_bonus * x).only_enforce_if(x != 0)
+        sp_assignment_vars = SkillpointsTuple(*(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        self.model.add(sum(sp_assignment_vars) <= 200)
+
+        sp_bonuses = SkillpointsTuple([], [], [], [], [])
+        for itm, x in zip(self._items, self.item_variables):
+            for sp_bonuses, sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
+                if sp_bonus != 0:
+                    sp_bonuses.append(sp_bonus * x)
+
+        for itm, x in zip(self._items, self.item_variables):
+            for sp_assign, sp_req, sp_bonuses, sp_bonus in zip(sp_assignment_vars,
+                                                               itm.requirements.skillpoints,
+                                                               sp_bonuses,
+                                                               itm.identifications.skillpoints):
+                if sp_req != 0:
+                    self.model.add(sp_assign >= sp_req - sum(sp_bonuses) + sp_bonus * x).only_enforce_if(x != 0)
 
         print(item_count)
 
@@ -136,7 +136,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 
         b = build.Build(self._weapon, *res_items)
         reqsp, bonsp = b.calc_sp()
-        if sum(reqsp) < 400:
+        if sum(reqsp) < 500:
             self.results.append(b)
 
         sys.stdout.write(
