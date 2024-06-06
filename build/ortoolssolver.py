@@ -34,7 +34,6 @@ class CPModelSolver:
 
         self._items = []
         self.variables = []
-        self._objective = []
 
         for item_type in types:
             t_items = [itm for itm in items if item_type in itm.type]
@@ -46,22 +45,19 @@ class CPModelSolver:
             self._items += t_items
             item_count.append(len(t_items))
 
-            if item_type != 'ring':
-                for itm in t_items:
-                    x = self.model.new_bool_var(f"x[{item_type},{itm.name}]")
-                    self.variables.append(x)
-                    self._objective.append(score_function(itm) * x)
-                self.model.add_exactly_one(self.variables[-len(t_items):])
-            else:  # build has 2 rings
-                for itm in t_items:
-                    x = self.model.new_int_var(0,2,f"x[{item_type},{itm.name}]")
-                    self.variables.append(x)
-                    self._objective.append(score_function(itm) * x)
-                self.model.add(sum(self.variables[-len(t_items):]) == 2)
+            if item_type == 'ring':  # build has 2 rings
+                t_vars = [self.model.new_int_var(0,2,f"x[{item_type},{itm.name}]") for itm in t_items]
+                self.model.add(sum(t_vars) == 2)
+            else:
+                t_vars = [self.model.new_bool_var(f"x[{item_type},{itm.name}]") for itm in t_items]
+                self.model.add_exactly_one(t_vars)
+
+            self.variables += t_vars
+
+        self._objective = [score_function(itm) * x for itm, x in zip(self._items, self.variables)]
+        self.model.maximize(sum(self._objective))
 
         print(item_count)
-
-        self.model.maximize(sum(self._objective))
 
     def find_best(self):
         """
