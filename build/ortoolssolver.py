@@ -31,15 +31,11 @@ class CPModelSolver:
 
         self._items: list[item.Item] = []
         self.item_variables = []
+        t_var_dict = {}
 
         self.sp_assignment_vars = SkillpointsTuple(*(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
         self.model.add(sum(self.sp_assignment_vars) <= 200)
-
-        sp_bonuses = SkillpointsTuple([], [], [], [], [])
-        for itm, x in zip(self._items, self.item_variables):
-            for sp_bonus, itm_sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
-                if itm_sp_bonus != 0:
-                    sp_bonus.append(itm_sp_bonus * x)
+        self.model.minimize(sum(self.sp_assignment_vars))
 
         for item_type in types:
             t_items = [itm for itm in items if item_type in itm.type]
@@ -60,18 +56,38 @@ class CPModelSolver:
                 self.model.add_exactly_one(t_vars)
 
             self.item_variables += t_vars
+            t_var_dict[item_type] = t_vars
+
+        sp_bonuses = SkillpointsTuple([], [], [], [], [])
+        for itm, x in zip(self._items, self.item_variables):
+            for sp_bonus, itm_sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
+                if itm_sp_bonus != 0:
+                    sp_bonus.append(itm_sp_bonus * x)
+
+        for item_type in types:
+            t_items = [itm for itm in items if item_type in itm.type]
+            if len(t_items) <= 1:
+                continue
+
+            t_vars = t_var_dict[item_type]
 
             sp_reqs = SkillpointsTuple([], [], [], [], [])
             for itm, x in zip(t_items, t_vars):
                 for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
-                    if itm_sp_bonus != 0:
+                    if itm_sp_req != 0:
                         sp_req.append((itm_sp_bonus + itm_sp_req) * x)
+                    else:
+                        sp_req.append(-1000 * x)
 
             for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, sp_reqs, sp_bonuses):
                 self.model.add(sp_assign >= sum(sp_req) - sum(sp_bonus))
 
+        for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses):
+            self.model.add(sp_assign >= sp_req - sum(sp_bonus))
+
         self._objective = [score_function(itm) * x for itm, x in zip(self._items, self.item_variables)]
-        self.model.add(sum(self._objective) > 7500)
+        self.model.add(sum(self._objective) > 7000)
+        # self.model.maximize(sum(self._objective))
 
         print(item_count)
 
