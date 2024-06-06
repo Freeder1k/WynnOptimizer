@@ -1,9 +1,11 @@
 from build.item import Crafted
 import math
+from collections import namedtuple
 
 skillPoints = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefence", "rawAgility"]
 sp = ["str","dex","int","def","agi"]
 
+SkillpointsTuple = namedtuple('SkillpointsTuple', ['str', 'dex', 'int', 'defe', 'agi'])
 
 def skillpoints(build):
 

@@ -1,7 +1,7 @@
 """Solves a simple assignment problem."""
 import sys
 from typing import Callable, TypeVar
-
+from utils.skillpoints import SkillpointsTuple
 import numpy as np
 from ortools.sat.python import cp_model
 
@@ -28,7 +28,7 @@ class CPModelSolver:
 
         self.model = cp_model.CpModel()
 
-        self._items = []
+        self._items: list[item.Item] = []
         self.item_variables = []
 
         for item_type in types:
@@ -54,22 +54,22 @@ class CPModelSolver:
         self.model.maximize(sum(self._objective))
 
         # Satisfy skill point constraints
-        sp_vars = [self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']]
-        self.model.add(sum(sp_vars) <= 200)
+        sp_assignment_vars = SkillpointsTuple(*(self.model.new_int_var(0, 100, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        self.model.add(sum(sp_assignment_vars) <= 200)
 
-        self._sp_bonuses = [[]*5]
+        sp_bonuses = SkillpointsTuple([], [], [], [], [])
         for itm, x in zip(self._items, self.item_variables):
-            for sp_bonus, bonus_sp in zip(self._sp_bonuses, [itm.identifications.rawStrength, itm.identifications.rawDexterity,
-                                                              itm.identifications.rawIntelligence, itm.identifications.rawDefence,
-                                                              itm.identifications.rawAgility]):
-                if bonus_sp.raw != 0:
-                    sp_bonus.append(x * bonus_sp.raw)
+            for sp_bonuses, sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
+                if sp_bonus != 0:
+                    sp_bonuses.append(sp_bonus * x)
+
         for itm, x in zip(self._items, self.item_variables):
-            for sp_var, req_sp, sp_bonus in zip(sp_vars, [itm.requirements.strength, itm.requirements.dexterity,
-                                            itm.requirements.intelligence, itm.requirements.defence,
-                                            itm.requirements.agility]), self._sp_bonuses:
-                if req_sp != 0:
-                    self.model.add(sp_var >= req_sp - sum(sp_bonus)).only_enforce_if(x)
+            for sp_assign, sp_req, sp_bonuses, sp_bonus in zip(sp_assignment_vars,
+                                                               itm.requirements.skillpoints,
+                                                               sp_bonuses,
+                                                               itm.identifications.skillpoints):
+                if sp_req != 0:
+                    self.model.add(sp_assign >= sp_req - sum(sp_bonuses) + sp_bonus * x).only_enforce_if(x != 0)
 
         print(item_count)
 
