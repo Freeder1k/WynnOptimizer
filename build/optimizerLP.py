@@ -3,7 +3,7 @@ import sys
 
 import numpy as np
 
-from core.optimizer.linearProgramming import BinaryLinearProgramm
+from core.optimizer.linearProgramming import IntegerLinearProgramm
 from build import item
 from utils.decorators import single_use
 from build import build
@@ -13,7 +13,7 @@ T = TypeVar('T')
 types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'bracelet', 'necklace']
 
 
-class LPBuildOptimizer(BinaryLinearProgramm):
+class LPBuildOptimizer(IntegerLinearProgramm):
     def __init__(self, items: list[item.Item],
                  score_function: Callable[[item.Item], float],
                  weapon: item.Item):

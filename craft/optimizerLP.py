@@ -2,7 +2,7 @@ from typing import Callable, TypeVar
 
 import numpy as np
 
-from core.optimizer.linearProgramming import BinaryLinearProgramm
+from core.optimizer.linearProgramming import IntegerLinearProgramm
 from craft import ingredient
 from craft.ingredient import IdentificationType
 from utils.decorators import single_use
@@ -10,7 +10,7 @@ from utils.decorators import single_use
 T = TypeVar('T')
 
 
-class LPRecipeOptimizer(BinaryLinearProgramm):
+class LPRecipeOptimizer(IntegerLinearProgramm):
     def __init__(self, ingredients: list[ingredient.Ingredient],
                  score_function: Callable[[ingredient.Ingredient], float],
                  modifiers: tuple[int] = (100, 100, 100, 100, 100, 100)):

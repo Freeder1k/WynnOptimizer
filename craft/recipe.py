@@ -62,9 +62,10 @@ class Recipe:
 
         return m.flatten()
 
-    def build(self, t) -> Crafted:
+    def build(self, item_type="None") -> Crafted:
         """
         Build the item from the recipe.
+        :param item_type: The type of the item.
         :return: A new Ingredient object representing the crafted item.
         """
         if self._item is not None:
@@ -78,7 +79,7 @@ class Recipe:
         for i in range(6):
             result = result + (self.ingredients[i] * modifier_vector[i])
 
-        self._item = Crafted(name, t, result.identifications, result.requirements, result.charges, result.duration, result.durability)
+        self._item = Crafted(name, item_type, result.identifications, result.requirements, result.charges, result.duration, result.durability)
 
         return self._item
 

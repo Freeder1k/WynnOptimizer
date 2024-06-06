@@ -5,7 +5,7 @@ import sys
 
 import numpy as np
 
-from core.optimizer.linearProgramming import BinaryLinearProgramm
+from core.optimizer.linearProgramming import IntegerLinearProgramm
 from build import item
 from build.item import IdentificationType, NO_ITEM
 from utils.decorators import single_use
