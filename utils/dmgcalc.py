@@ -30,11 +30,11 @@ def base_dmg(weapon, powders, spellmod):
 
 
 def true_dmg(base, ids, spellmodsum, crit=True):
-    for d in ["waterDamage", "fireDamage", "airDamage"]:
-        ids[d] = ids[d] + 15
+    #print(ids)
+    active = [False, False, False, True, True, True]
     pct = [0,0,0,0,0,0]
     for i in range(6):
-        pct[i] = ids[damageTypes[i]].max + ids["spellDamage"].max
+        pct[i] = ids[damageTypes[i]].max + ids["spellDamage"].max + int(active[i]) * 15
         pct[i] += 100*spToPct(ids[skillPoints[i]].max)
         pct[i] = pct[i]*0.01
 
