@@ -49,10 +49,6 @@ class CPModelSolver:
             self.item_variables += t_vars
             t_var_dict[item_type] = t_vars
 
-            t_items = [itm for itm in items if item_type in itm.type]
-            if len(t_items) <= 1:
-                continue
-
             # Skillpoint requirements
             t_sp_reqs = SkillpointsTuple([], [], [], [], [])
             for itm, x in zip(t_items, t_vars):
