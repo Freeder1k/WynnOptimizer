@@ -118,8 +118,32 @@ class CPModelSolver:
         self.model.add(sum(self._objective) > 5800) # 5925
         # #self.model.add(sum(self._objective) < 1650)
         # #self.model.maximize(free_sp)
+        hive_master = ["Abyss-Imbued Leggings","Boreal-Patterned Crown","Anima-Infused Cuirass","Chaos-Woven Greaves","Elysium-Engraved Aegis","Eden-Blessed Guards","Gaea-Hewn Boots","Hephaestus-Forged Sabatons","Obsidian-Framed Helmet","Twilight-Gilded Cloak","Contrast","Prowess","Intensity"]
+        self.mutual_exclude(hive_master)
 
         print(item_count)
+
+    def add_upper_bound(self, value: T, item_lambda: Callable[[item.Item], T]):
+        if value is not None:
+            a = []
+            for itm, x in zip(self._items, self.item_variables):
+                a.append(item_lambda(itm)*x)
+            self.model.add(value >= sum(a))
+
+    def add_lower_bound(self, value: T, item_lambda: Callable[[item.Item], T]):
+        if value is not None:
+            a = []
+            for itm, x in zip(self._items, self.item_variables):
+                a.append(item_lambda(itm)*x)
+            self.model.add(value <= sum(a))
+
+    def mutual_exclude(self, set_items):
+        if len(set_items) > 1:
+            a = []
+            for itm, x in zip(self._items, self.item_variables):
+                if itm.name in set_items:
+                    a.append(x)
+            self.model.add(sum(a) <= 1)
 
     def find_best(self):
         """

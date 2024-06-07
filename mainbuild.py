@@ -31,8 +31,9 @@ def main():
         items = []
         for n in entry:
             items.append(build.item.get_item(n))
-
         b = build.build.Build(cfg.weapon, *items)
+
+        # b = entry[0]
         builditem = sp.add_sp(b.build(), *b.calc_sp())
         buildscore = cfg.score_function(builditem)
         objectivevalue = sum(cfg.score_function(it) for it in b.items)
