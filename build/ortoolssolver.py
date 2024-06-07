@@ -4,12 +4,12 @@ from typing import Callable, TypeVar
 from build.item import SkillpointsTuple
 import numpy as np
 from ortools.sat.python import cp_model
-
+import copy
 from build import item, build
 
 np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
-types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'bracelet', 'necklace']
+types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'ring_', 'bracelet', 'necklace']
 spinner = ['|', '/', '-', '\\']
 
 
@@ -34,7 +34,7 @@ class CPModelSolver:
         t_var_dict = {}
 
         for item_type in types:
-            t_items = [itm for itm in items if item_type in itm.type]
+            t_items = [itm for itm in items if item_type == itm.type]
             if len(t_items) <= 1:
                 self._preitems = self._preitems + t_items
                 item_count.append(0)
@@ -45,44 +45,47 @@ class CPModelSolver:
             self._items += positems
             item_count.append(len(positems))
 
-            if item_type == 'ring':  # build has 2 rings
-                t_vars = [self.model.new_int_var(0, 2, f"x[{item_type},{itm.name}]") for itm in positems]
-                self.model.add(sum(t_vars) == 2)
-            else:
-                t_vars = [self.model.new_bool_var(f"x[{item_type},{itm.name}]") for itm in positems]
-                self.model.add_exactly_one(t_vars)
-
+            t_vars = [self.model.new_bool_var(f"x[{item_type},{itm.name}]") for itm in positems]
+            self.model.add_exactly_one(t_vars)
             self.item_variables += t_vars
             t_var_dict[item_type] = t_vars
+
+            if item_type == 'ring':
+                rings2 = copy.deepcopy(positems)  # Sure love python referencing bs...
+                for itm in rings2:
+                    itm.type = "ring_"
+                self._items.extend(rings2)
+                item_count.append(len(rings2))
+
+                t_vars2 = [self.model.new_bool_var(f"x[{item_type}_,{itm.name}]") for itm in rings2]
+                self.model.add_exactly_one(t_vars2)
+                self.item_variables += t_vars2
+                t_var_dict[f"{item_type}_"] = t_vars2
+
+                # Prevent same build with swapped rings
+                r1_ind = [i*x for i, x in enumerate(t_vars)]
+                r2_ind = [i*x for i, x in enumerate(t_vars2)]
+                self.model.add(sum(r1_ind) <= sum(r2_ind))
 
         sp_bonuses = SkillpointsTuple([], [], [], [], [])
         for itm, x in zip(self._items, self.item_variables):
             for sp_bonus, itm_sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
                 if itm_sp_bonus != 0:
                     sp_bonus.append(itm_sp_bonus * x)
-        ## Anselm
+        ## Afterfive
         sp_maxs = SkillpointsTuple(70, 70, 150, 10, 10)
 
         for item_type in types:
-            t_items = [itm for itm in items if item_type in itm.type]
-            if len(t_items) <= 1:
-                continue
-
-            positems = [i for i in t_items if score_function(i) > score_function(item.NO_ITEM)]
-
+            t_items = [itm for itm in self._items if item_type == itm.type]
             t_vars = t_var_dict[item_type]
 
             sp_reqs = SkillpointsTuple([], [], [], [], [])
-            for itm, x in zip(positems, t_vars):
+            for itm, x in zip(t_items, t_vars):
                 for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
                     if itm_sp_req != 0:
                         sp_req.append((itm_sp_bonus + itm_sp_req) * x)
-            if item_type != 'ring':
-                for sp_req, sp_bonus, sp_max in zip(sp_reqs, sp_bonuses, sp_maxs):
-                    self.model.add(sp_max >= sum(sp_req) - sum(sp_bonus))
-            else:
-                for sp_req, sp_bonus, sp_max in zip(sp_reqs, sp_bonuses, sp_maxs):
-                    self.model.add(2*sp_max >= sum(sp_req) - sum(sp_bonus))
+            for sp_req, sp_bonus, sp_max in zip(sp_reqs, sp_bonuses, sp_maxs):
+                self.model.add(sp_max >= sum(sp_req) - sum(sp_bonus))
 
         ## Frederik
         # self.sp_assignment_vars = SkillpointsTuple(
