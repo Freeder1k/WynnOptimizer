@@ -195,13 +195,10 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         for itm, x in zip(self._items, self._x):
             if self.Value(x) == 1:
                 res_items.append(itm)
-            elif self.Value(x) == 2:
-                res_items.append(itm)
-                res_items.append(itm)
 
         b = build.Build(self._weapon, *res_items)
         reqsp, bonsp = b.calc_sp()
-        if sum(reqsp) <= 205:
+        if sum(reqsp) < 205:
             #self.results.append((b, reqsp))
             self.results.append(0)
             with open('tempoutput.txt', 'a') as f:

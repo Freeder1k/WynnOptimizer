@@ -6,7 +6,7 @@ import build.build
 import utils.skillpoints as sp
 import ast
 
-def _runCPmodelSolver(cfg):
+def _runCPModelSolver(cfg):
     with open('tempoutput.txt', 'w') as f:
         f.write("")
     solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
@@ -22,7 +22,7 @@ def optimize(cfg):
 
     print(f"Finding optimal builds...")
 
-    _runCPmodelSolver(cfg)
+    #_runCPModelSolver(cfg)
 
     results = []
     with open('tempoutput.txt', 'r') as f:
@@ -50,5 +50,5 @@ def optimize(cfg):
         print("No viable builds found.")
     else:
         print("Best build:")
-        print(results[0][0], results[0][1])
+        print(results[0])
     return results
