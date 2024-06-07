@@ -77,10 +77,7 @@ class CPModelSolver:
                 for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
                     if itm_sp_req != 0:
                         sp_req.append((itm_sp_bonus + itm_sp_req) * x)
-                        # sp_req.append(itm_sp_req * x)
             if item_type != 'ring':
-                # for sp_req, sp_max in zip(sp_reqs, sp_maxs):
-                #     self.model.add(sp_max >= sum(sp_bonus) - sum(sp_req))
                 for sp_req, sp_bonus, sp_max in zip(sp_reqs, sp_bonuses, sp_maxs):
                     self.model.add(sp_max >= sum(sp_req) - sum(sp_bonus))
             else:
@@ -118,7 +115,7 @@ class CPModelSolver:
 
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
         # #print(self._objective)
-        self.model.add(sum(self._objective) > 5500) # 5925
+        self.model.add(sum(self._objective) > 5800) # 5925
         # #self.model.add(sum(self._objective) < 1650)
         # #self.model.maximize(free_sp)
 
@@ -190,7 +187,10 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         b = build.Build(self._weapon, *res_items)
         reqsp, bonsp = b.calc_sp()
         if sum(reqsp) <= 205:
-            self.results.append((b, reqsp))
+            #self.results.append((b, reqsp))
+            self.results.append(0)
+            with open('tempoutput.txt', 'a') as f:
+                f.write(f"{b.items}\n")
 
         sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds! {reqsp}")
         sys.stdout.flush()
