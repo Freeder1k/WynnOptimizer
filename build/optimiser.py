@@ -22,7 +22,7 @@ def optimize(cfg):
 
     print(f"Finding optimal builds...")
 
-    #_runCPModelSolver(cfg)
+    _runCPModelSolver(cfg)
 
     results = []
     with open('tempoutput.txt', 'r') as f:

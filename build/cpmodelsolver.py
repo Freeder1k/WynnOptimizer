@@ -23,7 +23,6 @@ class CPModelSolver:
         :param weapon: The weapon used in the build.
         """
         self._weapon = weapon
-        self._preitems = []  # TODO: add these
         item_count = []
 
         self.model = cp_model.CpModel()
@@ -32,82 +31,58 @@ class CPModelSolver:
         self.item_variables = []
         t_var_dict = {}
 
+        # Manual skillpoint assignment variables
+        self.sp_assignment_vars = SkillpointsTuple(
+            *(self.model.new_int_var(0, 104, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        self.model.add(sum(self.sp_assignment_vars) <= 204)
+
+        sp_reqs = SkillpointsTuple([], [], [], [], [])
+
         for item_type in types:
             t_items = [itm for itm in items if item_type == itm.type]
-            if len(t_items) <= 1:
-                self._preitems = self._preitems + t_items
-                item_count.append(0)
-                # TODO append item reqs
-                continue
+            self._items += t_items
+            item_count.append(len(t_items))
 
-            positems = [i for i in t_items if score_function(i) > score_function(item.NO_ITEM)]
-            self._items += positems
-            item_count.append(len(positems))
-
-            t_vars = [self.model.new_bool_var(f"x[{item_type},{itm.name}]") for itm in positems]
+            # Add exactly one item of each type
+            t_vars = [self.model.new_bool_var(f"x[{item_type},{itm.name}]") for itm in t_items]
             self.model.add_exactly_one(t_vars)
             self.item_variables += t_vars
             t_var_dict[item_type] = t_vars
+
+            t_items = [itm for itm in items if item_type in itm.type]
+            if len(t_items) <= 1:
+                continue
+
+            # Skillpoint requirements
+            t_sp_reqs = SkillpointsTuple([], [], [], [], [])
+            for itm, x in zip(t_items, t_vars):
+                for t_sp_req, itm_sp_bonus, itm_sp_req in zip(t_sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
+                    if itm_sp_req != 0:
+                        t_sp_req.append((itm_sp_bonus + itm_sp_req + 1000) * x)
+
+            for sp_assign, t_sp_req, sp_req in zip(self.sp_assignment_vars, t_sp_reqs, sp_reqs):
+                sp_req.append(sum(t_sp_req) - 1000)
 
         # Prevent same build with swapped rings
         r1_ind = [i*x for i, x in enumerate(t_var_dict['ring'])]
         r2_ind = [i*x for i, x in enumerate(t_var_dict['ring_'])]
         self.model.add(sum(r1_ind) <= sum(r2_ind))
 
+        # Skillpoint bonuses
         sp_bonuses = SkillpointsTuple([], [], [], [], [])
         for itm, x in zip(self._items, self.item_variables):
             for sp_bonus, itm_sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
                 if itm_sp_bonus != 0:
                     sp_bonus.append(itm_sp_bonus * x)
-        # ## Afterfive
-        # sp_maxs = SkillpointsTuple(70, 70, 150, 10, 10)
-        #
-        # for item_type in types:
-        #     t_items = [itm for itm in self._items if item_type == itm.type]
-        #     t_vars = t_var_dict[item_type]
-        #
-        #     sp_reqs = SkillpointsTuple([], [], [], [], [])
-        #     for itm, x in zip(t_items, t_vars):
-        #         for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
-        #             if itm_sp_req != 0:
-        #                 sp_req.append((itm_sp_bonus + itm_sp_req) * x)
-        #     for sp_req, sp_bonus, sp_max in zip(sp_reqs, sp_bonuses, sp_maxs):
-        #         self.model.add(sp_max >= sum(sp_req) - sum(sp_bonus))
 
-        ## Frederik
-        self.sp_assignment_vars = SkillpointsTuple(
-            *(self.model.new_int_var(0, 104, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        # Skillpoint requirement constraints
+        for sp_assign, w_sp_req, sp_bonus, sp_req in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses, sp_reqs):
+            if w_sp_req != 0:
+                sp_req.append(w_sp_req)
+            sp_req.append(sum(sp_bonus))
+            self.model.add_max_equality(sp_assign + sum(sp_bonus), sp_req)
 
-        free_sp = 204 - sum(self.sp_assignment_vars)
-        self.model.add(free_sp >= 0)
-
-        sp_eqs = SkillpointsTuple([], [], [], [], [])
-
-        for item_type in types:
-            t_items = [itm for itm in items if item_type in itm.type]
-            if len(t_items) <= 1:
-                continue
-
-            positems = [i for i in t_items if score_function(i) > score_function(item.NO_ITEM)]
-
-            t_vars = t_var_dict[item_type]
-
-            sp_reqs = SkillpointsTuple([], [], [], [], [])
-            for itm, x in zip(positems, t_vars):
-                for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
-                    if itm_sp_req != 0:
-                        sp_req.append((itm_sp_bonus + itm_sp_req + 1000) * x)
-
-            for sp_assign, sp_req, sp_bonus, sp_eq in zip(self.sp_assignment_vars, sp_reqs, sp_bonuses, sp_eqs):
-                sp_eq.append(sum(sp_req) - 1000 - sum(sp_bonus))
-
-        for sp_assign, sp_req, sp_bonus, sp_eq in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses, sp_eqs):
-            if sp_req != 0:
-                sp_eq.append(sp_req - sum(sp_bonus))
-            sp_eq.append(0)
-            self.model.add_max_equality(sp_assign, sp_eq)
-
-
+        # Set the objective function
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
         self.model.add(sum(self._objective) > 6200)
         # self.model.maximize(sum(self._objective))
@@ -208,5 +183,5 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         sys.stdout.flush()
         # print("\033[92m" if sum(reqsp) <= 205 else "\033[91m", b.items, [self.value(s) for s in self.spa], "\033[m")
 
-        # if self.UserTime() > 60:
-        #    self.StopSearch()
+        if self.UserTime() > 60:
+           self.StopSearch()

@@ -14,7 +14,7 @@ def score(item: build.item.Item, ) -> float:
     return sum(dmgcalc.true_dmg(base_dmg, item.identifications, spellmodsum))
 
 
-items = list(build.item.get_all_items().values())
+items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
 extra_rings = []
 for item in items:
     if item.type == 'ring':
