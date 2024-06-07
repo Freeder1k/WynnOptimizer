@@ -9,12 +9,16 @@ import ast
 def _runCPModelSolver(cfg):
     with open('tempoutput.txt', 'w') as f:
         f.write("")
+    with open('isrunning', 'w') as f:
+        f.write("True")
     solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
 
     hive_master = ["Abyss-Imbued Leggings","Boreal-Patterned Crown","Anima-Infused Cuirass","Chaos-Woven Greaves","Elysium-Engraved Aegis","Eden-Blessed Guards","Gaea-Hewn Boots","Hephaestus-Forged Sabatons","Obsidian-Framed Helmet","Twilight-Gilded Cloak","Contrast","Prowess","Intensity"]
     solver.mutual_exclude(hive_master)
 
     solver.find_allbest()
+    with open('isrunning', 'w') as f:
+        f.write("False")
 
 
 def optimize(cfg):
@@ -22,7 +26,15 @@ def optimize(cfg):
 
     print(f"Finding optimal builds...")
 
-    #_runCPModelSolver(cfg)
+    try:
+        with open('isrunning', 'r') as f:
+            running = f.readlines()[0]
+    except FileNotFoundError:
+        running = 'False'
+    if running == 'False':
+        _runCPModelSolver(cfg)
+    else:
+        print(f"Program is currently running, Calculating preliminary results. (Delete file:'isrunning' if this is not the case)")
 
     results = []
     with open('tempoutput.txt', 'r') as f:
