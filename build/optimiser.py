@@ -24,14 +24,13 @@ def _runCPModelSolver(cfg):
 def optimize(cfg):
     t = time.time()
 
-    print(f"Finding optimal builds...")
-
     try:
         with open('isrunning', 'r') as f:
             running = f.readlines()[0]
     except FileNotFoundError:
         running = 'False'
     if running == 'False':
+        print(f"Finding optimal builds...")
         _runCPModelSolver(cfg)
     else:
         print(f"Program is currently running, Calculating preliminary results. (Delete file:'isrunning' if this is not the case)")
@@ -61,6 +60,5 @@ def optimize(cfg):
     if len(results) == 0:
         print("No viable builds found.")
     else:
-        print("Best build:")
-        print(results[0])
+        print(f"Best build: {results[0][0]}, score: {results[0][1]}")
     return results

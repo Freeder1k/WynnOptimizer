@@ -179,5 +179,5 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         sys.stdout.flush()
         # print("\033[92m" if sum(reqsp) <= 205 else "\033[91m", b.items, [self.value(s) for s in self.spa], "\033[m")
 
-        if self.UserTime() > 60:
-           self.StopSearch()
+        #if self.UserTime() > 60:
+        #   self.StopSearch()
