@@ -1,17 +1,15 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Callable
 
 from build import item
 from build.item import IdentificationType
 
 
-class HybridOptimizerConfig:
+class OptimizerConfig:
 
     def __init__(self, items: list[item.Item],
                  score_function: Callable[[item.Item], float]):
         """
-        Class that contains relevant config information for the hybrid optimizer to run.
+        Class that contains relevant config information for the optimizer to run.
         :param items: The items to include in the search.
         :param score_function: A function that determines the score of a single item. Higher = better.
         """

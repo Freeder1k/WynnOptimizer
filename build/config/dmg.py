@@ -1,4 +1,4 @@
-from build.config.base import HybridOptimizerConfig
+from build.config.base import OptimizerConfig
 import build.item
 from utils import dmgcalc
 
@@ -15,7 +15,7 @@ def score(item: build.item.Item, ) -> float:
 items = list(build.item.get_all_items().values())
 
 
-class DmgConfig(HybridOptimizerConfig):
+class DmgConfig(OptimizerConfig):
 
     def __init__(self):
         super().__init__(items, score)

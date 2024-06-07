@@ -1,7 +1,7 @@
 import time
 
 import build.item
-import build.ortoolssolver
+import build.cpmodelsolver
 import build.build
 import utils.skillpoints as sp
 import ast
@@ -9,7 +9,7 @@ import ast
 def _runCPmodelSolver(cfg):
     with open('tempoutput.txt', 'w') as f:
         f.write("")
-    solver = build.ortoolssolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
+    solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
 
     hive_master = ["Abyss-Imbued Leggings","Boreal-Patterned Crown","Anima-Infused Cuirass","Chaos-Woven Greaves","Elysium-Engraved Aegis","Eden-Blessed Guards","Gaea-Hewn Boots","Hephaestus-Forged Sabatons","Obsidian-Framed Helmet","Twilight-Gilded Cloak","Contrast","Prowess","Intensity"]
     solver.mutual_exclude(hive_master)
