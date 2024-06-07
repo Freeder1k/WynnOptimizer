@@ -4,7 +4,6 @@ from typing import Callable, TypeVar
 from build.item import SkillpointsTuple
 import numpy as np
 from ortools.sat.python import cp_model
-import copy
 from build import item, build
 
 np.set_printoptions(threshold=sys.maxsize)
@@ -50,22 +49,10 @@ class CPModelSolver:
             self.item_variables += t_vars
             t_var_dict[item_type] = t_vars
 
-            if item_type == 'ring':
-                rings2 = copy.deepcopy(positems)  # Sure love python referencing bs...
-                for itm in rings2:
-                    itm.type = "ring_"
-                self._items.extend(rings2)
-                item_count.append(len(rings2))
-
-                t_vars2 = [self.model.new_bool_var(f"x[{item_type}_,{itm.name}]") for itm in rings2]
-                self.model.add_exactly_one(t_vars2)
-                self.item_variables += t_vars2
-                t_var_dict[f"{item_type}_"] = t_vars2
-
-                # Prevent same build with swapped rings
-                r1_ind = [i*x for i, x in enumerate(t_vars)]
-                r2_ind = [i*x for i, x in enumerate(t_vars2)]
-                self.model.add(sum(r1_ind) <= sum(r2_ind))
+        # Prevent same build with swapped rings
+        r1_ind = [i*x for i, x in enumerate(t_var_dict['ring'])]
+        r2_ind = [i*x for i, x in enumerate(t_var_dict['ring_'])]
+        self.model.add(sum(r1_ind) <= sum(r2_ind))
 
         sp_bonuses = SkillpointsTuple([], [], [], [], [])
         for itm, x in zip(self._items, self.item_variables):
@@ -118,7 +105,7 @@ class CPModelSolver:
 
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
         # #print(self._objective)
-        self.model.add(sum(self._objective) > 5800) # 5925
+        self.model.add(sum(self._objective) > 6200)
         # #self.model.add(sum(self._objective) < 1650)
         # #self.model.maximize(free_sp)
 

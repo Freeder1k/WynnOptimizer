@@ -1,3 +1,5 @@
+import copy
+
 from build.config.base import OptimizerConfig
 import build.item
 from utils import dmgcalc
@@ -13,6 +15,13 @@ def score(item: build.item.Item, ) -> float:
 
 
 items = list(build.item.get_all_items().values())
+extra_rings = []
+for item in items:
+    if item.type == 'ring':
+        item2 = copy.deepcopy(item)
+        item2.type = 'ring_'
+        extra_rings.append(item2)
+items += extra_rings
 
 
 class DmgConfig(OptimizerConfig):

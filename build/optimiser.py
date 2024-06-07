@@ -28,7 +28,7 @@ def optimize(cfg):
     with open('tempoutput.txt', 'r') as f:
         lines = f.readlines()
     for line in lines:
-        results.append(ast.literal_eval(line)[0])
+        results.append(ast.literal_eval(line))
 
     for i, entry in enumerate(results):
         items = []
