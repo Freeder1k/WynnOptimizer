@@ -42,6 +42,12 @@ class Build:
 
         return self._required_sp, self._bonus_sp
 
+    def __str__(self):
+        return str(self.items)
+
+    def __repr__(self):
+        return str(self.items)
+
 
 
     # Havent done this yet

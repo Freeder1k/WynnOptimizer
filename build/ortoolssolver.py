@@ -121,8 +121,6 @@ class CPModelSolver:
         self.model.add(sum(self._objective) > 5800) # 5925
         # #self.model.add(sum(self._objective) < 1650)
         # #self.model.maximize(free_sp)
-        hive_master = ["Abyss-Imbued Leggings","Boreal-Patterned Crown","Anima-Infused Cuirass","Chaos-Woven Greaves","Elysium-Engraved Aegis","Eden-Blessed Guards","Gaea-Hewn Boots","Hephaestus-Forged Sabatons","Obsidian-Framed Helmet","Twilight-Gilded Cloak","Contrast","Prowess","Intensity"]
-        self.mutual_exclude(hive_master)
 
         print(item_count)
 
