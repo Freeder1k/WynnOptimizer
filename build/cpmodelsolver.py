@@ -59,55 +59,58 @@ class CPModelSolver:
             for sp_bonus, itm_sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
                 if itm_sp_bonus != 0:
                     sp_bonus.append(itm_sp_bonus * x)
-        ## Afterfive
-        sp_maxs = SkillpointsTuple(70, 70, 150, 10, 10)
-
-        for item_type in types:
-            t_items = [itm for itm in self._items if item_type == itm.type]
-            t_vars = t_var_dict[item_type]
-
-            sp_reqs = SkillpointsTuple([], [], [], [], [])
-            for itm, x in zip(t_items, t_vars):
-                for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
-                    if itm_sp_req != 0:
-                        sp_req.append((itm_sp_bonus + itm_sp_req) * x)
-            for sp_req, sp_bonus, sp_max in zip(sp_reqs, sp_bonuses, sp_maxs):
-                self.model.add(sp_max >= sum(sp_req) - sum(sp_bonus))
-
-        ## Frederik
-        # self.sp_assignment_vars = SkillpointsTuple(
-        #     *(self.model.new_int_var(0, 104, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        # ## Afterfive
+        # sp_maxs = SkillpointsTuple(70, 70, 150, 10, 10)
         #
-        # free_sp = 204 - sum(self.sp_assignment_vars)
-        # self.model.add(free_sp >= 0)
         # for item_type in types:
-        #     t_items = [itm for itm in items if item_type in itm.type]
-        #     if len(t_items) <= 1:
-        #         continue
-        #
-        #     positems = [i for i in t_items if score_function(i) > score_function(item.NO_ITEM)]
-        #
+        #     t_items = [itm for itm in self._items if item_type == itm.type]
         #     t_vars = t_var_dict[item_type]
         #
         #     sp_reqs = SkillpointsTuple([], [], [], [], [])
-        #     for itm, x in zip(positems, t_vars):
+        #     for itm, x in zip(t_items, t_vars):
         #         for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
         #             if itm_sp_req != 0:
-        #                 sp_req.append((itm_sp_bonus + itm_sp_req + 1000) * x)
-        #
-        #     for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, sp_reqs, sp_bonuses):
-        #         self.model.add(sp_assign >= sum(sp_req) - 1000 - sum(sp_bonus))
-        #
-        # for sp_assign, sp_req, sp_bonus in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses):
-        #     if sp_req != 0:
-        #         self.model.add(sp_assign >= sp_req - sum(sp_bonus))
-        #
+        #                 sp_req.append((itm_sp_bonus + itm_sp_req) * x)
+        #     for sp_req, sp_bonus, sp_max in zip(sp_reqs, sp_bonuses, sp_maxs):
+        #         self.model.add(sp_max >= sum(sp_req) - sum(sp_bonus))
+
+        ## Frederik
+        self.sp_assignment_vars = SkillpointsTuple(
+            *(self.model.new_int_var(0, 104, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+
+        free_sp = 204 - sum(self.sp_assignment_vars)
+        self.model.add(free_sp >= 0)
+
+        sp_eqs = SkillpointsTuple([], [], [], [], [])
+
+        for item_type in types:
+            t_items = [itm for itm in items if item_type in itm.type]
+            if len(t_items) <= 1:
+                continue
+
+            positems = [i for i in t_items if score_function(i) > score_function(item.NO_ITEM)]
+
+            t_vars = t_var_dict[item_type]
+
+            sp_reqs = SkillpointsTuple([], [], [], [], [])
+            for itm, x in zip(positems, t_vars):
+                for sp_req, itm_sp_bonus, itm_sp_req in zip(sp_reqs, itm.identifications.skillpoints, itm.requirements.skillpoints):
+                    if itm_sp_req != 0:
+                        sp_req.append((itm_sp_bonus + itm_sp_req + 1000) * x)
+
+            for sp_assign, sp_req, sp_bonus, sp_eq in zip(self.sp_assignment_vars, sp_reqs, sp_bonuses, sp_eqs):
+                sp_eq.append(sum(sp_req) - 1000 - sum(sp_bonus))
+
+        for sp_assign, sp_req, sp_bonus, sp_eq in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses, sp_eqs):
+            if sp_req != 0:
+                sp_eq.append(sp_req - sum(sp_bonus))
+            sp_eq.append(0)
+            self.model.add_max_equality(sp_assign, sp_eq)
+
 
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
-        # #print(self._objective)
         self.model.add(sum(self._objective) > 6200)
-        # #self.model.add(sum(self._objective) < 1650)
-        # #self.model.maximize(free_sp)
+        # self.model.maximize(sum(self._objective))
 
         print(item_count)
 
@@ -165,7 +168,7 @@ class CPModelSolver:
         :return: The score of the best build and the items in that build.
         """
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, [0])# self.sp_assignment_vars)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.sp_assignment_vars)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
         print()
@@ -206,6 +209,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 
         sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {len(self.results)}/{self.solution_count} valid builds! {reqsp}")
         sys.stdout.flush()
+        # print("\033[92m" if sum(reqsp) <= 205 else "\033[91m", b.items, [self.value(s) for s in self.spa], "\033[m")
 
-        #if self.UserTime() > 60:
+        # if self.UserTime() > 60:
         #    self.StopSearch()
