@@ -11,7 +11,6 @@ def remove_bad_items(base_dmg, items: list[build.item.Item]) -> list[build.item.
     good_items = []
     for t in types:
         t_items = [i for i in items if i.type == t]
-        print(t, len(t_items))
         for itm in t_items:
             good = True
             for itm2 in t_items:
@@ -26,7 +25,6 @@ def remove_bad_items(base_dmg, items: list[build.item.Item]) -> list[build.item.
 
     for t in types:
         t_items = [i for i in good_items if i.type == t]
-        print(t, len(t_items))
 
     return good_items
 
