@@ -80,8 +80,7 @@ class CPModelSolver:
 
         # Set the objective function
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
-        self.model.add(sum(self._objective) > 6200)
-        # self.model.maximize(sum(self._objective))
+        self.model.add(sum(self._objective) > 5900)
 
         print(item_count)
 
@@ -114,23 +113,7 @@ class CPModelSolver:
         :return: The score of the best build and the items in that build.
         """
         self.model.maximize(sum(self._objective))
-        solver = cp_model.CpSolver()
-        status = solver.solve(self.model)
-
-        # Print solution.
-        res_items = []
-        res_score = 0
-        if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-            res_score = solver.objective_value
-            for itm, x in zip(self._items, self.item_variables):
-                if solver.value(x) == 1:
-                    res_items.append(itm)
-                elif solver.value(x) == 2:
-                    res_items.append(itm)
-                    res_items.append(itm)
-        b = build.Build(self._weapon, *res_items)
-
-        return [(b,res_score)]
+        return self.find_allbest()
 
     def find_allbest(self):
         """
