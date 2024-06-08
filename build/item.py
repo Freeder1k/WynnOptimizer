@@ -291,15 +291,21 @@ class Item:  # TODO: Add base stats (like base HP)
                         )
 
     def __add__(self, other: Item):
-        if not isinstance(other, Item):
-            raise TypeError(f"unsupported operand type(s) for +: '{type(self)}' and '{type(other)}'")
-
-        return Item(
-            "Merged Item",
-            "merged",
-            self.identifications + other.identifications,
-            self.requirements + other.requirements
-        )
+        if isinstance(other, Item):
+            return Item(
+                "Merged Item",
+                "merged",
+                self.identifications + other.identifications,
+                self.requirements + other.requirements
+            )
+        if isinstance(other, IdentificationList):
+            return Item(
+                self.name,
+                self.type,
+                self.identifications + other,
+                self.requirements
+            )
+        raise TypeError(f"unsupported operand type(s) for +: '{type(self)}' and '{type(other)}'")
 
     def __str__(self):
         return self.name

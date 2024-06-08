@@ -7,11 +7,13 @@ from build.item import IdentificationType
 class OptimizerConfig:
 
     def __init__(self, items: list[item.Item],
-                 score_function: Callable[[item.Item], float]):
+                 score_function: Callable[[item.Item], float],
+                 mastery: list[bool]):
         """
         Class that contains relevant config information for the optimizer to run.
         :param items: The items to include in the search.
         :param score_function: A function that determines the score of a single item. Higher = better.
+        :param mastery: Array to indicate whether each elemental mastery is enabled.
         """
         self.items = items
         self.score_function = score_function
@@ -25,6 +27,7 @@ class OptimizerConfig:
         self.min_id_reqs = {}
         self.N = 1
         self.weapon = item.NO_ITEM
+        self.mastery = mastery
 
     def set_max_str_req(self, value: int):
         self.max_str_req = value

@@ -8,11 +8,9 @@ skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefense
 powderConv = {"e":(0.46,13),"t":(0.28,20),"w":(0.32,11),"a":(0.35,14),"f":(0.37,12)}
 
 
-def base_dmg(weapon, powders, spellmod):
+def base_dmg(weapon, powders, spellmod, masteries):
     speedmod = speed_conv[weapon.attackSpeed]
-    active = [False, False, False, True, True, True]  # add to input (with skilltree ig)
-    # get weapon damages from item
-    weapon_dmg = [weapon.damage[dtype].max for dtype in damageTypes]  # TODO: do this not for max
+    weapon_dmg = [weapon.damage[dtype].max for dtype in damageTypes]  # do this not for max?
 
     weapon_dmg = add_powders(weapon_dmg, powders)
     # calculate base dmg without IDs
@@ -22,7 +20,7 @@ def base_dmg(weapon, powders, spellmod):
         base_dmg[i] += sum(weapon_dmg) * spellmod[i]  # elemental modifier applies to total damage
         base_dmg[i] *= speedmod
         if base_dmg[i] != 0:
-            base_dmg[i] += int(active[i]) * mastery[i]
+            base_dmg[i] += int(masteries[i]) * mastery[i]
     # neutral base only uses neutral dmg
     base_dmg[0] = weapon_dmg[0] * speedmod * spellmod[0]
 
@@ -30,11 +28,9 @@ def base_dmg(weapon, powders, spellmod):
 
 
 def true_dmg(base, ids, spellmodsum, crit=True):
-    #print(ids)
-    active = [False, False, False, True, True, True]
     pct = [0,0,0,0,0,0]
     for i in range(6):
-        pct[i] = ids[damageTypes[i]].max + ids["spellDamage"].max + int(active[i]) * 15
+        pct[i] = ids[damageTypes[i]].max + ids["spellDamage"].max
         pct[i] += 100*spToPct(ids[skillPoints[i]].max)
         pct[i] = pct[i]*0.01
 
