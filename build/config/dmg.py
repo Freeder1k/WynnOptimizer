@@ -3,6 +3,7 @@ import copy
 from build.config.base import OptimizerConfig
 import build.item
 from utils import dmgcalc
+from utils import itemfilter
 
 
 spellmod = [0.3, 0, 0.15, 0.1, 0, 0]  # multihit https://wynnbuilder.github.io/builder/#8_2SG2SH2SI2SJ2SK2SL2SM2SN0Qm00000000001g00001004fI0z0z0+0+0+0+0-ldxagIZu07
@@ -17,6 +18,8 @@ def score(item: build.item.Item, ) -> float:
 
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
+items = itemfilter.remove_bad_items(base_dmg, items)
+
 extra_rings = []
 for item in items:
     if item.type == 'ring':
