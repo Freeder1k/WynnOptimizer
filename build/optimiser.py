@@ -6,6 +6,9 @@ import build.build
 import utils.skillpoints as sp
 import ast
 
+masterybonus = [20, 10, 15, 15 ,15]
+damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
+
 def _runCPModelSolver(cfg):
     with open('tempoutput.txt', 'w') as f:
         f.write("")
@@ -48,6 +51,9 @@ def optimize(cfg):
         b = build.build.Build(cfg.weapon, *items)
 
         builditem = sp.add_sp(b.build(), *b.calc_sp())
+        for typ,mas,bon in zip(damageTypes, cfg.mastery, masterybonus):
+            builditem.identifications[typ] += bon*mas
+
         buildscore = cfg.score_function(builditem)
         objectivevalue = sum(cfg.score_function(it) for it in b.items)
         results[i] = (b, buildscore, objectivevalue)
