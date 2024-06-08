@@ -1,12 +1,17 @@
 import build.item
 
 types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'bracelet', 'necklace']
+elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
+Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']
 damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
 set_rings = ['Intensity', 'Breezehands', 'Coral Ring', 'Moon Pool Circlet']
 
 def remove_bad_items(base_dmg, items: list[build.item.Item]) -> list[build.item.Item]:
-    relevant_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility", 'rawSpellDamage', 'spellDamage']
-    relevant_ids += [t for i, t in enumerate(damageTypes) if base_dmg[i] > 0]
+    relevant_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility", 'rawSpellDamage',
+                    'spellDamage', "elementalDamage", "rawElementalDamage", "rawElementalSpellDamage", "elementalSpellDamage"]
+    for i in range(6):
+        if base_dmg[i] > 0:
+            relevant_ids += [damageTypes[i], elements[i]+'SpellDamage', 'raw'+Elements[i]+'Damage', 'raw'+Elements[i]+'SpellDamage']
 
     good_items = []
     for t in types:
@@ -23,8 +28,3 @@ def remove_bad_items(base_dmg, items: list[build.item.Item]) -> list[build.item.
                 good_items.append(itm)
 
     return good_items
-
-# waterSpellDamage
-# rawWaterSpellDamage
-# rawWaterDamage
-# rawWaterMainAttackDamage  # TODO: Add this shit

@@ -4,6 +4,8 @@ speed_conv = {"super_slow": 0.51, "very_slow": 0.83, "slow": 1.5, "normal": 2.05
 mastery = [0,4,8,4,5,4]
 dTypes = ["n","e","t","w","f","a"]
 damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
+elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
+Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']
 skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
 powderConv = {"e":(0.46,13),"t":(0.28,20),"w":(0.32,11),"a":(0.35,14),"f":(0.37,12)}
 
@@ -28,22 +30,22 @@ def base_dmg(weapon, powders, spellmod, masteries):
 
 
 def true_dmg(base, ids, spellmodsum, crit=True):
-    pct = [0,0,0,0,0,0]
+    pct = [ids["spellDamage"].max] + 5 * [ids["spellDamage"].max + ids['elementalSpellDamage'].max]
     for i in range(6):
-        pct[i] = ids[damageTypes[i]].max + ids["spellDamage"].max
+        pct[i] += ids[damageTypes[i]].max + ids[elements[i]+'SpellDamage'].max
         pct[i] += 100*spToPct(ids[skillPoints[i]].max)
         pct[i] = pct[i]*0.01
 
     strePct = spToPct(ids["rawStrength"].max)
     dexPct = spToPct(ids["rawDexterity"].max)
-    rawSD = ids["rawSpellDamage"].max
+    raw = [ids["rawSpellDamage"].max] + 5 * [ids["rawSpellDamage"].max + ids['rawElementalDamage'].max + ids['rawElementalSpellDamage'].max]
 
     # add IDs for final damage
     damage = [0,0,0,0,0,0]
     for i, dmg in enumerate(base):
-        damage[i] = dmg * (1 + pct[i])  # multiply by dmg% ID
-        damage[i] += dmg/sum(base) * spellmodsum * rawSD  # add raw dmg weighted by relative dmg
-        damage[i] *= 1 + strePct + int(crit) * dexPct  # strength and dexterity modifier (since dex is crit chance, it's just an average)
+        damage[i] = dmg * (1 + pct[i])
+        damage[i] += spellmodsum * (dmg/sum(base) * raw[i] + ids["raw"+Elements[i]+"SpellDamage"].max + ids["raw"+Elements[i]+"Damage"].max)
+        damage[i] *= 1 + strePct + int(crit) * dexPct  # (since dex is crit chance, it's just an average)
 
     return damage
 
