@@ -85,16 +85,19 @@ def add_sp(item, req_sp, bon_sp):
     s = req_str + bon_sp[0]
     d = req_dex + bon_sp[1]
 
-    if d+extra < s:
-        req_dex += extra
-    elif s+extra < d:
-        req_str += extra
-    else:
-        sdr = s + d + extra
-        req_str += math.ceil(sdr/2) - s
-        req_dex += math.floor(sdr/2) - d
+    if extra > 0:
+        if d+extra < s:
+            req_dex += extra
+        elif s+extra < d:
+            req_str += extra
+        else:
+            sdr = s + d + extra
+            req_str += math.ceil(sdr/2) - s
+            req_dex += math.floor(sdr/2) - d
 
-    for i in range(5):
-        item.identifications[skillPoints[i]] += req_sp[i]
-
+    item.identifications[skillPoints[0]] += req_str
+    item.identifications[skillPoints[1]] += req_dex
+    item.identifications[skillPoints[2]] += req_sp[2]
+    item.identifications[skillPoints[3]] += req_sp[3]
+    item.identifications[skillPoints[4]] += req_sp[4]
     return item

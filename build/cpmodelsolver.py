@@ -81,11 +81,14 @@ class CPModelSolver:
 
         # Set the objective function
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
-        self.model.add(sum(self._objective) > 5800)
+        self.model.add(sum(self._objective) > 5300)
 
         print(item_count)
 
     def add_upper_bound(self, value: T, item_lambda: Callable[[item.Item], T]):
+        """
+        Add a constraint that sum(ingr_lambda(i)) ≤ value for the weighted ingredients in the recipe.
+        """
         if value is not None:
             a = []
             for itm, x in zip(self._items, self.item_variables):
@@ -93,13 +96,20 @@ class CPModelSolver:
             self.model.add(value >= sum(a))
 
     def add_lower_bound(self, value: T, item_lambda: Callable[[item.Item], T]):
+        """
+        Add a constraint that sum(ingr_lambda(i)) ≥ value for the weighted ingredients in the recipe.
+        """
         if value is not None:
             a = []
             for itm, x in zip(self._items, self.item_variables):
                 a.append(item_lambda(itm)*x)
             self.model.add(value <= sum(a))
 
-    def mutual_exclude(self, set_items):
+    def mutual_exclude(self, set_items: list[item.Item]):
+        """
+        Prevent builds from having more than 1 item from the set.
+        :param set_items: list of items in a set.
+        """
         if len(set_items) > 1:
             a = []
             for itm, x in zip(self._items, self.item_variables):

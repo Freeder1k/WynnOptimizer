@@ -16,6 +16,15 @@ def _runCPModelSolver(cfg):
         f.write("True")
     solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
 
+    for i, value in cfg.max_ids.items():
+        solver.add_upper_bound(value + cfg.weapon.identifications[i].max, lambda itm: itm.identifications[i].max)
+    for i, value in cfg.min_ids.items():
+        solver.add_lower_bound(value - cfg.weapon.identifications[i].max, lambda itm: itm.identifications[i].max)
+    for i, value in cfg.max_reqs.items():
+        solver.add_upper_bound(value, lambda itm: itm.requirements[i])
+    for i, value in cfg.min_reqs.items():
+        solver.add_lower_bound(value, lambda itm: itm.identifications[i])
+
     hive_master = ["Abyss-Imbued Leggings","Boreal-Patterned Crown","Anima-Infused Cuirass","Chaos-Woven Greaves","Elysium-Engraved Aegis","Eden-Blessed Guards","Gaea-Hewn Boots","Hephaestus-Forged Sabatons","Obsidian-Framed Helmet","Twilight-Gilded Cloak","Contrast","Prowess","Intensity"]
     solver.mutual_exclude(hive_master)
 
