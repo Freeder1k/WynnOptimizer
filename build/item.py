@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import json
 from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import Enum
@@ -362,7 +363,8 @@ def get_all_items() -> dict[str, Item]:
     try:
         items = item.database()
     except TimeoutError:
-        items = item.database()
+        with open("data/database.json", "r") as f:
+            items = json.load(f)
 
     items_ = {}
     for k, v in items.items():
