@@ -8,10 +8,16 @@ class MinMaxValue:
     min: int
     max: int
 
-    def __init__(self, raw: int, min: int = None, max: int = None):
+    def __init__(self, raw: int, min_val: int = None, max_val: int = None):
         self.raw = raw
-        self.min = min if min is not None else raw
-        self.max = max if max is not None else raw
+        if min_val is None or max_val is None:
+            self.min = raw
+            self.max = raw
+            return
+        if min_val > max_val:
+            min_val, max_val = max_val, min_val
+        self.min = min_val
+        self.max = max_val
 
     @classmethod
     def from_api_data(cls, data: int | dict):
@@ -19,18 +25,6 @@ class MinMaxValue:
             return cls(data)
         else:
             return cls(data.get('raw', 0.5 * (data['min'] + data['max'])), data['min'], data['max'])
-
-    @property
-    def high(self):
-        if self.max < 0:
-            return self.min
-        return self.max
-
-    @property
-    def low(self):
-        if self.max < 0:
-            return self.max
-        return self.min
 
     def __add__(self, other: MinMaxValue):
         if other is None:

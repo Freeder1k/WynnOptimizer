@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from utils.type.min_max_value import MinMaxValue
-
 from .base import SkillpointsTuple
 
 
@@ -13,104 +12,103 @@ def replace_num(s: str):
 
 @dataclass
 class Identifications:
-    rawMainAttackDamage: MinMaxValue = None
-    rawSpellDamage: MinMaxValue = None
-    healthRegenRaw: MinMaxValue = None
-    manaSteal: MinMaxValue = None
-    walkSpeed: MinMaxValue = None
-    thunderDamage: MinMaxValue = None
-    rawStrength: MinMaxValue = None
-    rawDexterity: MinMaxValue = None
-    rawIntelligence: MinMaxValue = None
-    rawDefence: MinMaxValue = None
-    rawAgility: MinMaxValue = None
-    lootBonus: MinMaxValue = None
-    fireDefence: MinMaxValue = None
-    airDefence: MinMaxValue = None
-    mainAttackDamage: MinMaxValue = None
-    spellDamage: MinMaxValue = None
-    exploding: MinMaxValue = None
-    airDamage: MinMaxValue = None
-    rawHealth: MinMaxValue = None
-    reflection: MinMaxValue = None
-    earthDefence: MinMaxValue = None
-    earthDamage: MinMaxValue = None
-    waterDamage: MinMaxValue = None
-    waterDefence: MinMaxValue = None
-    healthRegen: MinMaxValue = None
-    manaRegen: MinMaxValue = None
-    fireDamage: MinMaxValue = None
-    lifeSteal: MinMaxValue = None
-    rawAttackSpeed: MinMaxValue = None
-    xpBonus: MinMaxValue = None
-    thunderDefence: MinMaxValue = None
-    thorns: MinMaxValue = None
-    soulPointRegen: MinMaxValue = None
-    stealing: MinMaxValue = None
-    firstSpellCost: MinMaxValue = None
-    secondSpellCost: MinMaxValue = None
-    rawfirstSpellCost: MinMaxValue = None
-    rawthirdSpellCost: MinMaxValue = None
-    jumpHeight: MinMaxValue = None
-    airSpellDamage: MinMaxValue = None
-    poison: MinMaxValue = None
-    elementalDamage: MinMaxValue = None
-    healingEfficiency: MinMaxValue = None
-    rawfourthSpellCost: MinMaxValue = None
-    rawsecondSpellCost: MinMaxValue = None
-    sprintRegen: MinMaxValue = None
-    slowEnemy: MinMaxValue = None
-    thirdSpellCost: MinMaxValue = None
-    sprint: MinMaxValue = None
-    elementalSpellDamage: MinMaxValue = None
-    rawNeutralSpellDamage: MinMaxValue = None
-    fourthSpellCost: MinMaxValue = None
-    knockback: MinMaxValue = None
-    waterSpellDamage: MinMaxValue = None
-    fireSpellDamage: MinMaxValue = None
-    rawAirMainAttackDamage: MinMaxValue = None
-    rawAirSpellDamage: MinMaxValue = None
-    earthSpellDamage: MinMaxValue = None
-    rawThunderDamage: MinMaxValue = None
-    rawWaterDamage: MinMaxValue = None
-    rawElementalDamage: MinMaxValue = None
-    rawEarthSpellDamage: MinMaxValue = None
-    elementalDefence: MinMaxValue = None
-    rawThunderMainAttackDamage: MinMaxValue = None
-    thunderSpellDamage: MinMaxValue = None
-    rawThunderSpellDamage: MinMaxValue = None
-    rawFireMainAttackDamage: MinMaxValue = None
-    weakenEnemy: MinMaxValue = None
-    rawWaterSpellDamage: MinMaxValue = None
-    earthMainAttackDamage: MinMaxValue = None
-    rawFireSpellDamage: MinMaxValue = None
-    rawElementalSpellDamage: MinMaxValue = None
-    healing: MinMaxValue = None
-    rawElementalMainAttackDamage: MinMaxValue = None
-    airMainAttackDamage: MinMaxValue = None
-    thunderMainAttackDamage: MinMaxValue = None
-    leveledLootBonus: MinMaxValue = None
-    damageFromMobs: MinMaxValue = None
-    leveledXpBonus: MinMaxValue = None
-    elementalDefense: MinMaxValue = None
-    rawAirDamage: MinMaxValue = None
-    rawEarthDamage: MinMaxValue = None
-    rawFireDamage: MinMaxValue = None
-    rawNeutralDamage: MinMaxValue = None
-    lootQuality: MinMaxValue = None
-    gatherXpBonus: MinMaxValue = None
-    gatherSpeed: MinMaxValue = None
-    rawWaterMainAttackDamage: MinMaxValue = None
-    rawEarthMainAttackDamage: MinMaxValue = None
+    rawMainAttackDamage = MinMaxValue(0)
+    rawSpellDamage = MinMaxValue(0)
+    healthRegenRaw = MinMaxValue(0)
+    manaSteal = MinMaxValue(0)
+    walkSpeed = MinMaxValue(0)
+    thunderDamage = MinMaxValue(0)
+    rawStrength = MinMaxValue(0)
+    rawDexterity = MinMaxValue(0)
+    rawIntelligence = MinMaxValue(0)
+    rawDefence = MinMaxValue(0)
+    rawAgility = MinMaxValue(0)
+    lootBonus = MinMaxValue(0)
+    fireDefence = MinMaxValue(0)
+    airDefence = MinMaxValue(0)
+    mainAttackDamage = MinMaxValue(0)
+    spellDamage = MinMaxValue(0)
+    exploding = MinMaxValue(0)
+    airDamage = MinMaxValue(0)
+    rawHealth = MinMaxValue(0)
+    reflection = MinMaxValue(0)
+    earthDefence = MinMaxValue(0)
+    earthDamage = MinMaxValue(0)
+    waterDamage = MinMaxValue(0)
+    waterDefence = MinMaxValue(0)
+    healthRegen = MinMaxValue(0)
+    manaRegen = MinMaxValue(0)
+    fireDamage = MinMaxValue(0)
+    lifeSteal = MinMaxValue(0)
+    rawAttackSpeed = MinMaxValue(0)
+    xpBonus = MinMaxValue(0)
+    thunderDefence = MinMaxValue(0)
+    thorns = MinMaxValue(0)
+    soulPointRegen = MinMaxValue(0)
+    stealing = MinMaxValue(0)
+    firstSpellCost = MinMaxValue(0)
+    secondSpellCost = MinMaxValue(0)
+    rawfirstSpellCost = MinMaxValue(0)
+    rawthirdSpellCost = MinMaxValue(0)
+    jumpHeight = MinMaxValue(0)
+    airSpellDamage = MinMaxValue(0)
+    poison = MinMaxValue(0)
+    elementalDamage = MinMaxValue(0)
+    healingEfficiency = MinMaxValue(0)
+    rawfourthSpellCost = MinMaxValue(0)
+    rawsecondSpellCost = MinMaxValue(0)
+    sprintRegen = MinMaxValue(0)
+    slowEnemy = MinMaxValue(0)
+    thirdSpellCost = MinMaxValue(0)
+    sprint = MinMaxValue(0)
+    elementalSpellDamage = MinMaxValue(0)
+    rawNeutralSpellDamage = MinMaxValue(0)
+    fourthSpellCost = MinMaxValue(0)
+    knockback = MinMaxValue(0)
+    waterSpellDamage = MinMaxValue(0)
+    fireSpellDamage = MinMaxValue(0)
+    rawAirMainAttackDamage = MinMaxValue(0)
+    rawAirSpellDamage = MinMaxValue(0)
+    earthSpellDamage = MinMaxValue(0)
+    rawThunderDamage = MinMaxValue(0)
+    rawWaterDamage = MinMaxValue(0)
+    rawElementalDamage = MinMaxValue(0)
+    rawEarthSpellDamage = MinMaxValue(0)
+    elementalDefence = MinMaxValue(0)
+    rawThunderMainAttackDamage = MinMaxValue(0)
+    thunderSpellDamage = MinMaxValue(0)
+    rawThunderSpellDamage = MinMaxValue(0)
+    rawFireMainAttackDamage = MinMaxValue(0)
+    weakenEnemy = MinMaxValue(0)
+    rawWaterSpellDamage = MinMaxValue(0)
+    earthMainAttackDamage = MinMaxValue(0)
+    rawFireSpellDamage = MinMaxValue(0)
+    rawElementalSpellDamage = MinMaxValue(0)
+    healing = MinMaxValue(0)
+    rawElementalMainAttackDamage = MinMaxValue(0)
+    airMainAttackDamage = MinMaxValue(0)
+    thunderMainAttackDamage = MinMaxValue(0)
+    leveledLootBonus = MinMaxValue(0)
+    damageFromMobs = MinMaxValue(0)
+    leveledXpBonus = MinMaxValue(0)
+    elementalDefense = MinMaxValue(0)
+    rawAirDamage = MinMaxValue(0)
+    rawEarthDamage = MinMaxValue(0)
+    rawFireDamage = MinMaxValue(0)
+    rawNeutralDamage = MinMaxValue(0)
+    lootQuality = MinMaxValue(0)
+    gatherXpBonus = MinMaxValue(0)
+    gatherSpeed = MinMaxValue(0)
+    rawWaterMainAttackDamage = MinMaxValue(0)
+    rawEarthMainAttackDamage = MinMaxValue(0)
 
     def __init__(self, ids: dict[str, MinMaxValue]):
         self._ids = ids
+        for k, v in ids.items():
+            setattr(self, k, v)
 
-    def __getattr__(self, name):
-        if name in ['_ids', 'skillpoints']:
-            return object.__getattribute__(self, name)
-        return self._ids.get(name, MinMaxValue(0))
-
+    def __getitem__(self, item: str) -> MinMaxValue:
+        return self._ids.get(item, MinMaxValue(0))
 
     def __add__(self, other: Identifications):
         if other is None:
