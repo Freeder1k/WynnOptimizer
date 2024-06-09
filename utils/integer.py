@@ -18,7 +18,7 @@ class Base64:
         while i != order:
             result = digits[x & 0x3f] + result
             x >>= 6
-            if order < 0 and x == 0 or x == -1:
+            if order < 0 and (x == 0 or x == -1):
                 break
             i += 1
         return result
@@ -33,5 +33,4 @@ class Base64:
             result = result * 64 + digitsMap[c]
         return result
 
-print(Base64.toInt("9c9c9c9c9c9c"))
-print(Base64.fromInt(626))
+#print(Base64.toInt("2SI"))

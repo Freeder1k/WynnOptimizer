@@ -1,26 +1,16 @@
 speed_conv = {"super_slow": 0.51, "very_slow": 0.83, "slow": 1.5, "normal": 2.05, "fast": 2.5, "very_fast": 3.1, "super_fast": 4.3}  # weapon speed modifier
 mastery_max = [0,4,8,4,5,4]
 mastery_min = [0,2,1,2,3,3]
-dTypes = ["n","e","t","w","f","a"]
 damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
 elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
 Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']
 skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
-powderConv = {"e":(0.46,13,11),"t":(0.28,20,5),"w":(0.32,11,9),"a":(0.35,14,8),"f":(0.37,12,10)}
 
 
-def base_dmg(weapon, powders, spellmod, masteries):
+def base_dmg(weapon, spellmod, masteries):
     speedmod = speed_conv[weapon.attackSpeed]
     weapon_dmg_max = [weapon.damage[dtype].max for dtype in damageTypes]
     weapon_dmg_min = [weapon.damage[dtype].min for dtype in damageTypes]  # do this not for max?
-
-    neutral_max = weapon_dmg_max[0]
-    neutral_min = weapon_dmg_min[0]
-    for powder in powders:
-        weapon_dmg_max[dTypes.index(powder)] += neutral_max*powderConv[powder][0] + powderConv[powder][1]
-        weapon_dmg_max[0] -= neutral_max*powderConv[powder][0]
-        weapon_dmg_min[dTypes.index(powder)] += neutral_min*powderConv[powder][0] + powderConv[powder][2]
-        weapon_dmg_min[0] -= neutral_min*powderConv[powder][0]
 
     # calculate base dmg without IDs
     base_dmg_max = [0,0,0,0,0,0]

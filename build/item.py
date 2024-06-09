@@ -5,11 +5,11 @@ import json
 from collections import namedtuple
 from dataclasses import dataclass, field
 from enum import Enum
-
 import numpy as np
 
 from core.wynnAPI import item
 from utils.decorators import ttl
+from utils.integer import Base64
 
 
 class IdentificationType(Enum):
@@ -330,25 +330,47 @@ class Item:  # TODO: Add base stats (like base HP)
     def __repr__(self):
         return f"\"{self.name}\""
 
+    def b64_hash(self):
+        return Base64.fromInt(get_item_id(self.name)).rjust(3, "0")
+
 
 NO_ITEM = Item("No Item", "none", IdentificationList(), Requirements(0, 0, 0, 0, 0, 0))
+
+powderConv = {"e":(0.46,13,11),"t":(0.28,20,5),"w":(0.32,11,9),"a":(0.35,14,8),"f":(0.37,12,10)}
+dConv = {"n":"damage", "e":"earthDamage", "t":"thunderDamage",  "w":"waterDamage", "f":"fireDamage", "a":"airDamage"}
 
 
 @dataclass
 class Weapon(Item):
     attackSpeed: str
     damage: IdentificationList
+    powders: list[str]
 
     @classmethod
     def from_api_json(cls, name, data: dict):
         try:
             instance = Item.from_api_json(name, data)
-            damage = IdentificationList.from_api_data(data.get("base", {}))
+            damage = data.get("base", {})
+            damage.pop('averageDPS')
+            damage = IdentificationList.from_api_data(damage)
             attackSpeed = data["attackSpeed"]
-            return cls(instance.name, instance.type, instance.identifications, instance.requirements, attackSpeed, damage)
+            return cls(instance.name, instance.type, instance.identifications, instance.requirements, attackSpeed, damage, [])
         except Exception as e:
             print(name)
             raise e
+
+    def set_powders(self, powders: list[str]):
+        self.powders = powders
+        neutral_max = self.damage['damage'].max
+        neutral_min = self.damage['damage'].min
+        for p in powders:
+            self.damage[dConv[p]].max += neutral_max*powderConv[p][0] + powderConv[p][1]
+            self.damage['damage'].max -= neutral_max*powderConv[p][0]
+            self.damage[dConv[p]].min += neutral_min*powderConv[p][0] + powderConv[p][2]
+            self.damage['damage'].min -= neutral_min*powderConv[p][0]
+            self.damage[dConv[p]].raw = 0.5 * (self.damage[dConv[p]].max + self.damage[dConv[p]].min)
+        self.damage['damage'].raw = 0.5 * (self.damage['damage'].max + self.damage['damage'].min)
+        return self
 
 
 @dataclass
@@ -376,6 +398,19 @@ def get_all_items() -> dict[str, Item]:
 def get_item(name: str):
     items = get_all_items()
     return items.get(name, None)
+
+_item_ids = {}
+
+def _get_item_ids():
+    if not _item_ids:
+        with open("data/items_clean.json", 'rb') as f:
+            _item_ids.update({i['name']: i['id'] for i in json.load(f)['items']})
+        _item_ids["No Item"] = 10000
+    return _item_ids
+
+def get_item_id(name: str):
+    return _get_item_ids().get(name, 4095)
+
 
 def get_weapon(name: str):
     try:

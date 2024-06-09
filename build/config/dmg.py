@@ -12,9 +12,9 @@ spellmod = [0.3, 0, 0.15, 0.1, 0, 0]  # multihit https://wynnbuilder.github.io/b
 # weapon = build.item.get_weapon("Cataclysm")
 powders = ["w", "w", "w"]
 mastery = [False] + [False, False, True, True, True]  # Elemental masteries from skilltree (ignore first false) [ETWFA]
-weapon = build.item.get_weapon("Nirvana")
+weapon = build.item.get_weapon("Nirvana").set_powders(powders)
 
-base_dmg_max, base_dmg_min = dmgcalc.base_dmg(weapon, powders, spellmod, mastery)
+base_dmg_max, base_dmg_min = dmgcalc.base_dmg(weapon, spellmod, mastery)
 spellmodsum = sum(spellmod)
 
 

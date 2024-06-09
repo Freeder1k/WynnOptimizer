@@ -1,11 +1,12 @@
 # import craft.ingredient
 # from utils.integer import Base64
-from build.item import Item
+from build.item import Item, Crafted, Weapon
 import utils.skillpoints as sp
+from utils.integer import Base64
 
 
 class Build:
-    def __init__(self, weapon: Item, i1: Item, i2: Item, i3: Item, i4: Item, i5: Item, i6: Item, i7: Item, i8: Item):
+    def __init__(self, weapon: Weapon, i1: Item, i2: Item, i3: Item, i4: Item, i5: Item, i6: Item, i7: Item, i8: Item):
         """
         Wynncraft build class.
         """
@@ -48,6 +49,32 @@ class Build:
     def __repr__(self):
         return str(self.items)
 
+    def generate_link(self):
+        build_string = 'https://hppeng-wynn.github.io/builder?v=7#9_'
+        for itm in self.items:
+            if isinstance(itm, Crafted):
+                build_string += "CR-"+itm.name
+            else:
+                build_string += itm.b64_hash()
+        build_string += self.weapon.b64_hash()
+        for skillpoint in sp.skillPoints:
+            build_string += Base64.fromInt(self.build().identifications[skillpoint].max,2)#.rjust(2, "0")
+        build_string += Base64.fromInt(106,2)#.rjust(2, "0")  # Level
+        build_string += "0000"  # This would be where armor powders go
+        build_string += Base64.fromInt((len(self.weapon.powders)-1)//6 + 1)
+        powder_hash = 0
+        for i, powder in enumerate(self.weapon.powders):
+            powder_hash = (powder_hash << 5) + {'e':6,'t':12,'w':18,'f':24,'a':36}[powder]
+            if (i+1)%6 == 0 and i != 0:
+                build_string += Base64.fromInt(powder_hash,5)
+                print(i, powder_hash)
+                powder_hash = 0
+        if powder_hash != 0:
+            build_string += Base64.fromInt(powder_hash,5)
+        build_string += '0z0z0+0+0+0+0-'  # This would be where tomes go
+        build_string += '1TldxagIZu07'  # Nirvana Trickstobat tree
+
+        return build_string
 
 
     # Havent done this yet
