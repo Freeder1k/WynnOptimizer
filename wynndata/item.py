@@ -166,7 +166,8 @@ def get_weapon(name: str):
     try:
         items = item.database()
     except TimeoutError:
-        items = item.database()
+        with open("data/database.json", "r") as f:
+            items = json.load(f)
     it = items.get(name, {})
     if "base" not in it:
         raise ValueError(f"{name} not a weapon")
