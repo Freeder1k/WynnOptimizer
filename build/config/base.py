@@ -1,5 +1,5 @@
 from typing import Callable
-
+import copy
 from build import item
 from build.item import IdentificationType
 
@@ -14,11 +14,21 @@ class OptimizerConfig:
         :param score_function: A function that determines the score of a single item. Higher = better.
         """
         self.items = items
+        if 'ring2' not in [i.type for i in items]:
+            extra_rings = []
+            for itm in items:
+                if itm.type == 'ring':
+                    itm2 = copy.deepcopy(itm)
+                    itm2.type = 'ring2'
+                    extra_rings.append(itm2)
+            items += extra_rings
+
         self.score_function = score_function
         self.max_ids = {}
         self.min_ids = {}
         self.max_reqs = {}
-        self.min_reqs = {}
+        self.max_sp = {}
+        self.min_sp = {}
         self.weapon = item.NO_ITEM
         self.mastery = [False, False, False, False, False, False]
         self.skilltree = ''
@@ -27,8 +37,12 @@ class OptimizerConfig:
         self.max_reqs[element] = value
         return self
 
-    def set_requirement_min(self, element: str, value: int):
-        self.min_reqs[element] = value
+    def set_sp_max(self, element: str, value: int):
+        self.max_sp[element] = value
+        return self
+
+    def set_sp_min(self, element: str, value: int):
+        self.min_sp[element] = value
         return self
 
     def set_identification_max(self, identification: str, value: int):

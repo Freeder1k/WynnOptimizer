@@ -8,7 +8,7 @@ from build import item, build
 
 np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
-types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'ring_', 'bracelet', 'necklace']
+types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'ring2', 'bracelet', 'necklace']
 spinner = ['|', '/', '-', '\\']
 
 
@@ -33,7 +33,7 @@ class CPModelSolver:
 
         # Manual skillpoint assignment variables
         self.sp_assignment_vars = SkillpointsTuple(
-            *(self.model.new_int_var(0, 104, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+            *(self.model.new_int_var(0, 102, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
         self.model.add(sum(self.sp_assignment_vars) <= 204)
 
         sp_reqs = SkillpointsTuple([], [], [], [], [])
@@ -61,7 +61,7 @@ class CPModelSolver:
 
         # Prevent same build with swapped rings
         r1_ind = [i*x for i, x in enumerate(t_var_dict['ring'])]
-        r2_ind = [i*x for i, x in enumerate(t_var_dict['ring_'])]
+        r2_ind = [i*x for i, x in enumerate(t_var_dict['ring2'])]
         self.model.add(sum(r1_ind) <= sum(r2_ind))
 
         # Skillpoint bonuses
@@ -104,6 +104,44 @@ class CPModelSolver:
             for itm, x in zip(self._items, self.item_variables):
                 a.append(item_lambda(itm)*x)
             self.model.add(value <= sum(a))
+
+    def add_max_assignable_sp(self, value: int, skillpoint: str):
+        """
+        Add a constraint that the build can't have more sp of element assigned than a given value.
+        :param value: The max value that can be assigned.
+        :param skillpoint: The skillpoint that is to be constrained.
+        """
+        a = ['str','dex','int','def','agi']
+        if value is not None and skillpoint in a:
+            self.model.add(value >= self.sp_assignment_vars[a.index(skillpoint)])
+
+    def add_max_sp(self, value: int, skillpoint: str):
+        """
+        Add a constraint that the build can't have more sp of element than a given value.
+        In certain cases this might exclude viable builds, set the value slightly higher.
+        :param value: The max value for given skillpoint.
+        :param skillpoint: The skillpoint that is to be constrained.
+        """
+        a = ['str','dex','int','def','agi']
+        if value is not None and skillpoint in a:
+            a = []
+            for itm, x in zip(self._items, self.item_variables):
+                a.append(itm.identifications.skillpoints[a.index(skillpoint)] * x)
+            self.model.add(value >= sum(a) + self.sp_assignment_vars[a.index(skillpoint)])
+
+    def add_min_sp(self, value: int, skillpoint: str):  # This one might include builds with lower skillpoints.
+        """
+        Add a constraint that the build can't have less sp of element than a given value.
+        In certain cases this might include non-viable builds.
+        :param value: The min value for given skillpoint.
+        :param skillpoint: The skillpoint that is to be constrained.
+        """
+        a = ['str','dex','int','def','agi']
+        if value is not None and skillpoint in a:
+            a = []
+            for itm, x in zip(self._items, self.item_variables):
+                a.append(itm.identifications.skillpoints[a.index(skillpoint)] * x)
+            self.model.add(value <= sum(a) + self.sp_assignment_vars[a.index(skillpoint)])
 
     def mutual_exclude(self, set_items: list[item.Item]):
         """

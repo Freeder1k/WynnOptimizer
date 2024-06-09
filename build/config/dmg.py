@@ -1,5 +1,3 @@
-import copy
-
 from build.config.base import OptimizerConfig
 import build.item
 from utils import dmgcalc
@@ -19,15 +17,8 @@ def score(itm: build.item.Item, ) -> float:
 
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
-#items = itemfilter.set_item_of_type(items, build.item.get_item("Stratosphere"), 'chestplate')
+#items = itemfilter.set_item(items, build.item.get_item("Stratosphere"))
 items = itemfilter.remove_bad_items(base_dmg_max, items)
-extra_rings = []
-for item in items:
-    if item.type == 'ring':
-        item2 = copy.deepcopy(item)
-        item2.type = 'ring_'
-        extra_rings.append(item2)
-items += extra_rings
 
 
 class DmgConfig(OptimizerConfig):
