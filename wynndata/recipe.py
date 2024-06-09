@@ -1,7 +1,6 @@
-import craft.ingredient
-from utils.integer import Base64
+from . import ingredient
 from .ingredient import Ingredient, Modifier, NO_INGREDIENT
-from build.item import Crafted
+from .item import Crafted, Base
 
 
 class ModifierMatrix:
@@ -62,7 +61,7 @@ class Recipe:
 
         return m.flatten()
 
-    def build(self, item_type="None") -> Crafted:
+    def build(self, item_type="none") -> Crafted:
         """
         Build the item from the recipe.
         :param item_type: The type of the item.
@@ -71,24 +70,27 @@ class Recipe:
         if self._item is not None:
             return self._item
 
-        name = self.b64_hash()
-
         # calculate the recipe stats
         modifier_vector = self.calculate_modifiers()
         result = NO_INGREDIENT
         for i in range(6):
-            result = result + (self.ingredients[i] * modifier_vector[i])
+            result = result + (self.ingredients[i] * (modifier_vector[i] / 100))
 
-        self._item = Crafted(name, item_type, result.identifications, result.requirements, result.charges, result.duration, result.durability)
+        # TODO actual base values maybe
+        self._item = Crafted(self.id, item_type, Base.none(), result.requirements, result.identifications,
+                             result.charges, result.duration, result.durability)
+
+        self._item.requirements.level = 105
 
         return self._item
 
-    def b64_hash(self):
-        return "".join([Base64.fromInt(i.id).rjust(2, "0") for i in self.ingredients])
+    @property
+    def id(self):
+        return sum(self.ingredients[i].id << (i * 12) for i in range(6))
 
     @classmethod
     def from_ingredient_strings(cls, i1: str, i2: str, i3: str, i4: str, i5: str, i6: str):
-        return cls(*(craft.ingredient.get_ingredient(ing) for ing in (i1, i2, i3, i4, i5, i6)))
+        return cls(*(ingredient.get_ingredient(ing) for ing in (i1, i2, i3, i4, i5, i6)))
 
     def __str__(self):
         return f"Recipe({', '.join(str(i) for i in self.ingredients)})"

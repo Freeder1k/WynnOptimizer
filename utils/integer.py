@@ -33,4 +33,5 @@ class Base64:
             result = result * 64 + digitsMap[c]
         return result
 
-print(Base64.toInt("2SI"))
+print(Base64.toInt("9c9c9c9c9c9c"))
+print(Base64.fromInt(626))

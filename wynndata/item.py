@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from core.wynnAPI import item
 from utils.decorators import ttl
+from utils.integer import Base64
 from utils.type.min_max_value import MinMaxValue
 from .base import ElementsTuple
 from .identifications import Identifications
@@ -77,6 +78,9 @@ class Item:
             print(name)
             raise e
 
+    def b64_hash(self):
+        return Base64.fromInt(self.id, 3)
+
     def __add__(self, other: Item):
         if not isinstance(other, Item):
             raise TypeError(f"unsupported operand type(s) for +: '{type(self)}' and '{type(other)}'")
@@ -127,6 +131,17 @@ class Crafted(Item):
     duration: int
     durability: int
 
+    def __init__(self, id, type, base, requirements, identifications, charges, duration, durability):
+        name = "CR-"
+        super().__init__(name, id, type, base, requirements, identifications)
+        self.name += self.b64_hash()
+        self.charges = charges
+        self.duration = duration
+        self.durability = durability
+
+    def b64_hash(self):
+        return f'{Base64.fromInt(self.id, 12)}{Base64.fromInt(get_recipe_id(self.type, self.requirements.level), 2)}91'
+
 
 @ttl(3600)
 def get_all_items() -> dict[str, Item]:
@@ -173,3 +188,23 @@ def _get_item_ids():
 
 def get_item_id(name: str):
     return _get_item_ids().get(name, 10000)
+
+
+_recipe_ids = {}
+
+
+def _get_recipe_ids():
+    if not _recipe_ids:
+        with open("data/recipes_clean.json") as f:
+            for i in json.load(f)['recipes']:
+                r_type = i['type'].lower()
+                if r_type not in _recipe_ids:
+                    _recipe_ids[i['type'].lower()] = [0] * 106
+                for j in range(i['lvl']['min'], i['lvl']['max'] + 1):
+                    _recipe_ids[r_type][j] = i['id']
+            _recipe_ids["none"] = [0] * 106
+    return _recipe_ids
+
+
+def get_recipe_id(type: str, lvl: int):
+    return _get_recipe_ids().get(type, 10000)[lvl]
