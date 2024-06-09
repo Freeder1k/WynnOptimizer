@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 import numpy as np
+from requests import ReadTimeout, Timeout
 
 from core.wynnAPI import item
 from utils.decorators import ttl
@@ -347,8 +348,9 @@ NO_INGREDIENT = Ingredient("No Ingredient", 0, 0, 0, IdentificationList(), Modif
 def get_all_ingredients() -> dict[str, Ingredient]:
     try:
         items = item.database()
-    except TimeoutError:
-        items = item.database()
+    except (TimeoutError, Timeout):
+        with open("data/database.json", encoding='utf8') as f:
+            items = json.load(f)
 
     return {k: Ingredient.from_api_json(k, v) for k, v in items.items()
             if 'itemOnlyIDs' in v or 'consumableOnlyIDs' in v}

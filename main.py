@@ -23,12 +23,13 @@ def main():
 
     cfg = HybridOptimizerConfig(
         ingredients=list(i for i in craft.ingredient.get_all_ingredients().values()
-                         if i.modifiers.abs_total() == 0 and 'jeweling' in i.requirements.skills),
+                         if i.modifiers.abs_total() == 0 and craft.ingredient.Skill('jeweling') in i.requirements.skills),
         score_function=score,
-        crafting_skill='jeweling',
+        crafting_skill=craft.ingredient.Skill('jeweling'),
         relevant_ids=[craft.ingredient.IdentificationType.SPELL_DAMAGE,
                       craft.ingredient.IdentificationType.THUNDER_DAMAGE,
-                      craft.ingredient.IdentificationType.AIR_DAMAGE]
+                      craft.ingredient.IdentificationType.AIR_DAMAGE,
+                      craft.ingredient.IdentificationType.MANA_REGEN]
     )
 
     cfg.set_min_durability(30)
