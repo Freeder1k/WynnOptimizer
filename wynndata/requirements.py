@@ -40,6 +40,37 @@ class Requirements:
             self.level,
         )
 
+    def __getitem__(self, key):
+        if key == 'strength' or key == 'str':
+            return self.strength
+        elif key == 'dexterity' or key == 'dex':
+            return self.dexterity
+        elif key == 'intelligence' or key == 'int':
+            return self.intelligence
+        elif key == 'defence' or key == 'def':
+            return self.defence
+        elif key == 'agility' or key == 'agi':
+            return self.agility
+        elif key == 'level':
+            return self.level
+        else:
+            raise KeyError(key)
+
+    def __lt__(self, other):
+        return [r1 < r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
+    def __le__(self, other):
+        return [r1 <= r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
+    def __eq__(self, other):
+        return [r1 == r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
+    def __ge__(self, other):
+        return [r1 >= r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
+    def __gt__(self, other):
+        return [r1 > r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
     @property
     def skillpoints(self) -> SkillpointsTuple[int]:
         return SkillpointsTuple(self.strength, self.dexterity, self.intelligence, self.defence, self.agility)
@@ -70,3 +101,4 @@ class Requirements:
             agi,
             requirements.get('level', 0),
         )
+

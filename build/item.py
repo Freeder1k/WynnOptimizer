@@ -252,6 +252,22 @@ class Requirements:
         else:
             raise KeyError(key)
 
+    def __lt__(self, other):
+        return [r1 < r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
+    def __le__(self, other):
+        return [r1 <= r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
+    def __eq__(self, other):
+        return [r1 == r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
+    def __ge__(self, other):
+        return [r1 >= r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
+    def __gt__(self, other):
+        return [r1 > r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
+
+
 
 @dataclass
 class Item:  # TODO: Add base stats (like base HP)

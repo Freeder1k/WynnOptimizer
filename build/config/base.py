@@ -7,65 +7,41 @@ from build.item import IdentificationType
 class OptimizerConfig:
 
     def __init__(self, items: list[item.Item],
-                 score_function: Callable[[item.Item], float],
-                 mastery: list[bool]):
+                 score_function: Callable[[item.Item], float]):
         """
         Class that contains relevant config information for the optimizer to run.
         :param items: The items to include in the search.
         :param score_function: A function that determines the score of a single item. Higher = better.
-        :param mastery: Array to indicate whether each elemental mastery is enabled.
         """
         self.items = items
         self.score_function = score_function
-        self.max_str_req = None
-        self.max_dex_req = None
-        self.max_int_req = None
-        self.max_def_req = None
-        self.max_agi_req = None
-        self.max_sp_sum_req: list[tuple[int, dict[str, bool]]] = []
-        self.max_id_reqs = {}
-        self.min_id_reqs = {}
-        self.N = 1
+        self.max_ids = {}
+        self.min_ids = {}
+        self.max_reqs = {}
+        self.min_reqs = {}
         self.weapon = item.NO_ITEM
-        self.mastery = mastery
+        self.mastery = [False, False, False, False, False, False]
 
-    def set_max_str_req(self, value: int):
-        self.max_str_req = value
+    def set_requirement_max(self, element: str, value: int):
+        self.max_reqs[element] = value
         return self
 
-    def set_max_dex_req(self, value: int):
-        self.max_dex_req = value
+    def set_requirement_min(self, element: str, value: int):
+        self.min_reqs[element] = value
         return self
 
-    def set_max_int_req(self, value: int):
-        self.max_int_req = value
+    def set_identification_max(self, identification: str, value: int):
+        self.max_ids[identification] = value
         return self
 
-    def set_max_def_req(self, value: int):
-        self.max_def_req = value
-        return self
-
-    def set_max_agi_req(self, value: int):
-        self.max_agi_req = value
-        return self
-
-    def add_max_sp_sum_req(self, value: int, strength=True, dexterity=True, intelligence=True, defence=True,
-                           agility=True):
-        self.max_sp_sum_req.append((value, {"strength": strength, "dexterity": dexterity, "intelligence": intelligence,
-                                            "defence": defence, "agility": agility}))
-
-    def set_identification_max(self, identification: IdentificationType, value: int):
-        self.max_id_reqs[identification] = value
-        return self
-
-    def set_identification_min(self, identification: IdentificationType, value: int):
-        self.min_id_reqs[identification] = value
-        return self
-
-    def set_num_builds(self, value: int):
-        self.N = value
+    def set_identification_min(self, identification: str, value: int):
+        self.min_ids[identification] = value
         return self
 
     def set_weapon(self, i: item.Weapon):
         self.weapon = i
+        return self
+
+    def set_elemental_mastery(self, mastery: list[bool]):
+        self.mastery = mastery
         return self
