@@ -28,3 +28,15 @@ def remove_bad_items(base_dmg, items: list[build.item.Item]) -> list[build.item.
                 good_items.append(itm)
 
     return good_items
+
+
+def set_item_of_type(items: list[build.item.Item], itm: build.item.Item, typ: str) -> list[build.item.Item]:
+    items = [i for i in items if i.type != typ]
+    items.append(itm)
+    return items
+
+
+def set_items_of_type(items: list[build.item.Item], itms:  list[build.item.Item], typ: str) -> list[build.item.Item]:
+    items = [i for i in items if i.type != typ]
+    items += itms
+    return items

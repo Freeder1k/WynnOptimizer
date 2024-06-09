@@ -1,4 +1,3 @@
-import math
 speed_conv = {"super_slow": 0.51, "very_slow": 0.83, "slow": 1.5, "normal": 2.05, "fast": 2.5, "very_fast": 3.1, "super_fast": 4.3}  # weapon speed modifier
 mastery_max = [0,4,8,4,5,4]
 mastery_min = [0,2,1,2,3,3]

@@ -23,8 +23,7 @@ def score(itm: build.item.Item, ) -> float:
 
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
-items = [i for i in items if i.type != 'chestplate']
-items.append(build.item.get_item("Stratosphere"))
+#items = itemfilter.set_item_of_type(items, build.item.get_item("Stratosphere"), 'chestplate')
 items = itemfilter.remove_bad_items(base_dmg_max, items)
 extra_rings = []
 for item in items:
