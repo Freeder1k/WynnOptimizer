@@ -27,34 +27,35 @@ class Requirements:
             max(self.level, other.level),
         )
 
-    def __mul__(self, scale: int):
-        if not isinstance(scale, int):
+    def __mul__(self, scale: float):
+        if not isinstance(scale, float) and not isinstance(scale, int):
             raise TypeError(f"unsupported operand type(s) for *: '{type(self)}' and '{type(scale)}'")
 
         return Requirements(
-            self.strength * scale // 100,
-            self.dexterity * scale // 100,
-            self.intelligence * scale // 100,
-            self.defence * scale // 100,
-            self.agility * scale // 100,
+            int(self.strength * scale),
+            int(self.dexterity * scale),
+            int(self.intelligence * scale),
+            int(self.defence * scale),
+            int(self.agility * scale),
             self.level,
         )
 
     def __getitem__(self, key):
-        if key == 'strength' or key == 'str':
-            return self.strength
-        elif key == 'dexterity' or key == 'dex':
-            return self.dexterity
-        elif key == 'intelligence' or key == 'int':
-            return self.intelligence
-        elif key == 'defence' or key == 'def':
-            return self.defence
-        elif key == 'agility' or key == 'agi':
-            return self.agility
-        elif key == 'level':
-            return self.level
-        else:
-            raise KeyError(key)
+        match key:
+            case 'strength', 'str':
+                return self.strength
+            case 'dexterity', 'dex':
+                return self.dexterity
+            case 'intelligence', 'int':
+                return self.intelligence
+            case 'defence', 'def':
+                return self.defence
+            case 'agility', 'agi':
+                return self.agility
+            case 'level':
+                return self.level
+            case _:
+                raise KeyError(key)
 
     def __lt__(self, other):
         return [r1 < r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
