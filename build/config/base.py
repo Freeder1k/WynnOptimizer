@@ -58,7 +58,7 @@ class OptimizerConfig:
         return self
 
     def set_elemental_mastery(self, mastery: list[bool]):
-        self.mastery = mastery
+        self.mastery = [False] + mastery
         return self
 
     def set_skilltree(self, skilltree: str):
