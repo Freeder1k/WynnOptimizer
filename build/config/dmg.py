@@ -6,7 +6,7 @@ from utils import itemfilter
 
 spellmod = [0.3, 0, 0.15, 0.1, 0, 0]  # multihit https://wynnbuilder.github.io/builder/#8_2SG2SH2SI2SJ2SK2SL2SM2SN0Qm00000000001g00001004fI0z0z0+0+0+0+0-ldxagIZu07
 mastery = [False, False, True, True, True]  # Elemental masteries from skilltree [ETWFA]
-skilltree = '1TldxagIZu07'
+skilltree = '1TldxagIZu07'  # TODO: actual calculations with skilltree (THIS WILL BE PAIN)
 weapon = build.item.get_weapon("Nirvana").set_powders(["w", "w", "w"])
 base_dmg_max, base_dmg_min = dmgcalc.base_dmg(weapon, spellmod, mastery)
 spellmodsum = sum(spellmod)

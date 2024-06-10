@@ -12,7 +12,7 @@ damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDa
 def _runCPModelSolver(cfg):
     with open('tempoutput.txt', 'w') as f:
         f.write("")
-    with open('isrunning', 'w') as f:
+    with open('.isrunning', 'w') as f:
         f.write("True")
     try:
         solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
@@ -34,7 +34,7 @@ def _runCPModelSolver(cfg):
         solver.find_best()
         best_score = process_results(cfg, 2)[0][2]
 
-        solver.add_min_score(int(best_score) - 200)
+        solver.add_min_score(int(0.96*best_score))
         solver.find_allbest()
     except:
         with open('.isrunning', 'w') as f:
