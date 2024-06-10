@@ -40,22 +40,28 @@ class Requirements:
             self.level,
         )
 
-    def __getitem__(self, key):
-        match key:
-            case 'strength', 'str':
+    def __getattr__(self, item):
+        match item:
+            case 'str':
                 return self.strength
-            case 'dexterity', 'dex':
+            case 'dex':
                 return self.dexterity
-            case 'intelligence', 'int':
+            case 'int':
                 return self.intelligence
-            case 'defence', 'def':
+            case 'def':
                 return self.defence
-            case 'agility', 'agi':
+            case 'agi':
                 return self.agility
-            case 'level':
+            case 'lvl':
                 return self.level
             case _:
-                raise KeyError(key)
+                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{item}'")
+
+    def __getitem__(self, key):
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            raise KeyError(key)
 
     def __lt__(self, other):
         return [r1 < r2 for r1, r2 in zip(self.skillpoints, other.skillpoints)]
@@ -83,23 +89,18 @@ class Requirements:
     @classmethod
     def from_api_data(cls, requirements: dict, item_only_ids: dict = None):
         if item_only_ids is None:
-            str = requirements.get('strength', 0)
-            dex = requirements.get('dexterity', 0)
-            int = requirements.get('intelligence', 0)
-            defe = requirements.get('defence', 0)
-            agi = requirements.get('agility', 0)
+            return cls(
+                requirements.get('strength', 0),
+                requirements.get('dexterity', 0),
+                requirements.get('intelligence', 0),
+                requirements.get('defence', 0),
+                requirements.get('agility', 0),
+                requirements.get('level', 0))
         else:
-            str = item_only_ids.get('strengthRequirement', 0)
-            dex = item_only_ids.get('dexterityRequirement', 0)
-            int = item_only_ids.get('intelligenceRequirement', 0)
-            defe = item_only_ids.get('defenceRequirement', 0)
-            agi = item_only_ids.get('agilityRequirement', 0)
-        return cls(
-            str,
-            dex,
-            int,
-            defe,
-            agi,
-            requirements.get('level', 0),
-        )
-
+            return cls(
+                item_only_ids.get('strengthRequirement', 0),
+                item_only_ids.get('dexterityRequirement', 0),
+                item_only_ids.get('intelligenceRequirement', 0),
+                item_only_ids.get('defenceRequirement', 0),
+                item_only_ids.get('agilityRequirement', 0),
+                requirements.get('level', 0))
