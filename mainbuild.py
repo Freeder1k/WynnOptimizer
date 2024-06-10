@@ -13,8 +13,17 @@ def main():
     cfg = DmgConfig()
     results = optimiser.optimise(cfg)
 
+
+    with open('.isrunning', 'r') as f:
+        running = f.readlines()[0]
+    if running:
+        filename = 'results.txt'
+    else:
+        filename = cfg.weapon.name+str(len(results))
+
+
     os.makedirs('output', exist_ok=True)
-    with open("output/"+cfg.weapon.name+str(len(results)), 'w') as f:
+    with open("output/"+filename, 'w') as f:
         for entry in results:
             f.write(f"{entry}\n")
 
