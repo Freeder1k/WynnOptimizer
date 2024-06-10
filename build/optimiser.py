@@ -32,8 +32,8 @@ def _runCPModelSolver(cfg):
         solver.mutual_exclude(hive_master)
 
         solver.find_best()
-        best_score = process_results(cfg, 2)[0][2]
-
+        best_score = process_results(cfg, 2, check_valid=False)[0][2]
+        print(f"Min objective score = {int(0.96*best_score)}")
         solver.add_min_score(int(0.96*best_score))
         solver.find_allbest()
     except:
@@ -45,18 +45,23 @@ def _runCPModelSolver(cfg):
         f.write("False")
 
 
-def process_results(cfg, sort: int):
-    results = []
+def process_results(cfg, sort: int, check_valid=True):
+    builds = []
     with open('tempoutput.txt', 'r') as f:
         lines = f.readlines()
     for line in lines:
-        results.append(ast.literal_eval(line))
+        builds.append(ast.literal_eval(line))
 
-    for i, entry in enumerate(results):
+    results = []
+    for i, entry in enumerate(builds):
         items = []
         for n in entry:
             items.append(build.item.get_item(n))
         b = build.build.Build(cfg.weapon, *items)
+
+        reqsp, bonsp = b.calc_sp()
+        if sum(reqsp) >= 205 and check_valid:
+            continue
 
         builditem = sp.add_sp(b.build(), *b.calc_sp())
         for typ,mas,bon in zip(damageTypes, cfg.mastery, masterybonus):
@@ -64,7 +69,7 @@ def process_results(cfg, sort: int):
 
         buildscore = cfg.score_function(builditem)
         objectivevalue = sum(cfg.score_function(it) for it in b.items)
-        results[i] = (b, buildscore, objectivevalue)
+        results.append((b, buildscore, objectivevalue))
 
     results = sorted(results, key=lambda x: x[sort], reverse=True)
     return results

@@ -168,7 +168,7 @@ class CPModelSolver:
             print(f"Status = {solver.status_name(status)}")
             print(f"Number of solutions found: {solution_printer.solution_count}")
 
-        return solution_printer.results
+        return solution_printer.solution_count
 
     def find_best(self):
         """
@@ -197,7 +197,6 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         self._x = x
         self._items = items
         self.solution_count = 0
-        self.results = 0
         self._weapon = weapon
         self.spa = spass
         self.silent = silent
@@ -209,13 +208,8 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
             if self.Value(x) == 1:
                 res_items.append(itm)
 
-        b = build.Build(self._weapon, *res_items)
-        reqsp, bonsp = b.calc_sp()
-        if sum(reqsp) < 205:
-            #self.results.append((b, reqsp))
-            self.results += 1
-            with open('tempoutput.txt', 'a') as f:
-                f.write(f"{b.items}\n")
+        with open('tempoutput.txt', 'a') as f:
+            f.write(f"{res_items}\n")
         if not self.silent:
-            sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.results}/{self.solution_count} valid builds! {reqsp}")
+            sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.solution_count} builds!")
             sys.stdout.flush()
