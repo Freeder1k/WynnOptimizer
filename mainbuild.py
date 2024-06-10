@@ -19,7 +19,7 @@ def main():
     if running:
         filename = 'results.txt'
     else:
-        filename = cfg.weapon.name+str(len(results))
+        filename = cfg.weapon.name+str(len(results))+'txt'
 
 
     os.makedirs('output', exist_ok=True)
