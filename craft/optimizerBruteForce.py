@@ -99,7 +99,7 @@ def get_best_recipes_gpu(config: OptimalCrafterConfigBase) -> list[recipe.Recipe
         ids = config.ids
         score_fun = config.score
         constraint_fun = config.constraints
-
+        # TODO top 10 single batch or something?
         print(f"Calculating optimal recipe with {len(ingredients)} ingredients...")
 
         global _score_fun, _constraint_fun
