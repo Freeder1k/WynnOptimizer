@@ -19,6 +19,14 @@ class MinMaxValue:
         self.min = min_val
         self.max = max_val
 
+    @property
+    def abs_max(self):
+        return self.min if abs(self.min) > abs(self.max) else self.max
+
+    @property
+    def abs_min(self):
+        return self.min if abs(self.min) < abs(self.max) else self.max
+
     @classmethod
     def from_api_data(cls, data: int | dict):
         if isinstance(data, int):

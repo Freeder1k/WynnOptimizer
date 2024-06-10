@@ -5,6 +5,8 @@ import craft.ingredient
 import craft.optimizerBruteForce
 import craft.recipe
 from craft.config.base import HybridOptimizerConfig
+import craft.optimizerCP
+import wynndata.ingredient
 
 
 def score(ingr: craft.ingredient.Ingredient) -> float:
