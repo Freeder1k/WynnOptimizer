@@ -37,11 +37,11 @@ def _runCPModelSolver(cfg):
         solver.add_min_score(int(best_score) - 200)
         solver.find_allbest()
     except:
-        with open('isrunning', 'w') as f:
+        with open('.isrunning', 'w') as f:
             f.write("False")
         raise
 
-    with open('isrunning', 'w') as f:
+    with open('.isrunning', 'w') as f:
         f.write("False")
 
 
@@ -70,11 +70,11 @@ def process_results(cfg, sort: int):
     return results
 
 
-def optimize(cfg):
+def optimise(cfg):
     t = time.time()
 
     try:
-        with open('isrunning', 'r') as f:
+        with open('.isrunning', 'r') as f:
             running = f.readlines()[0]
     except FileNotFoundError:
         running = 'False'

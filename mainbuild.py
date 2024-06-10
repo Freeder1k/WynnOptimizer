@@ -1,6 +1,6 @@
 from build.config.dmg import DmgConfig
-import build.optimiser as solver
-
+import build.optimiser as optimiser
+import os
 import faulthandler
 faulthandler.enable()
 
@@ -11,9 +11,10 @@ def main():
           "し———J\n")
 
     cfg = DmgConfig()
-    results = solver.optimize(cfg)
+    results = optimiser.optimise(cfg)
 
-    with open('array.txt', 'w') as f:
+    os.makedirs('output', exist_ok=True)
+    with open("output/"+cfg.weapon.name+str(len(results)), 'w') as f:
         for entry in results:
             f.write(f"{entry}\n")
 
