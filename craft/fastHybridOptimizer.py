@@ -11,7 +11,6 @@ from craft.config.base import HybridOptimizerConfig
 def _runLPOptimizer(mods, base_r, cfg):
     mods = tuple(int(m) for m in mods)
     base = base_r.build("a")
-
     optimizer = craft.optimizerLP.LPRecipeOptimizer(cfg.ingredients, cfg.score_function, mods)
     if cfg.min_charges is not None:
         optimizer.set_min_charges(cfg.min_charges - base.charges)
@@ -55,6 +54,7 @@ def _runLPOptimizer(mods, base_r, cfg):
 
 def optimize(cfg: HybridOptimizerConfig, pool_size=4):
     t = time.time()
+    # TODO some base recipes could be getting skipped
     bases = craft.base_recipes.get_base_recipes_gpu(cfg.crafting_skill, cfg.relevant_ids)
 
     print(f"Found {len(bases)} base recipes. Finding optimal recipes...")
