@@ -14,39 +14,38 @@ def _runCPModelSolver(cfg):
         f.write("")
     with open('isrunning', 'w') as f:
         f.write("True")
-    solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
+    try:
+        solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
 
-    for i, value in cfg.max_ids.items():
-        solver.add_upper_bound(value + cfg.weapon.identifications[i].max, lambda itm: itm.identifications[i].max)
-    for i, value in cfg.min_ids.items():
-        solver.add_lower_bound(value - cfg.weapon.identifications[i].max, lambda itm: itm.identifications[i].max)
-    for i, value in cfg.max_reqs.items():
-        solver.add_upper_bound(value, lambda itm: itm.requirements[i])
-    for i, value in cfg.min_reqs.items():
-        solver.add_lower_bound(value, lambda itm: itm.identifications[i])
+        for key, value in cfg.max_ids.items():
+            solver.add_upper_bound(value + cfg.weapon.identifications[key].max, lambda itm: itm.identifications[key].max)
+        for key, value in cfg.min_ids.items():
+            solver.add_lower_bound(value - cfg.weapon.identifications[key].max, lambda itm: itm.identifications[key].max)
+        for key, value in cfg.max_reqs.items():
+            solver.add_max_assignable_sp(value, key)
+        for key, value in cfg.max_sp.items():
+            solver.add_max_sp(value, key)
+        for key, value in cfg.min_sp.items():
+            solver.add_min_sp(value, key)
 
-    hive_master = ["Abyss-Imbued Leggings","Boreal-Patterned Crown","Anima-Infused Cuirass","Chaos-Woven Greaves","Elysium-Engraved Aegis","Eden-Blessed Guards","Gaea-Hewn Boots","Hephaestus-Forged Sabatons","Obsidian-Framed Helmet","Twilight-Gilded Cloak","Contrast","Prowess","Intensity"]
-    solver.mutual_exclude(hive_master)
+        hive_master = ["Abyss-Imbued Leggings","Boreal-Patterned Crown","Anima-Infused Cuirass","Chaos-Woven Greaves","Elysium-Engraved Aegis","Eden-Blessed Guards","Gaea-Hewn Boots","Hephaestus-Forged Sabatons","Obsidian-Framed Helmet","Twilight-Gilded Cloak","Contrast","Prowess","Intensity"]
+        solver.mutual_exclude(hive_master)
 
-    solver.find_allbest()
-    with open('isrunning', 'w') as f:
+        solver.find_best()
+        best_score = process_results(cfg, 2)[0][2]
+
+        solver.add_min_score(int(best_score) - 200)
+        solver.find_allbest()
+    except:
+        with open('.isrunning', 'w') as f:
+            f.write("False")
+        raise
+
+    with open('.isrunning', 'w') as f:
         f.write("False")
 
 
-def optimize(cfg):
-    t = time.time()
-
-    try:
-        with open('isrunning', 'r') as f:
-            running = f.readlines()[0]
-    except FileNotFoundError:
-        running = 'False'
-    if running == 'False':
-        print(f"Finding optimal builds...")
-        _runCPModelSolver(cfg)
-    else:
-        print(f"Program is currently running, Calculating preliminary results. (Delete file:'isrunning' if this is not the case)")
-
+def process_results(cfg, sort: int):
     results = []
     with open('tempoutput.txt', 'r') as f:
         lines = f.readlines()
@@ -67,8 +66,25 @@ def optimize(cfg):
         objectivevalue = sum(cfg.score_function(it) for it in b.items)
         results[i] = (b, buildscore, objectivevalue)
 
-    results = sorted(results, key=lambda x: x[1], reverse=True)
+    results = sorted(results, key=lambda x: x[sort], reverse=True)
+    return results
 
+
+def optimise(cfg):
+    t = time.time()
+
+    try:
+        with open('.isrunning', 'r') as f:
+            running = f.readlines()[0]
+    except FileNotFoundError:
+        running = 'False'
+    if running == 'False':
+        print(f"Finding optimal builds...")
+        _runCPModelSolver(cfg)
+    else:
+        print(f"Program is currently running, Calculating preliminary results. (Delete file:'isrunning' if this is not the case)")
+
+    results = process_results(cfg, 1)
 
     print(f"Total time taken: {time.time() - t:.2f}s")
 
@@ -76,4 +92,5 @@ def optimize(cfg):
         print("No viable builds found.")
     else:
         print(f"Best build: {results[0][0]}, score: {results[0][1]}")
+        print(results[0][0].generate_link(cfg.skilltree))
     return results

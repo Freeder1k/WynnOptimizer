@@ -8,6 +8,8 @@ skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefense
 
 
 def base_dmg(weapon, spellmod, masteries):
+    if len(masteries) == 5:
+        masteries = [False] + masteries
     speedmod = speed_conv[weapon.attackSpeed]
     weapon_dmg_max = [weapon.damage[dtype].max for dtype in damageTypes]
     weapon_dmg_min = [weapon.damage[dtype].min for dtype in damageTypes]  # do this not for max?

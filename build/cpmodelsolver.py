@@ -8,7 +8,7 @@ from build import item, build
 
 np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
-types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'ring_', 'bracelet', 'necklace']
+types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'ring2', 'bracelet', 'necklace']
 spinner = ['|', '/', '-', '\\']
 
 
@@ -33,7 +33,7 @@ class CPModelSolver:
 
         # Manual skillpoint assignment variables
         self.sp_assignment_vars = SkillpointsTuple(
-            *(self.model.new_int_var(0, 104, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+            *(self.model.new_int_var(0, 102, f"sp_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
         self.model.add(sum(self.sp_assignment_vars) <= 204)
 
         sp_reqs = SkillpointsTuple([], [], [], [], [])
@@ -61,7 +61,7 @@ class CPModelSolver:
 
         # Prevent same build with swapped rings
         r1_ind = [i*x for i, x in enumerate(t_var_dict['ring'])]
-        r2_ind = [i*x for i, x in enumerate(t_var_dict['ring_'])]
+        r2_ind = [i*x for i, x in enumerate(t_var_dict['ring2'])]
         self.model.add(sum(r1_ind) <= sum(r2_ind))
 
         # Skillpoint bonuses
@@ -81,7 +81,6 @@ class CPModelSolver:
 
         # Set the objective function
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
-        self.model.add(sum(self._objective) > 5300)
 
         print(item_count)
 
@@ -105,6 +104,48 @@ class CPModelSolver:
                 a.append(item_lambda(itm)*x)
             self.model.add(value <= sum(a))
 
+    def add_max_assignable_sp(self, value: int, skillpoint: str):
+        """
+        Add a constraint that the build can't have more sp of element assigned than a given value.
+        :param value: The max value that can be assigned.
+        :param skillpoint: The skillpoint that is to be constrained.
+        """
+        a = ['str','dex','int','def','agi']
+        if value is not None and skillpoint in a:
+            self.model.add(value >= self.sp_assignment_vars[a.index(skillpoint)])
+
+    def add_max_sp(self, value: int, skillpoint: str):
+        """
+        Add a constraint that the build can't have more sp of element than a given value.
+        In certain cases this might exclude viable builds, set the value slightly higher.
+        :param value: The max value for given skillpoint.
+        :param skillpoint: The skillpoint that is to be constrained.
+        """
+        a = ['str','dex','int','def','agi']
+        if value is not None and skillpoint in a:
+            a = []
+            for itm, x in zip(self._items, self.item_variables):
+                a.append(itm.identifications.skillpoints[a.index(skillpoint)] * x)
+            self.model.add(value >= sum(a) + self.sp_assignment_vars[a.index(skillpoint)])
+
+    def add_min_sp(self, value: int, skillpoint: str):
+        """
+        Add a constraint that the build can't have less sp of element than a given value.
+        In certain cases this might include non-viable builds.
+        :param value: The min value for given skillpoint.
+        :param skillpoint: The skillpoint that is to be constrained.
+        """
+        a = ['str','dex','int','def','agi']
+        if value is not None and skillpoint in a:
+            a = []
+            for itm, x in zip(self._items, self.item_variables):
+                a.append(itm.identifications.skillpoints[a.index(skillpoint)] * x)
+            self.model.add(value <= sum(a) + self.sp_assignment_vars[a.index(skillpoint)])
+
+    def add_min_score(self, value: int):
+        self.model.add(sum(self._objective) >= value)
+
+
     def mutual_exclude(self, set_items: list[item.Item]):
         """
         Prevent builds from having more than 1 item from the set.
@@ -117,6 +158,18 @@ class CPModelSolver:
                     a.append(x)
             self.model.add(sum(a) <= 1)
 
+    def _find(self, silent=False):
+        solver = cp_model.CpSolver()
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.sp_assignment_vars, silent)
+        solver.parameters.enumerate_all_solutions = True
+        status = solver.solve(self.model, solution_printer)
+        if not silent:
+            print()
+            print(f"Status = {solver.status_name(status)}")
+            print(f"Number of solutions found: {solution_printer.solution_count}")
+
+        return solution_printer.results
+
     def find_best(self):
         """
         Find the build where the sum of the scores of the items in that build is maximized and the constraints
@@ -124,27 +177,22 @@ class CPModelSolver:
         :return: Results.
         """
         self.model.maximize(sum(self._objective))
-        return self.find_allbest()
+
+        return self._find(silent=True)
 
     def find_allbest(self):
         """
         Find all builds satisfying the constraints.
         :return: Results.
         """
-        solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.sp_assignment_vars)
-        solver.parameters.enumerate_all_solutions = True
-        status = solver.solve(self.model, solution_printer)
-        print()
-        print(f"Status = {solver.status_name(status)}")
-        print(f"Number of solutions found: {solution_printer.solution_count}")
+        self.model.clear_objective()
 
-        return solution_printer.results
+        return self._find()
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, x, items, weapon, spass):
+    def __init__(self, x, items, weapon, spass, silent):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self._x = x
         self._items = items
@@ -152,6 +200,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.results = 0
         self._weapon = weapon
         self.spa = spass
+        self.silent = silent
 
     def on_solution_callback(self) -> None:
         self.solution_count += 1
@@ -167,10 +216,6 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
             self.results += 1
             with open('tempoutput.txt', 'a') as f:
                 f.write(f"{b.items}\n")
-
-        sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.results}/{self.solution_count} valid builds! {reqsp}")
-        sys.stdout.flush()
-        # print("\033[92m" if sum(reqsp) <= 205 else "\033[91m", b.items, [self.value(s) for s in self.spa], "\033[m")
-
-        #if self.UserTime() > 60:
-        #   self.StopSearch()
+        if not self.silent:
+            sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.results}/{self.solution_count} valid builds! {reqsp}")
+            sys.stdout.flush()

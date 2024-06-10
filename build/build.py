@@ -49,7 +49,7 @@ class Build:
     def __repr__(self):
         return str(self.items)
 
-    def generate_link(self):
+    def generate_link(self, skilltree = ""):
         build_string = 'https://hppeng-wynn.github.io/builder?v=7#9_'
         for itm in self.items:
             if isinstance(itm, Crafted):
@@ -72,7 +72,7 @@ class Build:
         if powder_hash != 0:
             build_string += Base64.fromInt(powder_hash,5)
         build_string += '0z0z0+0+0+0+0-'  # This would be where tomes go
-        build_string += '1TldxagIZu07'  # Nirvana Trickstobat tree
+        build_string += skilltree
 
         return build_string
 
