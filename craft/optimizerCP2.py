@@ -1,9 +1,9 @@
 from typing import Callable, TypeVar
 
 from ortools.sat.python import cp_model
-from ortools.sat.python.cp_model import LinearExpr
+from ortools.sat.python.cp_model import LinearExpr, BoundedLinearExpression
 
-from craft import CPIngredient
+from craft.CPIngredient import CPIngredient
 from wynndata.recipe import Recipe
 from wynndata import ingredient
 
@@ -12,7 +12,7 @@ T = TypeVar('T')
 
 class CPRecipeOptimizer:
     def __init__(self, ingredients: list[ingredient.Ingredient],
-                 score_function: Callable[[CPIngredient], LinearExpr],
+                 score_function: Callable[[ingredient.Ingredient], int],
                  bases: list[tuple[tuple, Recipe]]):
         """
         Create a linear programming optimizer for a recipe.
@@ -56,30 +56,24 @@ class CPRecipeOptimizer:
 
         # Ingredients with modifiers precalculated
         self.ingrs_mod = [[ingr * (mod / 100) for ingr in ingredients] for mod in self.mod_values]
+        self.base_items = [base[1].build() for base in bases]
 
         # Set the objective
+        self.item = CPIngredient(self)
+
         self.objective = (sum(score_function(self.ingrs_mod[i][j]) * self.ingredient_variables[i][j]
                              for i in range(self.mod_amt)
-                             for j in range(self.ingr_count))
-                          + sum(score_function(bases[i][1]) * self.base_variables[i] for i in range(len(bases))))
+                             for j in range(self.ingr_count)
+                              if score_function(self.ingrs_mod[i][j]) != 0)
+                          + sum(score_function(self.base_items[i]) * self.base_variables[i]
+                                for i in range(len(bases))
+                                if score_function(self.base_items[i]) != 0)
+                          )
         self.model.maximize(self.objective)
 
-        # TODO constraints
-        self.model.add(sum(self.ingrs_mod[i][j].durability * self.ingredient_variables[i][j]
-                           for i in range(self.mod_amt) for j in range(self.ingr_count))
-                       >= -735 + 20)
-        self.model.add(sum(self.ingrs_mod[i][j].requirements.intelligence * self.ingredient_variables[i][j]
-                           for i in range(self.mod_amt) for j in range(self.ingr_count)
-                           if self.ingrs_mod[i][j].requirements.intelligence != 0)
-                       <= 70)
-        self.model.add(sum(self.ingrs_mod[i][j].identifications.manaRegen * self.ingredient_variables[i][j]
-                           for i in range(self.mod_amt) for j in range(self.ingr_count)
-                           if self.ingrs_mod[i][j].identifications.manaRegen != 0)
-                       >= 0)
-        self.model.add(sum(self.ingrs_mod[i][j].identifications.rawIntelligence * self.ingredient_variables[i][j]
-                           for i in range(self.mod_amt) for j in range(self.ingr_count)
-                           if self.ingrs_mod[i][j].identifications.rawIntelligence != 0)
-                       >= 0)
+
+    def add(self, constraint: BoundedLinearExpression):
+        self.model.add(constraint)
 
     def find_best(self):
         """

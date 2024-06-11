@@ -58,19 +58,23 @@ def _kernel(ingredients, recipes, viable):
             if recipe_args[i] == 0:
                 abs_mod += abs(recipes[pos][i + 8])
 
+        _calc_recipe_cuda(ingredients, recipe_args, recipes[pos][8:14], recipes[pos])
+
         if abs_mod < 300:
+            # TODO this causes massive slowdowns
+            for i in range(14, 14 + (_id_count * 2), 2):
+                if recipes[pos][i] > 0:
+                    viable[pos] = True
+                    return
             viable[pos] = False
-            return
         else:
             viable[pos] = True
-
-        _calc_recipe_cuda(ingredients, recipe_args, recipes[pos][8:14], recipes[pos])
 
 
 def is_worse(a, b, profession: str):
     return (((a[2] <= b[2] and all(a[i] >= b[i] for i in range(3, 8)) and profession in item_profs)
              or ((a[0] <= b[0] and a[1] <= b[1]) and profession in consu_profs))
-            and all(a[i] <= b[i] for i in range(14, 14 + _id_count * 2))
+            and all(a[i] <= b[i] for i in range(14, 14 + _id_count * 2, 2))
             )
 
 
@@ -189,10 +193,12 @@ def get_base_recipes_gpu(skill: str, ids: list[IdentificationType]):
 
         res = sorted(((k, v) for k, v in res.items()), key=lambda x: sum(x[0]), reverse=True)
         res = {k: [nonzero_indx[i].item() for i in v] for k, v in res}
+
         res = [(k, recipe.Recipe(*[ingredients[p] for p in get_permutation_py(_ingr_count, i)]))
                for k, v in res.items() for i in v]
 
-        # _to_csv(res)
+
+        _to_csv(res)
 
         print(f"Finished. Total unique recipes: {len(res)}.")
 
@@ -206,13 +212,12 @@ def get_base_recipes_gpu(skill: str, ids: list[IdentificationType]):
         return res
 
 
-def _to_csv(combos: dict[tuple[int, ...], list]):
+def _to_csv(combos: list[tuple[tuple[int], recipe.Recipe]]):
     with open("combos2.csv", "w", encoding='utf8') as f:
         f.write("Combo,,,,,,Charges,Duration,Durability,Str,Dex,Int,Def,Agi,mods,...,,,,,id0_max,id0_min,...\n")
-        for k, v in combos.items():
-            for res in v:
-                res[2] += 735
-                f.write(
-                    f"{','.join(_pad_r(tuple(map(str, k)), 6, ''))},"
-                    f"{','.join(map(str, list(res)))}\n"
-                )
+        for k, r in combos:
+            r = r.build()
+            f.write(
+                f"{','.join(_pad_r(tuple(map(str, k)), 6, ''))},"
+                f"{','.join(map(str, (r.charges, r.duration, r.durability, r.requirements.strength, r.requirements.dexterity, r.requirements.intelligence, r.requirements.defence, r.requirements.agility,)))}\n"
+            )

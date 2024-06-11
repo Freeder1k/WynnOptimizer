@@ -28,10 +28,7 @@ def main():
                          if i.modifiers.abs_total() == 0 and craft.ingredient.Skill('jeweling') in i.requirements.skills),
         score_function=score,
         crafting_skill=craft.ingredient.Skill('jeweling'),
-        relevant_ids=[craft.ingredient.IdentificationType.SPELL_DAMAGE,
-                      craft.ingredient.IdentificationType.THUNDER_DAMAGE,
-                      craft.ingredient.IdentificationType.AIR_DAMAGE,
-                      craft.ingredient.IdentificationType.MANA_REGEN]
+        relevant_ids=[]
     )
 
     cfg.set_min_durability(30)
@@ -40,8 +37,8 @@ def main():
     cfg.set_max_int_req(65)
     cfg.set_max_def_req(0)
     cfg.set_max_agi_req(0)
-    cfg.set_identification_min(craft.ingredient.IdentificationType.MANA_REGEN, 0)
-    cfg.set_identification_min(craft.ingredient.IdentificationType.RAW_INTELLIGENCE, 0)
+    # cfg.set_identification_min(craft.ingredient.IdentificationType.MANA_REGEN, 0)
+    # cfg.set_identification_min(craft.ingredient.IdentificationType.RAW_INTELLIGENCE, 0)
 
     res = craft.fastHybridOptimizer.optimize(cfg)
     print_recipe(res)

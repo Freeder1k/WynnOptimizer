@@ -15,12 +15,16 @@ class LinearExprGenerator:
         self._optimizer = optimizer
         self._accessor = accessor
 
-    def _gen_lin_expr(self, attr_name: str) -> LinearExpr:
-        return LinearExpr().sum([getattr(self._accessor(self._optimizer.ingrs_mod[i][j]), attr_name)
-                                 * self._optimizer.ingredient_variables[i][j]
-                                 for i in range(self._optimizer.mod_amt)
-                                 for j in range(self._optimizer.ingr_count)
-                                 if getattr(self._accessor(self._optimizer.ingrs_mod[i][j]), attr_name) != 0])
+    def _gen_lin_expr(self, attr: str) -> LinearExpr:
+        return (LinearExpr().sum([getattr(self._accessor(self._optimizer.ingrs_mod[i][j]), attr)
+                                  * self._optimizer.ingredient_variables[i][j]
+                                  for i in range(self._optimizer.mod_amt)
+                                  for j in range(self._optimizer.ingr_count)
+                                  if getattr(self._accessor(self._optimizer.ingrs_mod[i][j]), attr) != 0])
+                + LinearExpr().sum([getattr(self._accessor(self._optimizer.base_items[i]), attr)
+                                    * self._optimizer.base_variables[i]
+                                    for i in range(len(self._optimizer.base_items))
+                                    if getattr(self._accessor(self._optimizer.base_items[i]), attr) != 0]))
 
     def __getattr__(self, item) -> LinearExpr:
         expr = self._get_lin_expr(item)
