@@ -61,12 +61,12 @@ def _kernel(ingredients, recipes, viable):
         _calc_recipe_cuda(ingredients, recipe_args, recipes[pos][8:14], recipes[pos])
 
         if abs_mod < 300:
-            for i in range(14, 14 + _id_count * 2, 2):
+            # TODO this causes massive slowdowns
+            for i in range(14, 14 + (_id_count * 2), 2):
                 if recipes[pos][i] > 0:
                     viable[pos] = True
                     return
             viable[pos] = False
-            return
         else:
             viable[pos] = True
 
