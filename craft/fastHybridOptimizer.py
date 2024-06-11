@@ -10,7 +10,12 @@ from craft.config.base import HybridOptimizerConfig
 
 def _runLPOptimizer(mods, base_r, cfg):
     mods = tuple(int(m) for m in mods)
-    base = base_r.build("a")
+    base = base_r.build()
+    base_score = cfg.score_function(base)
+
+    if len(mods) == 0:
+        return base_score, base_r.ingredients
+
     optimizer = craft.optimizerLP.LPRecipeOptimizer(cfg.ingredients, cfg.score_function, mods)
     if cfg.min_charges is not None:
         optimizer.set_min_charges(cfg.min_charges - base.charges)
@@ -49,7 +54,7 @@ def _runLPOptimizer(mods, base_r, cfg):
         else:
             ingrs.append(ingr)
 
-    return res_score, ingrs
+    return res_score + base_score, ingrs
 
 
 def optimize(cfg: HybridOptimizerConfig, pool_size=4):
@@ -58,6 +63,17 @@ def optimize(cfg: HybridOptimizerConfig, pool_size=4):
     bases = craft.base_recipes.get_base_recipes_gpu(cfg.crafting_skill, cfg.relevant_ids)
 
     print(f"Found {len(bases)} base recipes. Finding optimal recipes...")
+
+    best_base = None
+    best_base_score = 0
+    for mods, base_r in bases:
+        r = base_r.build()
+        if cfg.score_function(r) > best_base_score:
+            best_base = base_r
+            best_base_score = cfg.score_function(r)
+
+    print(f"Best base recipe: {best_base}, score: {best_base_score}")
+
 
     with Pool(pool_size) as p:
         results = p.starmap(_runLPOptimizer, [(mods, base_r, cfg) for mods, base_r in bases])
