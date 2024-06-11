@@ -63,8 +63,12 @@ class CPRecipeOptimizer:
 
         self.objective = (sum(score_function(self.ingrs_mod[i][j]) * self.ingredient_variables[i][j]
                              for i in range(self.mod_amt)
-                             for j in range(self.ingr_count))
-                          + sum(score_function(self.base_items[i]) * self.base_variables[i] for i in range(len(bases))))
+                             for j in range(self.ingr_count)
+                              if score_function(self.ingrs_mod[i][j]) != 0)
+                          + sum(score_function(self.base_items[i]) * self.base_variables[i]
+                                for i in range(len(bases))
+                                if score_function(self.base_items[i]) != 0)
+                          )
         self.model.maximize(self.objective)
 
 

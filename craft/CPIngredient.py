@@ -23,7 +23,8 @@ class LinearExprGenerator:
                                   if getattr(self._accessor(self._optimizer.ingrs_mod[i][j]), attr) != 0])
                 + LinearExpr().sum([getattr(self._accessor(self._optimizer.base_items[i]), attr)
                                     * self._optimizer.base_variables[i]
-                                    for i in range(len(self._optimizer.base_items))]))
+                                    for i in range(len(self._optimizer.base_items))
+                                    if getattr(self._accessor(self._optimizer.base_items[i]), attr) != 0]))
 
     def __getattr__(self, item) -> LinearExpr:
         expr = self._get_lin_expr(item)
