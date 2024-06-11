@@ -43,12 +43,20 @@ class CPRecipeOptimizer:
         self.model.maximize(sum(self._objective))
 
         # requirements
-        self.model.add(sum(self.effective_values(lambda i: i.requirements.intelligence)) <= 60 * 100)
-        self.model.add(sum(self.effective_values(lambda i: i.identifications.rawIntelligence.max)) >= 0)
-        self.model.add(sum(self.effective_values(lambda i: i.identifications.manaRegen.max)) >= 0)
+        # self.model.add(sum(self.effective_values(lambda i: i.requirements.intelligence)) <= 60 * 100)
+        # self.model.add(sum(self.effective_values(lambda i: i.identifications.rawIntelligence.max)) >= 0)
+        # self.model.add(sum(self.effective_values(lambda i: i.identifications.rawHealth.max)) >= 0)
+        # self.model.add(sum(self.effective_values(lambda i: i.identifications.manaRegen.max)) >= 0)
+        self.model.add(sum(self.effective_values(lambda i: i.requirements.strength)) <= 77 * 100)
+        self.model.add(sum(self.effective_values(lambda i: i.requirements.defence)) <= 126 * 100)
+        # self.model.add(sum(self.effective_values(lambda i: i.requirements.intelligence)) <= 10 * 100)
+        # self.model.add(sum(self.effective_values(lambda i: i.requirements.intelligence)) <= 60)
         self.model.add(sum(sum(self.ingredients[j].durability * self.ingredient_variables[i][j]
                                for j in range(self.ingr_count))
-                           for i in range(6)) > -705 * 1000)
+                           for i in range(6)) > (-735 + 90) * 1000)
+        # self.model.add(sum(sum(self.ingredients[j].duration * self.ingredient_variables[i][j]
+        #                        for j in range(self.ingr_count))
+        #                    for i in range(6)) > -3800)
 
     def effective_values(self, value_func: Callable[[ingredient.Ingredient], int]):
         return [sum(value_func(self.ingredients[j]) * self.mod_variables[i][j]
