@@ -16,10 +16,10 @@ def main():
 
     with open('.isrunning', 'r') as f:
         running = f.readlines()[0]
-    if running:
+    if running == 'True':
         filename = 'results.txt'
     else:
-        filename = cfg.weapon.name+str(len(results))+'txt'
+        filename = cfg.weapon.name+str(len(results))+'.txt'
 
 
     os.makedirs('output', exist_ok=True)

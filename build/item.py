@@ -351,7 +351,7 @@ class Weapon(Item):
         try:
             instance = Item.from_api_json(name, data)
             damage = data.get("base", {})
-            damage.pop('averageDPS')
+            damage.pop('averageDPS', None)
             damage = IdentificationList.from_api_data(damage)
             attackSpeed = data["attackSpeed"]
             return cls(instance.name, instance.type, instance.identifications, instance.requirements, attackSpeed, damage, [])
