@@ -9,8 +9,9 @@ import numpy as np
 
 from core.wynnAPI import item
 from utils.decorators import ttl
-from .requirements import Requirements
 from .identifications import Identifications
+from .item import Crafted, Base
+from .requirements import Requirements
 
 
 @dataclass
@@ -89,13 +90,25 @@ class Ingredient:
                         dtype=np.intc
                         )
 
+    def as_item(self, item_type="none") -> Crafted:
+        return Crafted(
+            self.id,
+            item_type,
+            Base.none(),
+            self.requirements,
+            self.identifications,
+            self.charges,
+            self.duration,
+            self.durability
+        )
+
     def __add__(self, other: Ingredient):
         if not isinstance(other, Ingredient):
             raise TypeError(f"unsupported operand type(s) for +: '{type(self)}' and '{type(other)}'")
 
         return Ingredient(
             "Modified Ingredient",
-            4095,
+            (self.id << 12) + other.id,
             self.charges + other.charges,
             self.duration + other.duration,
             self.durability + other.durability,
@@ -111,7 +124,7 @@ class Ingredient:
 
         return Ingredient(
             "Modified Ingredient",
-            4095,
+            self.id,
             self.charges,
             self.duration,
             self.durability,
