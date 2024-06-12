@@ -11,6 +11,7 @@ spellmod = [0.3, 0, 0.15, 0.1, 0, 0]  # multihit https://wynnbuilder.github.io/b
 skilltree = '1Tjdxa+LQK30'
 mastery = [False, False, True, False, False]  # Elemental masteries from skilltree [ETWFA]
 # weapon = build.item.get_weapon("Cataclysm").set_powders(["t", "t", "t"])
+# weapon = build.item.get_weapon("Oblivion").set_powders(["t", "t", "t", "t"])
 weapon = build.item.get_weapon("Inferno").set_powders(["f", "f", "f"])
 base_dmg_max, base_dmg_min = dmgcalc.base_dmg(weapon, spellmod, mastery)
 spellmodsum = sum(spellmod)
