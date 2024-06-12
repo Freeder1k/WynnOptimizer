@@ -152,7 +152,10 @@ def get_base_recipes_gpu(skill: str, ids: list[IdentificationType]):
         dict_time = time.time() - t
         t = time.time()
 
+        times = {}
+
         for mods, option in res.items():
+            t2 = time.time()
             new_options = []
             for recipe_indx1 in option:
                 passes = True
@@ -167,10 +170,12 @@ def get_base_recipes_gpu(skill: str, ids: list[IdentificationType]):
                 if passes:
                     new_options.append(recipe_indx1)
             res[mods] = new_options
+            times[mods] = time.time() - t2
 
 
         unique_time = time.time() - t
         print(f"Filtered out {res_len - sum(len(v) for v in res.values())} worse recipes with same modifiers.")
+        print("Filtering times:", sorted(times.items(), key=lambda x: x[1], reverse=True))
         res_len = sum(len(v) for v in res.values())
         t = time.time()
 
@@ -198,7 +203,6 @@ def get_base_recipes_gpu(skill: str, ids: list[IdentificationType]):
 
         res = [(k, recipe.Recipe(*[ingredients[p] for p in get_permutation_py(_ingr_count, i)]))
                for k, v in res.items() for i in v]
-
 
         _to_csv(res)
 
