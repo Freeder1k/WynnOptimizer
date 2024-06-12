@@ -33,7 +33,7 @@ def _runCPModelSolver(cfg):
 
         solver.find_best()
         best_score = process_results(cfg, 2, check_valid=False)[0][2]
-        factor = 0.93  # WIP
+        factor = 0.96  # WIP
         print(f"Min objective score = {int(factor*best_score)}")
         solver.add_min_score(int(factor*best_score))
         solver.find_allbest()
