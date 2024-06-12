@@ -34,7 +34,8 @@ def _runCPModelSolver(cfg):
         best_score = process_results(cfg, 2, check_valid=False)[0][2]
         factor = 0.96  # WIP
         print(f"Min objective score = {int(factor*best_score)}")
-        solver.add_min_score(int(factor*best_score))
+        #solver.add_min_score(int(factor*best_score))
+        solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
         solver.find_allbest()
     except:
         with open('.isrunning', 'w') as f:
@@ -68,7 +69,8 @@ def process_results(cfg, sort: int, check_valid=True):
             builditem.identifications[typ] += bon*mas
 
         buildscore = cfg.score_function(builditem)
-        objectivevalue = sum(cfg.score_function(it) for it in b.items)
+        # objectivevalue = sum(cfg.score_function(it) for it in b.items)
+        objectivevalue = cfg.sdfactor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)
         results.append((b, buildscore, objectivevalue))
 
     results = sorted(results, key=lambda x: x[sort], reverse=True)

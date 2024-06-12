@@ -36,3 +36,8 @@ class DmgConfig(OptimizerConfig):
         self.set_weapon(weapon)
         self.set_elemental_mastery(mastery)
         self.set_skilltree(skilltree)
+        self.set_sdfactor(2)
+        self.set_sp_max('str', 150)
+        self.set_sp_min('str', 45)
+        self.set_sp_max('dex', 150)
+        self.set_sp_min('dex', 45)

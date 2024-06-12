@@ -40,6 +40,7 @@ class OptimizerConfig:
         self.weapon = item.NO_ITEM
         self.mastery = [False, False, False, False, False, False]
         self.skilltree = ''
+        self.sdfactor = 0
 
     def set_requirement_max(self, element: str, value: int):
         self.max_reqs[element] = value
@@ -71,4 +72,8 @@ class OptimizerConfig:
 
     def set_skilltree(self, skilltree: str):
         self.skilltree = skilltree
+        return self
+
+    def set_sdfactor(self, value):
+        self.sdfactor = value
         return self
