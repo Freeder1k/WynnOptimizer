@@ -37,8 +37,8 @@ def main():
     cfg.set_max_int_req(65)
     cfg.set_max_def_req(0)
     cfg.set_max_agi_req(0)
-    # cfg.set_identification_min(craft.ingredient.IdentificationType.MANA_REGEN, 0)
-    # cfg.set_identification_min(craft.ingredient.IdentificationType.RAW_INTELLIGENCE, 0)
+    cfg.set_identification_min(craft.ingredient.IdentificationType.MANA_REGEN, 0)
+    cfg.set_identification_min(craft.ingredient.IdentificationType.RAW_INTELLIGENCE, 0)
 
     res = craft.fastHybridOptimizer.optimize(cfg)
     print_recipe(res)

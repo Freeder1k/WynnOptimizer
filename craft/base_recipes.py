@@ -61,7 +61,6 @@ def _kernel(ingredients, recipes, viable):
         _calc_recipe_cuda(ingredients, recipe_args, recipes[pos][8:14], recipes[pos])
 
         if abs_mod < 300:
-            # TODO this causes massive slowdowns
             for i in range(14, 14 + (_id_count * 2), 2):
                 if recipes[pos][i] > 0:
                     viable[pos] = True
@@ -157,15 +156,18 @@ def get_base_recipes_gpu(skill: str, ids: list[IdentificationType]):
             new_options = []
             for recipe_indx1 in option:
                 passes = True
-                for recipe_indx2 in option:
-                    if recipe_indx1 == recipe_indx2:
-                        continue
+                worse = []
+                for recipe_indx2 in new_options:
                     if is_worse(nonzero_res[recipe_indx1], nonzero_res[recipe_indx2], skill):
                         passes = False
                         break
+                    elif is_worse(nonzero_res[recipe_indx2], nonzero_res[recipe_indx1], skill):
+                        worse.append(recipe_indx2)
+                new_options = [i for i in new_options if i not in worse]
                 if passes:
                     new_options.append(recipe_indx1)
             res[mods] = new_options
+
 
         unique_time = time.time() - t
         print(f"Filtered out {res_len - sum(len(v) for v in res.values())} worse recipes with same modifiers.")
