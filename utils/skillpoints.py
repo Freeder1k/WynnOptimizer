@@ -1,7 +1,7 @@
 from build.item import Crafted
 import math
 
-skillPoints = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefence", "rawAgility"]
+skillPoints = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
 sp = ["str","dex","int","def","agi"]
 
 

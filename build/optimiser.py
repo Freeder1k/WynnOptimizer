@@ -27,9 +27,8 @@ def _runCPModelSolver(cfg):
             solver.add_max_sp(value, key)
         for key, value in cfg.min_sp.items():
             solver.add_min_sp(value, key)
-
-        hive_master = ["Abyss-Imbued Leggings","Boreal-Patterned Crown","Anima-Infused Cuirass","Chaos-Woven Greaves","Elysium-Engraved Aegis","Eden-Blessed Guards","Gaea-Hewn Boots","Hephaestus-Forged Sabatons","Obsidian-Framed Helmet","Twilight-Gilded Cloak","Contrast","Prowess","Intensity"]
-        solver.mutual_exclude(hive_master)
+        for s in cfg.exclusive_sets:
+            solver.mutual_exclude(s)
 
         solver.find_best()
         best_score = process_results(cfg, 2, check_valid=False)[0][2]

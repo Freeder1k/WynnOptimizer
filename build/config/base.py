@@ -3,6 +3,14 @@ import copy
 from build import item
 from build.item import IdentificationType
 
+hive_master = ["Abyss-Imbued Leggings","Boreal-Patterned Crown","Anima-Infused Cuirass","Chaos-Woven Greaves","Elysium-Engraved Aegis","Eden-Blessed Guards","Gaea-Hewn Boots","Hephaestus-Forged Sabatons","Obsidian-Framed Helmet","Twilight-Gilded Cloak","Contrast","Prowess","Intensity"]
+hive_earth = ["Ambertoise Shell","Beetle Aegis","Elder Oak Roots","Humbark Moccasins","Subur Clip","Golemlus Core"]
+hive_thunder = ["Sparkling Visor","Insulated Plate Mail","Static-Charged Leggings","Thunderous Step","Bottled Thunderstorm","Lightning Flash"]
+hive_water = ["Whitecap Crown","Stillwater Blue","Trench Scourer","Silt of the Seafloor","Coral Ring","Moon Pool Circlet"]
+hive_fire = ["Sparkweaver","Soulflare","Cinderchain","Mantlewalkers","Clockwork","Dupliblaze"]
+hive_air = ["Pride of the Aerie","Gale's Freedom","Turbine Greaves","Flashstep","Breezehands","Vortex Bracer"]
+
+
 
 class OptimizerConfig:
 
@@ -22,7 +30,7 @@ class OptimizerConfig:
                     itm2.type = 'ring2'
                     extra_rings.append(itm2)
             items += extra_rings
-
+        self.exclusive_sets = [hive_master, hive_earth, hive_thunder, hive_water, hive_fire, hive_air]
         self.score_function = score_function
         self.max_ids = {}
         self.min_ids = {}

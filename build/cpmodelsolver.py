@@ -207,9 +207,12 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         for itm, x in zip(self._items, self._x):
             if self.Value(x) == 1:
                 res_items.append(itm)
+        skps = []
+        for skp in self.spa:
+            skps.append(self.Value(skp))
 
         with open('tempoutput.txt', 'a') as f:
             f.write(f"{res_items}\n")
         if not self.silent:
-            sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.solution_count} builds!")
+            sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.solution_count} builds! {skps}")
             sys.stdout.flush()
