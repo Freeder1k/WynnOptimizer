@@ -117,7 +117,7 @@ class CPModelSolver:
     def add_max_sp(self, value: int, skillpoint: str):
         """
         Add a constraint that the build can't have more sp of element than a given value.
-        In certain cases this might exclude viable builds, set the value slightly higher.
+        In certain cases this might exclude include non-viable builds.
         :param value: The max value for given skillpoint.
         :param skillpoint: The skillpoint that is to be constrained.
         """
@@ -128,10 +128,10 @@ class CPModelSolver:
                 a.append(itm.identifications.skillpoints[s.index(skillpoint)] * x)
             self.model.add(value >= sum(a) + self.sp_assignment_vars[s.index(skillpoint)])
 
-    def add_min_sp(self, value: int, skillpoint: str):
+    def add_min_sp(self, value: int, skillpoint: str):  # TODO: Better method for this
         """
         Add a constraint that the build can't have less sp of element than a given value.
-        In certain cases this might include non-viable builds.
+        In certain cases this might exclude viable builds.
         :param value: The min value for given skillpoint.
         :param skillpoint: The skillpoint that is to be constrained.
         """

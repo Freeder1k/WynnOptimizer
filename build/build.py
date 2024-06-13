@@ -49,7 +49,7 @@ class Build:
     def __repr__(self):
         return str(self.items)
 
-    def generate_link(self, skilltree = ""):
+    def generate_link(self, skilltree = "1T"):
         build_string = 'https://hppeng-wynn.github.io/builder?v=7#9_'
         for itm in self.items:
             if isinstance(itm, Crafted):
@@ -67,7 +67,7 @@ class Build:
             powder_hash = (powder_hash << 5) + {'e':6,'t':12,'w':18,'f':24,'a':36}[powder]
             if (i+1)%6 == 0 and i != 0:
                 build_string += Base64.fromInt(powder_hash,5)
-                print(i, powder_hash)
+                #print(i, powder_hash)
                 powder_hash = 0
         if powder_hash != 0:
             build_string += Base64.fromInt(powder_hash,5)

@@ -96,6 +96,7 @@ def optimise(cfg):
     if len(results) == 0:
         print("No viable builds found.")
     else:
+        print(f"Number of valid builds found: {len(results)}")
         print(f"Best build: {results[0][0]}, score: {results[0][1]}")
         print(results[0][0].generate_link(cfg.skilltree))
     return results
