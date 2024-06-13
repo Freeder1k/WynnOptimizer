@@ -123,7 +123,7 @@ class CPModelSolver:
         """
         s = ['str','dex','int','def','agi']
         if value is not None and skillpoint in s:
-            a = []
+            a = [self._weapon.identifications.skillpoints[s.index(skillpoint)]]
             for itm, x in zip(self._items, self.item_variables):
                 a.append(itm.identifications.skillpoints[s.index(skillpoint)] * x)
             self.model.add(value >= sum(a) + self.sp_assignment_vars[s.index(skillpoint)])
@@ -137,7 +137,7 @@ class CPModelSolver:
         """
         s = ['str','dex','int','def','agi']
         if value is not None and skillpoint in s:
-            a = []
+            a = [self._weapon.identifications.skillpoints[s.index(skillpoint)]]
             for itm, x in zip(self._items, self.item_variables):
                 a.append(itm.identifications.skillpoints[s.index(skillpoint)] * x)
             self.model.add(value <= sum(a) + self.sp_assignment_vars[s.index(skillpoint)])
@@ -147,6 +147,7 @@ class CPModelSolver:
 
     def add_min_score_sp(self, value: int, factor):
         itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
+        itembonusses += [self._weapon.identifications.skillpoints[0] + self._weapon.identifications.skillpoints[1]]
         assignsp = self.sp_assignment_vars[0] + self.sp_assignment_vars[1]
         self.model.add(factor*(assignsp + sum(itembonusses)) + sum(self._objective) >= value)
 
