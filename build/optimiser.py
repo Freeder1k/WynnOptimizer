@@ -30,11 +30,10 @@ def _runCPModelSolver(cfg):
         for s in cfg.exclusive_sets:
             solver.mutual_exclude(s)
 
-        solver.find_best()
-        best_score = process_results(cfg, 2, check_valid=False)[0][2]
+        solver.find_best(cfg.sdfactor)
+        best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
         factor = 0.96  # WIP
         print(f"Min objective score = {int(factor*best_score)}")
-        #solver.add_min_score(int(factor*best_score))
         solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
         solver.find_allbest()
     except:
@@ -46,7 +45,7 @@ def _runCPModelSolver(cfg):
         f.write("False")
 
 
-def process_results(cfg, sort: int, check_valid=True):
+def process_results(cfg, sort: int, check_valid=True, factor=0):
     builds = []
     with open('tempoutput.txt', 'r') as f:
         lines = f.readlines()
@@ -69,8 +68,7 @@ def process_results(cfg, sort: int, check_valid=True):
             builditem.identifications[typ] += bon*mas
 
         buildscore = cfg.score_function(builditem)
-        # objectivevalue = sum(cfg.score_function(it) for it in b.items)
-        objectivevalue = cfg.sdfactor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)
+        objectivevalue = factor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)
         results.append((b, buildscore, objectivevalue))
 
     results = sorted(results, key=lambda x: x[sort], reverse=True)

@@ -174,13 +174,15 @@ class CPModelSolver:
 
         return solution_printer.solution_count
 
-    def find_best(self):
+    def find_best(self, factor):
         """
         Find the build where the sum of the scores of the items in that build is maximized and the constraints
         are satisfied.
         :return: Results.
         """
-        self.model.maximize(sum(self._objective))
+        itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
+        assignsp = self.sp_assignment_vars[0] + self.sp_assignment_vars[1]
+        self.model.maximize(factor*(assignsp + sum(itembonusses)) + sum(self._objective))
 
         return self._find(silent=True)
 
