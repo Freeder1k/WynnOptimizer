@@ -24,42 +24,22 @@ def skillpoints(build):
 
 def uncrafted_sp(items):
     bon_sp=[0,0,0,0,0]
-    nbon_sp=[0,0,0,0,0]
-    # do items that dont have any requirements
-    remain = []
-    for item in items:
-        if any(req > 0 for req in item.requirements.get_requirements()):
-            remain.append(item)
-        else:
-            for i in range(5):
-                s = item.identifications[skillPoints[i]].max
-                if s > 0:
-                    bon_sp[i] += s
-                else:
-                    nbon_sp[i] += s
-
-    # do items that have requirements
     req_sp = [0,0,0,0,0]
     for i in range(5):
         splist = []
-        for item in remain:
+        for item in items:
             req = item.requirements[sp[i]]
             bon = item.identifications[skillPoints[i]].max
-            name = item.name
-            splist.append((req, bon, name))
-        sorted_list = sorted(splist, key=lambda x: x[0])  # sort by lowest requirement
-
-        for j, (req, bon, name) in enumerate(sorted_list):  # on last item do negative skillpoints
-            if j == len(sorted_list) - 1:
-                bon_sp[i] += nbon_sp[i]
-            if req > 0:
-                req_sp[i] = max(req_sp[i], req - bon_sp[i])
+            if req <= 0:
                 bon_sp[i] += bon
             else:
-                if bon > 0:
-                    bon_sp[i] += bon
-                else:
-                    nbon_sp[i] += bon
+                splist.append((req, bon))
+
+        sorted_list = sorted(splist, key=lambda x: x[0])  # sort by lowest requirement
+        for j, (req, bon) in enumerate(sorted_list):
+            if req > 0:
+                req_sp[i] = max(req_sp[i], req - bon_sp[i])
+            bon_sp[i] += bon
 
     return req_sp, bon_sp
 
