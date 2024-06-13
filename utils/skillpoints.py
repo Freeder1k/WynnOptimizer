@@ -26,20 +26,21 @@ def uncrafted_sp(items):
     bon_sp=[0,0,0,0,0]
     req_sp = [0,0,0,0,0]
     for i in range(5):
-        splist = []
+        reqs = []
+        bons = []
         for item in items:
             req = item.requirements[sp[i]]
-            bon = item.identifications[skillPoints[i]].max
-            if req <= 0:
-                bon_sp[i] += bon
+            if req == 0:
+                reqs.append(-1000)
             else:
-                splist.append((req, bon))
-
-        sorted_list = sorted(splist, key=lambda x: x[0])  # sort by lowest requirement
-        for j, (req, bon) in enumerate(sorted_list):
-            if req > 0:
-                req_sp[i] = max(req_sp[i], req - bon_sp[i])
-            bon_sp[i] += bon
+                reqs.append(req)
+            bons.append(item.identifications[skillPoints[i]].max)
+        sums = [r + b for r, b in zip(reqs, bons)]
+        max_index = sums.index(max(sums))
+        max_req = reqs[max_index]
+        bonus = sum(min(bon,max(0,max_req-req)) for req, bon in zip(reqs, bons))
+        req_sp[i] = max(0, max_req - bonus)
+        bon_sp[i] = sum(bons)
 
     return req_sp, bon_sp
 
