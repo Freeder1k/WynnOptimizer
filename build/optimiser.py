@@ -28,14 +28,15 @@ def _runCPModelSolver(cfg):
         for s in cfg.exclusive_sets:
             solver.mutual_exclude(s)
 
-        solver.find_best(cfg.sdfactor)
-        best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
-        with open('tempoutput.txt', 'w') as f:
-            f.write("")
-        factor = 0.97  # WIP
-        print(f"Min objective score = {int(factor*best_score)}")
-        solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
-        solver.find_allbest()
+        print(solver.model.model_stats())
+        solver.find_best(1)
+        # best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
+        # with open('tempoutput.txt', 'w') as f:
+        #     f.write("")
+        # factor = 0.96  # WIP
+        # print(f"Min objective score = {int(factor*best_score)}")
+        # solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
+        # solver.find_allbest()
     except:
         with open('.isrunning', 'w') as f:
             f.write("False")

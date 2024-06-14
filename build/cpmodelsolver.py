@@ -5,6 +5,8 @@ from build.item import SkillpointsTuple
 import numpy as np
 from ortools.sat.python import cp_model
 from build import item, build
+from utils import dmgcalc
+from build.config import dmg
 
 np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
@@ -85,6 +87,8 @@ class CPModelSolver:
             self.model.add_max_equality(sp_assign + sum(sp_bonus), sp_req)
 
         # Set the objective function
+        self.damage = dmgcalc.true_dmg_model(self.model, dmg.base_dmg_max, self._items, self.item_variables, self.sp_assignment_vars, self._weapon, dmg.spellmod)
+
         self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
 
         print(item_count)
@@ -154,7 +158,7 @@ class CPModelSolver:
 
     def _find(self, silent=False):
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.sp_assignment_vars, silent)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.damage, silent)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
         if not silent:
@@ -163,6 +167,10 @@ class CPModelSolver:
             print(f"Number of solutions found: {solution_printer.solution_count}")
 
         return solution_printer.solution_count
+
+    def find_best_new(self):
+        self.model.maximize(sum(self.damage))
+        return self._find(silent=True)
 
     def find_best(self, factor):
         """

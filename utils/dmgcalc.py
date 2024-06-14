@@ -5,6 +5,7 @@ damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDa
 elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
 Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']
 skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
+sptypes = ['str','dex','int','def','agi']
 
 
 def base_dmg(weapon, spellmod, masteries):
@@ -59,6 +60,72 @@ def true_dmg(base, ids, spellmodsum, crit=True):
 
     return damage
 
+def true_dmg_model(model, base, items, item_vars, sp_vars, weapon, spellmod, crit=True):
+    spellmodsum = sum(spellmod)
+    skillpoints = [0,0,0,0,0,0]
+    for i in range(5):
+        a = [weapon.identifications[skillPoints[i]].max, sp_vars[i]]
+        for itm, x in zip(items, item_vars):
+            if itm.identifications[skillPoints[i]].max != 0:
+                a.append(itm.identifications[skillPoints[i]].max * x)
+        skillpoints[i+1] = spToPct_model(model, sum(a), sptypes[i])
+    strdexvar = model.new_int_var(100, 300, f"strdexvar")
+    model.add(strdexvar == 100 + skillpoints[1] + int(crit) * skillpoints[2])
+
+    item_pcts = [[],[],[],[],[],[]]
+    item_raws_base = [[],[]]
+    item_raws_elemental = [[],[],[],[],[],[]]
+    for itm, x in zip(items, item_vars):
+        item_pct = [itm.identifications["spellDamage"].max] + 5 * [itm.identifications["spellDamage"].max + itm.identifications['elementalSpellDamage'].max]
+        item_raw_n = itm.identifications["rawSpellDamage"].max
+        item_raw_e = itm.identifications['rawElementalDamage'].max + itm.identifications['rawElementalSpellDamage'].max
+        if item_raw_n != 0:
+            item_raws_base[0].append(item_raw_n * x)
+        if item_raw_e != 0:
+            item_raws_base[1].append(item_raw_e * x)
+        for i in range(6):
+            item_pct[i] += itm.identifications[damageTypes[i]].max + itm.identifications[elements[i]+'SpellDamage'].max
+            if item_pct[i] != 0:
+                item_pcts[i].append(item_pct[i] * x)
+            item_raw_elemental = itm.identifications["raw"+Elements[i]+"SpellDamage"].max + itm.identifications["raw"+Elements[i]+"Damage"].max
+            if item_raw_elemental != 0:
+                item_raws_elemental[i].append(item_raw_elemental * x)
+
+    pcts = [0,0,0,0,0,0]
+    raws_base = [0,0]
+    raws_elemental = [0,0,0,0,0,0]
+    for i in range(6):
+        pcts[i] = sum(item_pcts[i])# + skillpoints[i]
+        raws_elemental[i] = sum(item_raws_elemental[i])
+    for i in range(2):
+        raws_base[i] = sum(item_raws_base[i])
+
+    damage = [0,0,0,0,0,0]
+    for i in range(6):
+        if spellmod[i] == 0:
+            continue
+        dmg = int(base[i]) * (100 + pcts[i])
+        if i == 0:
+            raw = raws_base[0]
+        else:
+            raw = raws_base[1]
+        raw = int(100*spellmodsum*base[i]/sum(base)) * raw + int(100*spellmodsum) * raws_elemental[i]
+        dmg = dmg + raw
+        dmgvar = model.new_int_var(0, int(base[i])*1000 + 200000, f"dmgvar")
+        model.add(dmgvar == dmg)
+        damage[i] = model.new_int_var(0, 300*(int(base[i])*1000 + 200000), f"damage_{elements[i]}")
+        model.add_multiplication_equality(damage[i], [dmgvar,strdexvar])
+
+    return damage
+
+def spToPct_model(model, sp, sptype):
+    skillpoint1 = model.new_int_var(1, 150, f"{sptype}1")
+    model.add_max_equality(skillpoint1, [1, sp])
+    skillpoint2 = model.new_int_var(1, 150, f"{sptype}2")
+    model.add_min_equality(skillpoint2, [150, skillpoint1])
+    skillpointpct = model.new_int_var(0, 82, f"{sptype}_pct")
+    model.add_division_equality(skillpointpct - 165, -25400, skillpoint2 + 153)
+    return skillpointpct
 
 def spToPct(sp):  # skillpoints to percentage
     if sp <= 0:
