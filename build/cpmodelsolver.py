@@ -10,17 +10,20 @@ np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
 types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'ring2', 'bracelet', 'necklace']
 spinner = ['|', '/', '-', '\\']
+sptypes = ['str','dex','int','def','agi']
 
 
 class CPModelSolver:
     def __init__(self, items: list[item.Item],
                  score_function: Callable[[item.Item], int],
-                 weapon: item.Item):
+                 weapon: item.Item,
+                 min_sp: dict[str, int]):
         """
         Create a linear programming optimizer for a Build.
         :param items: A list of items to use in the Build.
         :param score_function: A function that returns the score of an individual item.
         :param weapon: The weapon used in the build.
+        :param min_sp: A dict of minimum skillpoint requirements in the build.
         """
         self._weapon = weapon
         item_count = []
@@ -73,10 +76,12 @@ class CPModelSolver:
                         sp_bonus.append(itm_sp_bonus * x)
 
         # Skillpoint requirement constraints
-        for sp_assign, w_sp_req, sp_bonus, sp_req in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses, sp_reqs):
+        for sp_assign, w_sp_req, sp_bonus, sp_req, sptype in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses, sp_reqs, sptypes):
             if w_sp_req != 0:
                 sp_req.append(w_sp_req)
             sp_req.append(sum(sp_bonus))
+            if sptype in min_sp:
+                sp_req.append(min_sp[sptype])
             self.model.add_max_equality(sp_assign + sum(sp_bonus), sp_req)
 
         # Set the objective function
@@ -110,9 +115,8 @@ class CPModelSolver:
         :param value: The max value that can be assigned.
         :param skillpoint: The skillpoint that is to be constrained.
         """
-        a = ['str','dex','int','def','agi']
-        if value is not None and skillpoint in a:
-            self.model.add(value >= self.sp_assignment_vars[a.index(skillpoint)])
+        if value is not None and skillpoint in sptypes:
+            self.model.add(value >= self.sp_assignment_vars[sptypes.index(skillpoint)])
 
     def add_max_sp(self, value: int, skillpoint: str):
         """
@@ -121,26 +125,11 @@ class CPModelSolver:
         :param value: The max value for given skillpoint.
         :param skillpoint: The skillpoint that is to be constrained.
         """
-        s = ['str','dex','int','def','agi']
-        if value is not None and skillpoint in s:
-            a = [self._weapon.identifications.skillpoints[s.index(skillpoint)]]
+        if value is not None and skillpoint in sptypes:
+            a = [self._weapon.identifications.skillpoints[sptypes.index(skillpoint)]]
             for itm, x in zip(self._items, self.item_variables):
-                a.append(itm.identifications.skillpoints[s.index(skillpoint)] * x)
-            self.model.add(value >= sum(a) + self.sp_assignment_vars[s.index(skillpoint)])
-
-    def add_min_sp(self, value: int, skillpoint: str):  # TODO: Better method for this
-        """
-        Add a constraint that the build can't have less sp of element than a given value.
-        In certain cases this might exclude viable builds.
-        :param value: The min value for given skillpoint.
-        :param skillpoint: The skillpoint that is to be constrained.
-        """
-        s = ['str','dex','int','def','agi']
-        if value is not None and skillpoint in s:
-            a = [self._weapon.identifications.skillpoints[s.index(skillpoint)]]
-            for itm, x in zip(self._items, self.item_variables):
-                a.append(itm.identifications.skillpoints[s.index(skillpoint)] * x)
-            self.model.add(value <= sum(a) + self.sp_assignment_vars[s.index(skillpoint)])
+                a.append(itm.identifications.skillpoints[sptypes.index(skillpoint)] * x)
+            self.model.add(value >= sum(a) + self.sp_assignment_vars[sptypes.index(skillpoint)])
 
     def add_min_score(self, value: int):
         self.model.add(sum(self._objective) >= value)
@@ -148,7 +137,7 @@ class CPModelSolver:
     def add_min_score_sp(self, value: int, factor):
         itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
         itembonusses += [self._weapon.identifications.skillpoints[0] + self._weapon.identifications.skillpoints[1]]
-        assignsp = self.sp_assignment_vars[0] + self.sp_assignment_vars[1]
+        assignsp = 200 - (self.sp_assignment_vars[2] + self.sp_assignment_vars[3] + self.sp_assignment_vars[4])
         self.model.add(factor*(assignsp + sum(itembonusses)) + sum(self._objective) >= value)
 
     def mutual_exclude(self, set_items: list[item.Item]):

@@ -21,23 +21,38 @@ def skillpoints(build):
 
     return req_sp, bon_sp
 
-
+# There are very few cases in which this is incorrect:
+# (https://hppeng-wynn.github.io/builder/?v=7#9_07F0mG0uS06n2SK2SL2SM2SN05e0t190y-v-v1g000000z0z0+0+0+0+0-1Tjdxa+LQK30)
+# returns: ([52, 50, 32, 0, 0], [3, 13, 28, -7, -7]) instead of ([52, 60, 32, 0, 0], [3, 13, 28, -7, -7])
+# There are probably also complete (good) builds that this would apply to,
+# but it's a very specific problem and the rigorous method is much slower.
 def uncrafted_sp(items):
     bon_sp=[0,0,0,0,0]
     req_sp = [0,0,0,0,0]
     for i in range(5):
         reqs = []
         bons = []
-        for item in items:
+        nbons = []
+        max_sum = 0
+        max_index = 0
+        for j, item in enumerate(items):
             req = item.requirements[sp[i]]
+            bon = item.identifications[skillPoints[i]].max
+            bons.append(bon)
+            if bon < 0:
+                nbons.append(bon)
             if req == 0:
                 reqs.append(-1000)
-            else:
-                reqs.append(req)
-            bons.append(item.identifications[skillPoints[i]].max)
-        sums = [r + b for r, b in zip(reqs, bons)]
-        max_index = sums.index(max(sums))
-        max_req = reqs[max_index]
+                continue
+            reqs.append(req)
+            if req + bon > max_sum:
+                max_sum = req + bon
+                max_index = j
+            elif req + bon == max_sum:
+                if bon > bons[max_index]:
+                    max_index = j
+
+        max_req = reqs[max_index]-sum(nbons)
         bonus = sum(min(bon,max(0,max_req-req)) for req, bon in zip(reqs, bons))
         req_sp[i] = max(0, max_req - bonus)
         bon_sp[i] = sum(bons)
