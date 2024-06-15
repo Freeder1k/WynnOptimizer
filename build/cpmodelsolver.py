@@ -87,9 +87,9 @@ class CPModelSolver:
             self.model.add_max_equality(sp_assign + sum(sp_bonus), sp_req)
 
         # Set the objective function
-        self.damage = dmgcalc.true_dmg_model(self.model, dmg.base_dmg_max, self._items, self.item_variables, self.sp_assignment_vars, self._weapon, dmg.spellmod)
+        self.damage, self.testvars = dmgcalc.true_dmg_model(self.model, dmg.base_dmg_min, dmg.base_dmg_max, self._items, self.item_variables, self.sp_assignment_vars, self._weapon, dmg.spellmod, [False] + dmg.mastery)
 
-        self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
+        #self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
 
         print(item_count)
 
@@ -158,7 +158,7 @@ class CPModelSolver:
 
     def _find(self, silent=False):
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.damage, silent)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, [sum(self.damage)] + self.testvars, silent)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
         if not silent:
@@ -170,6 +170,8 @@ class CPModelSolver:
 
     def find_best_new(self):
         self.model.maximize(sum(self.damage))
+        # self.model.clear_objective()
+        # self.model.add(sum(self.damage) >= 50000000)
         return self._find()
 
     def find_best(self, factor):
@@ -196,13 +198,13 @@ class CPModelSolver:
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, x, items, weapon, spass, silent):
+    def __init__(self, x, items, weapon, testvars, silent):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self._x = x
         self._items = items
         self.solution_count = 0
         self._weapon = weapon
-        self.spa = spass
+        self.testvars = testvars
         self.silent = silent
 
     def on_solution_callback(self) -> None:
@@ -211,12 +213,13 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         for itm, x in zip(self._items, self._x):
             if self.Value(x) == 1:
                 res_items.append(itm)
-        skps = []
-        for skp in self.spa:
-            skps.append(self.Value(skp))
+        test = []
+        for var in self.testvars:
+            #skps.append(self.Value(skp))
+            test += [self.Value(var)]
 
         with open('tempoutput.txt', 'a') as f:
-            f.write(f"{res_items}\n")
+            f.write(f"({res_items}, {test})\n")
         if not self.silent:
-            sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.solution_count} builds! {skps}")
+            sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.solution_count} builds! {test}")
             sys.stdout.flush()

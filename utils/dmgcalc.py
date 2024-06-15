@@ -39,6 +39,7 @@ def base_dmg(weapon, spellmod, masteries):
 
 def avg_dmg(min, max, ids, spellmodsum, crit=True):
     return sum(true_dmg(min, ids, spellmodsum, crit) + true_dmg(max, ids, spellmodsum, crit))/2
+    #return sum(true_dmg(max, ids, spellmodsum, crit))
 
 def true_dmg(base, ids, spellmodsum, crit=True):
     pct = [ids["spellDamage"].max] + 5 * [ids["spellDamage"].max + ids['elementalSpellDamage'].max]
@@ -57,10 +58,16 @@ def true_dmg(base, ids, spellmodsum, crit=True):
         damage[i] = dmg * (1 + pct[i])
         damage[i] += spellmodsum * (dmg/sum(base) * raw[i] + ids["raw"+Elements[i]+"SpellDamage"].max + ids["raw"+Elements[i]+"Damage"].max)
         damage[i] *= 1 + strePct + int(crit) * dexPct  # (since dex is crit chance, it's just an average)
-
     return damage
 
-def true_dmg_model(model, base, items, item_vars, sp_vars, weapon, spellmod, crit=True):
+
+def true_dmg_model(model, basemin, basemax, items, item_vars, sp_vars, weapon, spellmod, mastery, crit=True):
+    base = [0,0,0,0,0,0]
+    baser = [0,0,0,0,0,0]
+    for i in range(6):
+        base[i] = (basemin[i] + basemax[i])/2
+        baser[i] = (basemin[i]/sum(basemin) + basemax[i]/sum(basemax))/2
+
     spellmodsum = sum(spellmod)
     skillpoints = [0,0,0,0,0,0]
     free_sp = 204 - sum(sp_vars)
@@ -86,10 +93,10 @@ def true_dmg_model(model, base, items, item_vars, sp_vars, weapon, spellmod, cri
     strdexvar = model.new_int_var(100, 300, f"strdexvar")
     model.add(strdexvar == 100 + skillpoints[1] + int(crit) * skillpoints[2])
 
-    item_pcts = [[],[],[],[],[],[]]
+    item_pcts = [[15*m] for m in mastery]
     item_raws_base = [[],[]]
     item_raws_elemental = [[],[],[],[],[],[]]
-    for itm, x in zip(items, item_vars):
+    for itm, x in zip(items + [weapon], item_vars + [1]):
         item_pct = [itm.identifications["spellDamage"].max] + 5 * [itm.identifications["spellDamage"].max + itm.identifications['elementalSpellDamage'].max]
         item_raw_n = itm.identifications["rawSpellDamage"].max
         item_raw_e = itm.identifications['rawElementalDamage'].max + itm.identifications['rawElementalSpellDamage'].max
@@ -109,12 +116,14 @@ def true_dmg_model(model, base, items, item_vars, sp_vars, weapon, spellmod, cri
     raws_base = [0,0]
     raws_elemental = [0,0,0,0,0,0]
     for i in range(6):
-        pcts[i] = sum(item_pcts[i])# + skillpoints[i]
+        pcts[i] = sum(item_pcts[i]) + skillpoints[i]
         raws_elemental[i] = sum(item_raws_elemental[i])
     for i in range(2):
         raws_base[i] = sum(item_raws_base[i])
 
     damage = [0,0,0,0,0,0]
+    dmgvars = [0,0,0,0,0,0]
+    raw_vars = [0,0,0,0,0,0]
     for i in range(6):
         if spellmod[i] == 0:
             continue
@@ -122,23 +131,24 @@ def true_dmg_model(model, base, items, item_vars, sp_vars, weapon, spellmod, cri
         if i == 0:
             raw = raws_base[0]
         else:
-            raw = raws_base[1]
-        raw = int(100*spellmodsum*base[i]/sum(base)) * raw + int(100*spellmodsum) * raws_elemental[i]
+            raw = raws_base[0] + raws_base[1]
+        raw = int(100*spellmodsum*baser[i]) * raw + int(100*spellmodsum) * raws_elemental[i]
         dmg = dmg + raw
-        dmgvar = model.new_int_var(0, int(base[i])*1000 + 200000, f"dmgvar")
-        model.add(dmgvar == dmg)
-        damage[i] = model.new_int_var(0, 300*(int(base[i])*1000 + 200000), f"damage_{elements[i]}")
-        model.add_multiplication_equality(damage[i], [dmgvar,strdexvar])
+        dmgvars[i] = model.new_int_var(0, 1000000, f"dmgvar")
+        model.add(dmgvars[i] == dmg)
+        damage[i] = model.new_int_var(0, 300000000, f"damage_{elements[i]}")
+        model.add_multiplication_equality(damage[i], [dmgvars[i],strdexvar])
 
-    return damage
+    return damage, []
+
 
 def spToPct_model(model, sp, sptype):
     skillpoint1 = model.new_int_var(1, 150, f"{sptype}1")
     model.add_max_equality(skillpoint1, [1, sp])
     skillpoint2 = model.new_int_var(1, 150, f"{sptype}2")
     model.add_min_equality(skillpoint2, [150, skillpoint1])
-    skillpointpct = model.new_int_var(0, 82, f"{sptype}_pct")
-    model.add_division_equality(skillpointpct - 165, -25400, skillpoint2 + 153)
+    skillpointpct = model.new_int_var(-1, 82, f"{sptype}_pct")
+    model.add_division_equality(skillpointpct - 165, -25245, skillpoint2 + 152)
     return skillpointpct
 
 def spToPct(sp):  # skillpoints to percentage

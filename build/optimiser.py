@@ -48,10 +48,12 @@ def _runCPModelSolver(cfg):
 
 def process_results(cfg, sort: int, check_valid=True, factor=0):
     builds = []
+    test_vars = []
     with open('tempoutput.txt', 'r') as f:
         lines = f.readlines()
     for line in lines:
-        builds.append(ast.literal_eval(line))
+        builds.append(ast.literal_eval(line)[0])
+        test_vars.append(ast.literal_eval(line)[1][0]/10000)
 
     results = []
     for i, entry in enumerate(builds):
@@ -67,10 +69,10 @@ def process_results(cfg, sort: int, check_valid=True, factor=0):
         builditem = sp.add_sp(b.build(), *b.calc_sp())
         for typ,mas,bon in zip(damageTypes, cfg.mastery, masterybonus):
             builditem.identifications[typ] += bon*mas
-
+        print(builditem)
         buildscore = cfg.score_function(builditem)
-        objectivevalue = factor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)
-        results.append((b, buildscore, objectivevalue))
+        objectivevalue = 1#factor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)
+        results.append((b, buildscore, objectivevalue, test_vars[i]))
 
     results = sorted(results, key=lambda x: x[sort], reverse=True)
     return results
