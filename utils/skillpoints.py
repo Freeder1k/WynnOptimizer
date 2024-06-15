@@ -53,9 +53,12 @@ def uncrafted_sp(items):
                     max_index = j
 
         max_req = reqs[max_index]-sum(nbons)
+        max_bon = bons[max_index]
+        bons[max_index] = 0
         bonus = sum(min(bon,max(0,max_req-req)) for req, bon in zip(reqs, bons))
-        req_sp[i] = max(0, max_req - bonus)
-        bon_sp[i] = sum(bons)
+        #print(reqs, bons, max_req, bonus)
+        req_sp[i] = max(0, reqs[max_index] - bonus)
+        bon_sp[i] = sum(bons) + max_bon
 
     return req_sp, bon_sp
 

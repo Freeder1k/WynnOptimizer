@@ -63,12 +63,26 @@ def true_dmg(base, ids, spellmodsum, crit=True):
 def true_dmg_model(model, base, items, item_vars, sp_vars, weapon, spellmod, crit=True):
     spellmodsum = sum(spellmod)
     skillpoints = [0,0,0,0,0,0]
+    free_sp = 204 - sum(sp_vars)
+    item_sp = []
     for i in range(5):
-        a = [weapon.identifications[skillPoints[i]].max, sp_vars[i]]
+        a = [weapon.identifications[skillPoints[i+1]].max, sp_vars[i]]
         for itm, x in zip(items, item_vars):
-            if itm.identifications[skillPoints[i]].max != 0:
-                a.append(itm.identifications[skillPoints[i]].max * x)
-        skillpoints[i+1] = spToPct_model(model, sum(a), sptypes[i])
+            if itm.identifications[skillPoints[i+1]].max != 0:
+                a.append(itm.identifications[skillPoints[i+1]].max * x)
+        item_sp.append(sum(a))
+
+    extrastr = model.new_int_var(0, 1000, f"extrastr")
+    model.add_max_equality(extrastr, [0, (free_sp - item_sp[1] + item_sp[2])])
+    extrastr2 = model.new_int_var(0, 408, f"extrastr2")
+    model.add_min_equality(extrastr2, [2*free_sp, extrastr])
+    extrastr3 = model.new_int_var(0, 204, f"extrastr3")
+    model.add_division_equality(extrastr3, extrastr2, 2)
+    item_sp[0] = item_sp[0] + extrastr3
+    item_sp[1] = item_sp[1] + free_sp - extrastr3
+
+    for i in range(5):
+        skillpoints[i+1] = spToPct_model(model, item_sp[i], sptypes[i])
     strdexvar = model.new_int_var(100, 300, f"strdexvar")
     model.add(strdexvar == 100 + skillpoints[1] + int(crit) * skillpoints[2])
 

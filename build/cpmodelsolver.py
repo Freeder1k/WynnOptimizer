@@ -170,7 +170,7 @@ class CPModelSolver:
 
     def find_best_new(self):
         self.model.maximize(sum(self.damage))
-        return self._find(silent=True)
+        return self._find()
 
     def find_best(self, factor):
         """
