@@ -123,7 +123,6 @@ def true_dmg_model(model, basemin, basemax, items, item_vars, sp_vars, weapon, s
 
     damage = [0,0,0,0,0,0]
     dmgvars = [0,0,0,0,0,0]
-    raw_vars = [0,0,0,0,0,0]
     for i in range(6):
         if spellmod[i] == 0:
             continue
@@ -134,6 +133,78 @@ def true_dmg_model(model, basemin, basemax, items, item_vars, sp_vars, weapon, s
             raw = raws_base[0] + raws_base[1]
         raw = int(100*spellmodsum*baser[i]) * raw + int(100*spellmodsum) * raws_elemental[i]
         dmg = dmg + raw
+        dmgvars[i] = model.new_int_var(0, 1000000, f"dmgvar")
+        model.add(dmgvars[i] == dmg)
+        damage[i] = model.new_int_var(0, 300000000, f"damage_{elements[i]}")
+        model.add_multiplication_equality(damage[i], [dmgvars[i],strdexvar])
+
+    return damage, []
+
+
+def true_dmg_model2(model, basemin, basemax, items, item_vars, sp_vars, weapon, spellmod, mastery, crit=True):
+    base = [0,0,0,0,0,0]
+    baser = [0,0,0,0,0,0]
+    for i in range(6):
+        base[i] = (basemin[i] + basemax[i])/2
+        baser[i] = (basemin[i]/sum(basemin) + basemax[i]/sum(basemax))/2
+
+    spellmodsum = sum(spellmod)
+
+    # Skillpoints
+    skillpoints = [0,0,0,0,0,0]
+    free_sp = 204 - sum(sp_vars)
+    item_sp = []
+    for i in range(5):
+        a = [weapon.identifications[skillPoints[i+1]].max, sp_vars[i]]
+        for itm, x in zip(items, item_vars):
+            if itm.identifications[skillPoints[i+1]].max != 0:
+                a.append(itm.identifications[skillPoints[i+1]].max * x)
+        item_sp.append(sum(a))
+
+    extrastr = model.new_int_var(0, 1000, f"extrastr")
+    model.add_max_equality(extrastr, [0, (free_sp - item_sp[1] - sp_vars[0] + item_sp[2] + sp_vars[1])])
+    extrastr2 = model.new_int_var(0, 408, f"extrastr2")
+    model.add_min_equality(extrastr2, [2*free_sp, extrastr])
+    extrastr3 = model.new_int_var(0, 204, f"extrastr3")
+    model.add_division_equality(extrastr3, extrastr2, 2)
+    item_sp[0] = item_sp[0] + extrastr3
+    item_sp[1] = item_sp[1] + free_sp - extrastr3
+    for i in range(5):
+        if base[i] != 0 or i<=1:
+            skillpoints[i+1] = spToPct_model(model, item_sp[i], sptypes[i])
+    strdexvar = model.new_int_var(100, 300, f"strdexvar")
+    model.add(strdexvar == 100 + skillpoints[1] + int(crit) * skillpoints[2])
+
+    # Damage percentages
+    pcts = [[15*mastery[i]*base[i]] for i in range(6)]
+    for itm, x in zip(items + [weapon], item_vars + [1]):
+        item_pct = [itm.identifications["spellDamage"].max] + 5 * [itm.identifications["spellDamage"].max + itm.identifications['elementalSpellDamage'].max]
+        for i in range(6):
+            item_pct[i] += itm.identifications[damageTypes[i]].max + itm.identifications[elements[i]+'SpellDamage'].max
+            if item_pct[i] != 0 and base[i] != 0:
+                pcts[i].append(int(base[i] * item_pct[i]) * x)
+
+    # Raw damage
+    raws = [[],[],[],[],[],[]]
+    for itm, x in zip(items + [weapon], item_vars + [1]):
+        item_raw_n = itm.identifications["rawSpellDamage"].max
+        item_raw_e = itm.identifications['rawElementalDamage'].max + itm.identifications['rawElementalSpellDamage'].max
+        for i in range(6):
+            item_raw_elemental = itm.identifications["raw"+Elements[i]+"SpellDamage"].max + itm.identifications["raw"+Elements[i]+"Damage"].max
+            if i == 0:
+                item_raw = baser[i] * item_raw_n + item_raw_elemental
+            else:
+                item_raw = baser[i] * (item_raw_n + item_raw_e) + item_raw_elemental
+            if item_raw != 0 and base[i] != 0:
+                raws[i].append(int(100 * spellmodsum * item_raw) * x)
+
+
+    damage = [0,0,0,0,0,0]
+    dmgvars = [0,0,0,0,0,0]
+    for i in range(6):
+        if base[i] == 0:
+            continue
+        dmg = int(base[i]*100) + int(base[i])*skillpoints[i] + sum(pcts[i]) + sum(raws[i])
         dmgvars[i] = model.new_int_var(0, 1000000, f"dmgvar")
         model.add(dmgvars[i] == dmg)
         damage[i] = model.new_int_var(0, 300000000, f"damage_{elements[i]}")

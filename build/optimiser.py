@@ -69,10 +69,10 @@ def process_results(cfg, sort: int, check_valid=True, factor=0):
         builditem = sp.add_sp(b.build(), *b.calc_sp())
         for typ,mas,bon in zip(damageTypes, cfg.mastery, masterybonus):
             builditem.identifications[typ] += bon*mas
-        print(builditem)
         buildscore = cfg.score_function(builditem)
-        objectivevalue = 1#factor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)
-        results.append((b, buildscore, objectivevalue, test_vars[i]))
+        objectivevalue = test_vars[i]
+        # objectivevalue = factor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)
+        results.append((b, buildscore, objectivevalue))
 
     results = sorted(results, key=lambda x: x[sort], reverse=True)
     return results

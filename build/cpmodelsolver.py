@@ -87,7 +87,7 @@ class CPModelSolver:
             self.model.add_max_equality(sp_assign + sum(sp_bonus), sp_req)
 
         # Set the objective function
-        self.damage, self.testvars = dmgcalc.true_dmg_model(self.model, dmg.base_dmg_min, dmg.base_dmg_max, self._items, self.item_variables, self.sp_assignment_vars, self._weapon, dmg.spellmod, [False] + dmg.mastery)
+        self.damage, self.testvars = dmgcalc.true_dmg_model2(self.model, dmg.base_dmg_min, dmg.base_dmg_max, self._items, self.item_variables, self.sp_assignment_vars, self._weapon, dmg.spellmod, [False] + dmg.mastery)
 
         #self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
 
@@ -169,9 +169,9 @@ class CPModelSolver:
         return solution_printer.solution_count
 
     def find_best_new(self):
-        self.model.maximize(sum(self.damage))
-        # self.model.clear_objective()
-        # self.model.add(sum(self.damage) >= 50000000)
+        #self.model.maximize(sum(self.damage))
+        self.model.clear_objective()
+        self.model.add(sum(self.damage) >= 48000000)
         return self._find()
 
     def find_best(self, factor):
