@@ -29,6 +29,7 @@ def _runCPModelSolver(cfg):
             solver.mutual_exclude(s)
 
         print(solver.model.model_stats())
+        print(solver.model.validate())
         solver.find_best_new()
         # best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
         # with open('tempoutput.txt', 'w') as f:
@@ -53,7 +54,7 @@ def process_results(cfg, sort: int, check_valid=True, factor=0):
         lines = f.readlines()
     for line in lines:
         builds.append(ast.literal_eval(line)[0])
-        test_vars.append(ast.literal_eval(line)[1][0]/10000)
+        test_vars.append(ast.literal_eval(line)[1][0]/100000)
 
     results = []
     for i, entry in enumerate(builds):

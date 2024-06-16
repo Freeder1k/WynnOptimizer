@@ -171,7 +171,7 @@ class CPModelSolver:
     def find_best_new(self):
         #self.model.maximize(sum(self.damage))
         self.model.clear_objective()
-        self.model.add(sum(self.damage) >= 48000000)
+        self.model.add(self.damage >= 500000000)
         return self._find()
 
     def find_best(self, factor):
