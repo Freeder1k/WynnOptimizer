@@ -15,7 +15,7 @@ def _runCPModelSolver(cfg):
     with open('.isrunning', 'w') as f:
         f.write("True")
     try:
-        solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon)
+        solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon, cfg.min_sp)
 
         for key, value in cfg.max_ids.items():
             solver.add_upper_bound(value + cfg.weapon.identifications[key].max, lambda itm: itm.identifications[key].max)
@@ -25,18 +25,19 @@ def _runCPModelSolver(cfg):
             solver.add_max_assignable_sp(value, key)
         for key, value in cfg.max_sp.items():
             solver.add_max_sp(value, key)
-        for key, value in cfg.min_sp.items():
-            solver.add_min_sp(value, key)
         for s in cfg.exclusive_sets:
             solver.mutual_exclude(s)
 
-        solver.find_best()
-        best_score = process_results(cfg, 2, check_valid=False)[0][2]
-        factor = 0.96  # WIP
-        print(f"Min objective score = {int(factor*best_score)}")
-        #solver.add_min_score(int(factor*best_score))
-        solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
-        solver.find_allbest()
+        print(solver.model.model_stats())
+        print(solver.model.validate())
+        solver.find_best_new()
+        # best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
+        # with open('tempoutput.txt', 'w') as f:
+        #     f.write("")
+        # factor = 0.96  # WIP
+        # print(f"Min objective score = {int(factor*best_score)}")
+        # solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
+        # solver.find_allbest()
     except:
         with open('.isrunning', 'w') as f:
             f.write("False")
@@ -46,12 +47,14 @@ def _runCPModelSolver(cfg):
         f.write("False")
 
 
-def process_results(cfg, sort: int, check_valid=True):
+def process_results(cfg, sort: int, check_valid=True, factor=0):
     builds = []
+    test_vars = []
     with open('tempoutput.txt', 'r') as f:
         lines = f.readlines()
     for line in lines:
-        builds.append(ast.literal_eval(line))
+        builds.append(ast.literal_eval(line)[0])
+        test_vars.append(ast.literal_eval(line)[1][0]/100000)
 
     results = []
     for i, entry in enumerate(builds):
@@ -67,10 +70,9 @@ def process_results(cfg, sort: int, check_valid=True):
         builditem = sp.add_sp(b.build(), *b.calc_sp())
         for typ,mas,bon in zip(damageTypes, cfg.mastery, masterybonus):
             builditem.identifications[typ] += bon*mas
-
         buildscore = cfg.score_function(builditem)
-        # objectivevalue = sum(cfg.score_function(it) for it in b.items)
-        objectivevalue = cfg.sdfactor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)
+        objectivevalue = test_vars[i]
+        # objectivevalue = factor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)
         results.append((b, buildscore, objectivevalue))
 
     results = sorted(results, key=lambda x: x[sort], reverse=True)
@@ -98,6 +100,7 @@ def optimise(cfg):
     if len(results) == 0:
         print("No viable builds found.")
     else:
+        print(f"Number of valid builds found: {len(results)}")
         print(f"Best build: {results[0][0]}, score: {results[0][1]}")
         print(results[0][0].generate_link(cfg.skilltree))
     return results

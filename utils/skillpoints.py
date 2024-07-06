@@ -21,45 +21,44 @@ def skillpoints(build):
 
     return req_sp, bon_sp
 
-
+# There are very few cases in which this is incorrect:
+# (https://hppeng-wynn.github.io/builder/?v=7#9_07F0mG0uS06n2SK2SL2SM2SN05e0t190y-v-v1g000000z0z0+0+0+0+0-1Tjdxa+LQK30)
+# returns: ([52, 50, 32, 0, 0], [3, 13, 28, -7, -7]) instead of ([52, 60, 32, 0, 0], [3, 13, 28, -7, -7])
+# There are probably also complete (good) builds that this would apply to,
+# but it's a very specific problem and the rigorous method is much slower.
 def uncrafted_sp(items):
     bon_sp=[0,0,0,0,0]
-    nbon_sp=[0,0,0,0,0]
-    # do items that dont have any requirements
-    remain = []
-    for item in items:
-        if any(req > 0 for req in item.requirements.get_requirements()):
-            remain.append(item)
-        else:
-            for i in range(5):
-                s = item.identifications[skillPoints[i]].max
-                if s > 0:
-                    bon_sp[i] += s
-                else:
-                    nbon_sp[i] += s
-
-    # do items that have requirements
     req_sp = [0,0,0,0,0]
     for i in range(5):
-        splist = []
-        for item in remain:
+        reqs = []
+        bons = []
+        nbons = []
+        max_sum = 0
+        max_index = 0
+        for j, item in enumerate(items):
             req = item.requirements[sp[i]]
             bon = item.identifications[skillPoints[i]].max
-            name = item.name
-            splist.append((req, bon, name))
-        sorted_list = sorted(splist, key=lambda x: x[0])  # sort by lowest requirement
+            bons.append(bon)
+            if bon < 0:
+                nbons.append(bon)
+            if req == 0:
+                reqs.append(-1000)
+                continue
+            reqs.append(req)
+            if req + bon > max_sum:
+                max_sum = req + bon
+                max_index = j
+            elif req + bon == max_sum:
+                if bon > bons[max_index]:
+                    max_index = j
 
-        for j, (req, bon, name) in enumerate(sorted_list):  # on last item do negative skillpoints
-            if j == len(sorted_list) - 1:
-                bon_sp[i] += nbon_sp[i]
-            if req > 0:
-                req_sp[i] = max(req_sp[i], req - bon_sp[i])
-                bon_sp[i] += bon
-            else:
-                if bon > 0:
-                    bon_sp[i] += bon
-                else:
-                    nbon_sp[i] += bon
+        max_req = reqs[max_index]-sum(nbons)
+        max_bon = bons[max_index]
+        bons[max_index] = 0
+        bonus = sum(min(bon,max(0,max_req-req)) for req, bon in zip(reqs, bons))
+        #print(reqs, bons, max_req, bonus)
+        req_sp[i] = max(0, reqs[max_index] - bonus)
+        bon_sp[i] = sum(bons) + max_bon
 
     return req_sp, bon_sp
 

@@ -5,22 +5,27 @@ from build.item import SkillpointsTuple
 import numpy as np
 from ortools.sat.python import cp_model
 from build import item, build
+from utils import dmgcalc
+from build.config import dmg
 
 np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
 types = ['helmet', 'chestplate', 'leggings', 'boots', 'ring', 'ring2', 'bracelet', 'necklace']
 spinner = ['|', '/', '-', '\\']
+sptypes = ['str','dex','int','def','agi']
 
 
 class CPModelSolver:
     def __init__(self, items: list[item.Item],
                  score_function: Callable[[item.Item], int],
-                 weapon: item.Item):
+                 weapon: item.Item,
+                 min_sp: dict[str, int]):
         """
         Create a linear programming optimizer for a Build.
         :param items: A list of items to use in the Build.
         :param score_function: A function that returns the score of an individual item.
         :param weapon: The weapon used in the build.
+        :param min_sp: A dict of minimum skillpoint requirements in the build.
         """
         self._weapon = weapon
         item_count = []
@@ -64,16 +69,6 @@ class CPModelSolver:
         r2_ind = [i*x for i, x in enumerate(t_var_dict['ring2'])]
         self.model.add(sum(r1_ind) <= sum(r2_ind))
 
-
-        # Skillpoint requirement constraints
-        self.sp_req_vars = SkillpointsTuple(
-            *(self.model.new_int_var(0, 10000, f"sp_req_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
-        for sp_assign, w_sp_req, sp_bonus, sp_req, sp_req_var in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses, sp_reqs, self.sp_req_vars):
-            if w_sp_req != 0:
-                sp_req.append(w_sp_req)
-            sp_req.append(sum(sp_bonus))
-            self.model.add_max_equality(sp_req_var, sp_req)
-
         # Skillpoint bonuses
         sp_bonuses = SkillpointsTuple([], [], [], [], [])
         for itm, x in zip(self._items, self.item_variables):
@@ -81,10 +76,20 @@ class CPModelSolver:
                 for sp_bonus, itm_sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
                     if itm_sp_bonus != 0:
                         sp_bonus.append(itm_sp_bonus * x)
+
+        # Skillpoint requirement constraints
+        for sp_assign, w_sp_req, sp_bonus, sp_req, sptype in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses, sp_reqs, sptypes):
+            if w_sp_req != 0:
+                sp_req.append(w_sp_req)
+            sp_req.append(sum(sp_bonus))
+            if sptype in min_sp:
+                sp_req.append(min_sp[sptype])
             self.model.add_max_equality(sp_assign + sum(sp_bonus), sp_req)
 
         # Set the objective function
-        self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
+        self.damage, self.testvars = dmgcalc.true_dmg_model2(self.model, dmg.base_dmg_min, dmg.base_dmg_max, self._items, self.item_variables, self.sp_assignment_vars, self._weapon, dmg.spellmod, [False] + dmg.mastery)
+
+        #self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
 
         print(item_count)
 
@@ -114,44 +119,29 @@ class CPModelSolver:
         :param value: The max value that can be assigned.
         :param skillpoint: The skillpoint that is to be constrained.
         """
-        a = ['str','dex','int','def','agi']
-        if value is not None and skillpoint in a:
-            self.model.add(value >= self.sp_assignment_vars[a.index(skillpoint)])
+        if value is not None and skillpoint in sptypes:
+            self.model.add(value >= self.sp_assignment_vars[sptypes.index(skillpoint)])
 
     def add_max_sp(self, value: int, skillpoint: str):
         """
         Add a constraint that the build can't have more sp of element than a given value.
-        In certain cases this might exclude viable builds, set the value slightly higher.
+        In certain cases this might exclude include non-viable builds.
         :param value: The max value for given skillpoint.
         :param skillpoint: The skillpoint that is to be constrained.
         """
-        s = ['str','dex','int','def','agi']
-        if value is not None and skillpoint in s:
-            a = []
+        if value is not None and skillpoint in sptypes:
+            a = [self._weapon.identifications.skillpoints[sptypes.index(skillpoint)]]
             for itm, x in zip(self._items, self.item_variables):
-                a.append(itm.identifications.skillpoints[s.index(skillpoint)] * x)
-            self.model.add(value >= sum(a) + self.sp_assignment_vars[s.index(skillpoint)])
-
-    def add_min_sp(self, value: int, skillpoint: str):
-        """
-        Add a constraint that the build can't have less sp of element than a given value.
-        In certain cases this might include non-viable builds.
-        :param value: The min value for given skillpoint.
-        :param skillpoint: The skillpoint that is to be constrained.
-        """
-        s = ['str','dex','int','def','agi']
-        if value is not None and skillpoint in s:
-            a = []
-            for itm, x in zip(self._items, self.item_variables):
-                a.append(itm.identifications.skillpoints[s.index(skillpoint)] * x)
-            self.model.add(value <= sum(a) + self.sp_assignment_vars[s.index(skillpoint)])
+                a.append(itm.identifications.skillpoints[sptypes.index(skillpoint)] * x)
+            self.model.add(value >= sum(a) + self.sp_assignment_vars[sptypes.index(skillpoint)])
 
     def add_min_score(self, value: int):
         self.model.add(sum(self._objective) >= value)
 
     def add_min_score_sp(self, value: int, factor):
         itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
-        assignsp = self.sp_assignment_vars[0] + self.sp_assignment_vars[1]
+        itembonusses += [self._weapon.identifications.skillpoints[0] + self._weapon.identifications.skillpoints[1]]
+        assignsp = 200 - (self.sp_assignment_vars[2] + self.sp_assignment_vars[3] + self.sp_assignment_vars[4])
         self.model.add(factor*(assignsp + sum(itembonusses)) + sum(self._objective) >= value)
 
     def mutual_exclude(self, set_items: list[item.Item]):
@@ -168,7 +158,7 @@ class CPModelSolver:
 
     def _find(self, silent=False):
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, self.sp_assignment_vars, silent)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, [sum(self.damage)] + self.testvars, silent)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
         if not silent:
@@ -178,13 +168,21 @@ class CPModelSolver:
 
         return solution_printer.solution_count
 
-    def find_best(self):
+    def find_best_new(self):
+        #self.model.maximize(sum(self.damage))
+        self.model.clear_objective()
+        self.model.add(self.damage >= 500000000)
+        return self._find()
+
+    def find_best(self, factor):
         """
         Find the build where the sum of the scores of the items in that build is maximized and the constraints
         are satisfied.
         :return: Results.
         """
-        self.model.maximize(sum(self._objective))
+        itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
+        assignsp = self.sp_assignment_vars[0] + self.sp_assignment_vars[1]
+        self.model.maximize(factor*(assignsp + sum(itembonusses)) + sum(self._objective))
 
         return self._find(silent=True)
 
@@ -200,13 +198,13 @@ class CPModelSolver:
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
-    def __init__(self, x, items, weapon, spass, silent):
+    def __init__(self, x, items, weapon, testvars, silent):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self._x = x
         self._items = items
         self.solution_count = 0
         self._weapon = weapon
-        self.spa = spass
+        self.testvars = testvars
         self.silent = silent
 
     def on_solution_callback(self) -> None:
@@ -215,12 +213,13 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         for itm, x in zip(self._items, self._x):
             if self.Value(x) == 1:
                 res_items.append(itm)
-        skps = []
-        for skp in self.spa:
-            skps.append(self.Value(skp))
+        test = []
+        for var in self.testvars:
+            #skps.append(self.Value(skp))
+            test += [self.Value(var)]
 
         with open('tempoutput.txt', 'a') as f:
-            f.write(f"{res_items}\n")
+            f.write(f"({res_items}, {test})\n")
         if not self.silent:
-            sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.solution_count} builds! {skps}")
+            sys.stdout.write(f"\r{spinner[(int(self.UserTime())) % 4]}  Solving {self.solution_count} builds! {test}")
             sys.stdout.flush()
