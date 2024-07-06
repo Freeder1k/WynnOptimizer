@@ -64,6 +64,16 @@ class CPModelSolver:
         r2_ind = [i*x for i, x in enumerate(t_var_dict['ring2'])]
         self.model.add(sum(r1_ind) <= sum(r2_ind))
 
+
+        # Skillpoint requirement constraints
+        self.sp_req_vars = SkillpointsTuple(
+            *(self.model.new_int_var(0, 10000, f"sp_req_{name}") for name in ['str', 'dex', 'int', 'def', 'agi']))
+        for sp_assign, w_sp_req, sp_bonus, sp_req, sp_req_var in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses, sp_reqs, self.sp_req_vars):
+            if w_sp_req != 0:
+                sp_req.append(w_sp_req)
+            sp_req.append(sum(sp_bonus))
+            self.model.add_max_equality(sp_req_var, sp_req)
+
         # Skillpoint bonuses
         sp_bonuses = SkillpointsTuple([], [], [], [], [])
         for itm, x in zip(self._items, self.item_variables):
@@ -71,12 +81,6 @@ class CPModelSolver:
                 for sp_bonus, itm_sp_bonus in zip(sp_bonuses, itm.identifications.skillpoints):
                     if itm_sp_bonus != 0:
                         sp_bonus.append(itm_sp_bonus * x)
-
-        # Skillpoint requirement constraints
-        for sp_assign, w_sp_req, sp_bonus, sp_req in zip(self.sp_assignment_vars, weapon.requirements.skillpoints, sp_bonuses, sp_reqs):
-            if w_sp_req != 0:
-                sp_req.append(w_sp_req)
-            sp_req.append(sum(sp_bonus))
             self.model.add_max_equality(sp_assign + sum(sp_bonus), sp_req)
 
         # Set the objective function

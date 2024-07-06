@@ -1,48 +1,41 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, Any
+from typing import Callable
 
 from ortools.sat.python.cp_model import LinearExpr
 
-from craft.optimizerCP2 import CPRecipeOptimizer
 from wynndata.base import SkillpointsTuple
 from wynndata.ingredient import Ingredient
 
 
-class LinearExprGenerator:
-    def __init__(self, optimizer: CPRecipeOptimizer, accessor: Callable[[Ingredient], Any]):
-        self._optimizer = optimizer
-        self._accessor = accessor
-
-    def _gen_lin_expr(self, attr: str) -> LinearExpr:
-        return (LinearExpr().sum([getattr(self._accessor(self._optimizer.ingrs_mod[i][j]), attr)
-                                  * self._optimizer.ingredient_variables[i][j]
-                                  for i in range(self._optimizer.mod_amt)
-                                  for j in range(self._optimizer.ingr_count)
-                                  if getattr(self._accessor(self._optimizer.ingrs_mod[i][j]), attr) != 0])
-                + LinearExpr().sum([getattr(self._accessor(self._optimizer.base_items[i]), attr)
-                                    * self._optimizer.base_variables[i]
-                                    for i in range(len(self._optimizer.base_items))
-                                    if getattr(self._accessor(self._optimizer.base_items[i]), attr) != 0]))
-
-    def __getattr__(self, item) -> LinearExpr:
-        expr = self._get_lin_expr(item)
-        setattr(self, item, expr)
-        return expr
+class LinearExprGenerator(ABC):
+    @abstractmethod
+    def generate(self, value_func: Callable[[Ingredient], int], raw: bool = False) -> LinearExpr:
+        """
+        Generate a linear expression from a value function.
+        :param value_func: Function that returns the desired value of an ingredient.
+        :param raw: Whether the value is modified by other ingredient's modifiers or just the raw value.
+        """
+        pass
 
 
 @dataclass
-class CPRequirements(LinearExprGenerator):
+class CPRequirements:
     strength: LinearExpr
     dexterity: LinearExpr
     intelligence: LinearExpr
     defence: LinearExpr
     agility: LinearExpr
-    level: LinearExpr
 
-    def __init__(self, optimizer: CPRecipeOptimizer):
-        super().__init__(optimizer, lambda ingr: ingr.requirements)
+    def __init__(self, lin_expr_gen: LinearExprGenerator):
+        self.lin_expr_gen = lin_expr_gen
+
+    def __getattr__(self, item):
+        expr = self.lin_expr_gen.generate(lambda i: getattr(i.requirements, item))
+        setattr(self, item, expr)
+        return expr
 
     def __getitem__(self, key):
         match key:
@@ -56,8 +49,6 @@ class CPRequirements(LinearExprGenerator):
                 return self.defence
             case 'agility', 'agi':
                 return self.agility
-            case 'level':
-                return self.level
             case _:
                 raise KeyError(key)
 
@@ -66,15 +57,21 @@ class CPRequirements(LinearExprGenerator):
         return SkillpointsTuple(self.strength, self.dexterity, self.intelligence, self.defence, self.agility)
 
 
-class CPIdentificationValue(LinearExprGenerator):
+class CPIdentificationValue:
     raw: LinearExpr
     min: LinearExpr
     max: LinearExpr
     abs_max: LinearExpr
     abs_min: LinearExpr
 
-    def __init__(self, optimizer: CPRecipeOptimizer, id_name: str):
-        super().__init__(optimizer, lambda ingr: ingr.identifications[id_name])
+    def __init__(self, lin_expr_gen: LinearExprGenerator, name: str):
+        self.lin_expr_gen = lin_expr_gen
+        self.name = name
+
+    def __getattr__(self, item):
+        expr = self.lin_expr_gen.generate(lambda i: getattr(i.identifications[self.name], item))
+        setattr(self, item, expr)
+        return expr
 
 
 class CPIdentifications:
@@ -168,11 +165,11 @@ class CPIdentifications:
     rawWaterMainAttackDamage: CPIdentificationValue
     rawEarthMainAttackDamage: CPIdentificationValue
 
-    def __init__(self, optimizer: CPRecipeOptimizer):
-        super().__init__(optimizer)
+    def __init__(self, lin_expr_gen: LinearExprGenerator):
+        self.lin_expr_gen = lin_expr_gen
 
     def __getattr__(self, item):
-        setattr(self, item, CPIdentificationValue(self.optimizer, item))
+        setattr(self, item, CPIdentificationValue(self.lin_expr_gen, item))
         return getattr(self, item)
 
     def __getitem__(self, item: str) -> CPIdentificationValue:
@@ -188,12 +185,29 @@ class CPIdentifications:
         return SkillpointsTuple(str, dex, int, defe, agi)
 
 
-class CPIngredient(LinearExprGenerator):
-    charges: LinearExpr
-    duration: LinearExpr
-    durability: LinearExpr
+class CPRecipe:
+    def __init__(self, lin_expr_gen: LinearExprGenerator):
+        self.lin_expr_gen = lin_expr_gen
+        self.requirements = CPRequirements(lin_expr_gen)
+        self.identifications = CPIdentifications(lin_expr_gen)
+        self._charges = None
+        self._duration = None
+        self._durability = None
 
-    def __init__(self, optimizer: CPRecipeOptimizer):
-        super().__init__(optimizer, lambda ingr: ingr)
-        self.requirements = CPRequirements(optimizer)
-        self.identifications = CPIdentifications(optimizer)
+    @property
+    def charges(self):
+        if self._charges is None:
+            self._charges = self.lin_expr_gen.generate(lambda i: i.charges, True) + 3
+        return self._charges
+
+    @property
+    def duration(self):
+        if self._duration is None:
+            self._duration = self.lin_expr_gen.generate(lambda i: i.duration, True)
+        return self._duration
+
+    @property
+    def durability(self):
+        if self._durability is None:
+            self._durability = self.lin_expr_gen.generate(lambda i: i.durability // 1000, True) + 735
+        return self._durability

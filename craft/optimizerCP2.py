@@ -3,7 +3,7 @@ from typing import Callable, TypeVar
 from ortools.sat.python import cp_model
 from ortools.sat.python.cp_model import LinearExpr, BoundedLinearExpression
 
-from craft.CPIngredient import CPIngredient
+from craft.CPRecipe import CPRecipe
 from wynndata.recipe import Recipe
 from wynndata import ingredient
 
@@ -59,7 +59,32 @@ class CPRecipeOptimizer:
         self.base_items = [base[1].build() for base in bases]
 
         # Set the objective
-        self.item = CPIngredient(self)
+        self.item = CPRecipe(self)
+        # TODO fix this ^ using this \/
+        # , optimizer: CPRecipeOptimizer, value_func: Callable[[Ingredient], int], generator: Callable[
+        #     [str], LinearExpr] = None):
+        # self._optimizer = optimizer
+        # self._accessor = accessor
+        # self._get_lin_expr = generator
+        # if generator is None:
+        #
+        #     def _gen_lin_expr(attr: str) -> LinearExpr:
+        #         return (LinearExpr().sum([getattr(self._accessor(self._optimizer.ingrs_mod[i][j]), attr)
+        #                                   * self._optimizer.ingredient_variables[i][j]
+        #                                   for i in range(self._optimizer.mod_amt)
+        #                                   for j in range(self._optimizer.ingr_count)
+        #                                   if getattr(self._accessor(self._optimizer.ingrs_mod[i][j]), attr) != 0])
+        #                 + LinearExpr().sum([getattr(self._accessor(self._optimizer.base_items[i]), attr)
+        #                                     * self._optimizer.base_variables[i]
+        #                                     for i in range(len(self._optimizer.base_items))
+        #                                     if getattr(self._accessor(self._optimizer.base_items[i]), attr) != 0]))
+        #
+        # self._get_lin_expr = _gen_lin_expr
+        #
+        # def __getattr__(self, item) -> LinearExpr:
+        #     expr = self._get_lin_expr(item)
+        #     setattr(self, item, expr)
+        #     return expr
 
         self.objective = (sum(score_function(self.ingrs_mod[i][j]) * self.ingredient_variables[i][j]
                              for i in range(self.mod_amt)

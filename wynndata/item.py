@@ -181,8 +181,8 @@ _item_ids = {}
 
 def _get_item_ids():
     if not _item_ids:
-        with open("data/items_clean.json") as f:
-            _item_ids.update({i['name']: i['id'] for i in json.load(f)})
+        with open("data/items.json") as f:
+            _item_ids.update({i['name']: i['id'] for i in json.load(f)["items"]})
         _item_ids["No Item"] = 10000
     return _item_ids
 
