@@ -184,8 +184,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         print(
             f"Solution {self.count}, time = {self.WallTime()} s, objective = {self.ObjectiveValue()}, ingredients = {ingredients}")
 
-        print(self.Value(self.optimizer.recipe.identifications.spellDamage.abs_max))
-        print(self.Value(self.optimizer.recipe.identifications.healingEfficiency.max))
+        # TODO why reversed?
         recipe = Recipe(*reversed(ingredients))
         print(f"https://hppeng-wynn.github.io/crafter/#1{Base64.fromInt(recipe.id, order=12)}9i91")
 
