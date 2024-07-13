@@ -81,7 +81,12 @@ class Recipe:
 
     @property
     def id(self):
-        return sum(self.ingredients[i].id << (i * 12) for i in range(6))
+        id = 0
+        for i in range(6):
+            id <<= 12
+            id += self.ingredients[i].id
+
+        return id
 
     @classmethod
     def from_ingredient_strings(cls, i1: str, i2: str, i3: str, i4: str, i5: str, i6: str):
