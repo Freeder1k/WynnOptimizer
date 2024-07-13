@@ -1,7 +1,7 @@
 import cupy
 
 from ..base import OptimalCrafterConfigBase
-from ... import ingredient
+from ...old import ingredient
 
 
 class DmgConfig(OptimalCrafterConfigBase):

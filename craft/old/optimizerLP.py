@@ -3,8 +3,8 @@ from typing import Callable, TypeVar
 import numpy as np
 
 from core.optimizer.linearProgramming import IntegerLinearProgramm
-from craft import ingredient
-from craft.ingredient import IdentificationType
+from craft.old import ingredient
+from craft.old.ingredient import IdentificationType
 from utils.decorators import single_use
 
 T = TypeVar('T')

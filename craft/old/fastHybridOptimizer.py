@@ -1,10 +1,10 @@
 import time
 from multiprocessing import Pool
 
-import craft.base_recipes
-import craft.ingredient
-import craft.optimizerLP
-import craft.recipe
+import craft.old.base_recipes
+import craft.old.ingredient
+import craft.old.optimizerLP
+import craft.old.recipe
 from craft.config.base import HybridOptimizerConfig
 
 
@@ -16,7 +16,7 @@ def _runLPOptimizer(mods, base_r, cfg):
     if len(mods) == 0:
         return base_score, base_r.ingredients
 
-    optimizer = craft.optimizerLP.LPRecipeOptimizer(cfg.ingredients, cfg.score_function, mods)
+    optimizer = craft.old.optimizerLP.LPRecipeOptimizer(cfg.ingredients, cfg.score_function, mods)
     if cfg.min_charges is not None:
         optimizer.set_min_charges(cfg.min_charges - base.charges)
     if cfg.min_duration is not None:
@@ -48,7 +48,7 @@ def _runLPOptimizer(mods, base_r, cfg):
     ingrs = []
     j = 0
     for ingr in base_r.ingredients:
-        if ingr == craft.ingredient.NO_INGREDIENT:
+        if ingr == craft.old.ingredient.NO_INGREDIENT:
             ingrs.append(res_ingrs[j])
             j += 1
         else:
@@ -60,7 +60,7 @@ def _runLPOptimizer(mods, base_r, cfg):
 def optimize(cfg: HybridOptimizerConfig, pool_size=4):
     t = time.time()
     # TODO some base recipes could be getting skipped
-    bases = craft.base_recipes.get_base_recipes_gpu(cfg.crafting_skill, cfg.relevant_ids)
+    bases = craft.old.base_recipes.get_base_recipes_gpu(cfg.crafting_skill, cfg.relevant_ids)
 
     print(f"Found {len(bases)} base recipes. Finding optimal recipes...")
 
@@ -85,7 +85,7 @@ def optimize(cfg: HybridOptimizerConfig, pool_size=4):
         print("No viable recipes found.")
         return None
 
-    max_recipe = craft.recipe.Recipe(*max_recipe)
+    max_recipe = craft.old.recipe.Recipe(*max_recipe)
 
     print(f"Best score: {max_score}")
 

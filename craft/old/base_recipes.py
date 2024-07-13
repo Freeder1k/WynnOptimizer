@@ -7,13 +7,13 @@ import numba
 import numpy as np
 from numba import cuda
 
-import craft.cuda_utils
+import craft.old.cuda_utils
 from core.optimizer import bruteForce
-from craft import ingredient, recipe
-from craft.cuda_utils import calc_recipe_cuda_function_factory
-from craft.ingredient import IdentificationType
+from craft.old import ingredient, recipe
+from craft.old.cuda_utils import calc_recipe_cuda_function_factory
+from craft.old.ingredient import IdentificationType
 from craft.old.base_recipe import _pad_r
-from craft.utils import get_permutation_py, item_profs, consu_profs
+from craft.old.utils import get_permutation_py, item_profs, consu_profs
 
 # ingredient format:
 # charges,                      # 0
@@ -49,9 +49,9 @@ def _kernel(ingredients, recipes, viable):
     pos = cuda.grid(1)
     if pos < len(recipes):
         recipe_args = cuda.local.array(shape=6, dtype=numba.intc)
-        craft.cuda_utils.get_permutation_cuda(len(ingredients), pos, recipe_args)
+        craft.old.cuda_utils.get_permutation_cuda(len(ingredients), pos, recipe_args)
 
-        craft.cuda_utils.calc_mods(ingredients, recipe_args, recipes[pos][8:14])
+        craft.old.cuda_utils.calc_mods(ingredients, recipe_args, recipes[pos][8:14])
 
         abs_mod = 0
         for i in range(6):
@@ -84,7 +84,7 @@ def _mods_kernel(nonzero_indx, nonzero_res, mods):
         p_num = nonzero_indx[pos]
 
         r_arr = cuda.local.array(shape=6, dtype=numba.intc)
-        craft.cuda_utils.get_permutation_cuda(_ingr_count, p_num, r_arr)
+        craft.old.cuda_utils.get_permutation_cuda(_ingr_count, p_num, r_arr)
         j = 1
         for k in range(6):
             if r_arr[k] == 0:

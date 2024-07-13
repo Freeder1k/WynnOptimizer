@@ -3,7 +3,7 @@ from llvmlite import ir
 from numba import cuda
 from numba.cuda.extending import intrinsic
 
-from craft.utils import get_permutation
+from craft.old.utils import get_permutation
 
 CHARGES = 0
 DURATION = 1

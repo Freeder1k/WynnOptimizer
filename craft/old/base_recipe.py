@@ -1,14 +1,8 @@
-import math
 import signal
-import sys
 from multiprocessing import Pool
 
-import numba.cuda
-import numpy
-from numba import jit, cuda
-
 from core.optimizer import bruteForce
-from craft import ingredient, recipe
+from craft.old import ingredient, recipe
 
 
 def calc_base_recipes(ingredients: list[ingredient.Ingredient],

@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable
 
-from craft import ingredient
-from craft.ingredient import IdentificationType
+from craft.old import ingredient
+from craft.old.ingredient import IdentificationType
 
 
 class OptimalCrafterConfigBase(ABC):
