@@ -60,6 +60,7 @@ class CPRecipeOptimizer:
     def effective_values(self, value_func: Callable[[ingredient.Ingredient], int], name: str = None):
         """
         Add and return variables corresponding to the modified value of each slot.
+        Each call to this function adds 12 new variables, 24 new linear constraints and 6 new division constraints.
         """
         if name is None:
             name = self._values_count
@@ -71,14 +72,14 @@ class CPRecipeOptimizer:
         base_vals = [sum(values[j] * self._mod_variables[i][j] for j in range(self.ingr_count)) for i in SLOTS]
         base_vars = [self.model.new_int_var(-max_val * 1000, max_val * 1000, f"val_{i}_{name}_base") for i in SLOTS]
 
-        slot_vars = [self.model.new_int_var(-max_val * 1000, max_val * 1000, f"val_{i}_{name}") for i in SLOTS]
+        slot_vars = [self.model.new_int_var(-max_val * 10, max_val * 10, f"val_{i}_{name}") for i in SLOTS]
 
         for i in SLOTS:
-            # Add -99 if negative
             is_neg_var = self.model.new_bool_var(f"val_{i}_{name}_is_neg")
             self.model.add(base_vars[i] < 0).only_enforce_if(is_neg_var)
             self.model.add(base_vars[i] >= 0).only_enforce_if(is_neg_var.Not())
 
+            # Add -99 if negative
             self.model.add(base_vars[i] == base_vals[i]).only_enforce_if(is_neg_var.Not())
             self.model.add(base_vars[i] == base_vals[i] - 99).only_enforce_if(is_neg_var)
 
