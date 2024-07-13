@@ -12,11 +12,12 @@ from wynndata.ingredient import Ingredient
 
 class LinearExprGenerator(ABC):
     @abstractmethod
-    def generate(self, value_func: Callable[[Ingredient], int], raw: bool = False) -> LinearExpr:
+    def generate(self, value_func: Callable[[Ingredient], int], raw: bool = False, name: str = None) -> LinearExpr:
         """
         Generate a linear expression from a value function.
         :param value_func: Function that returns the desired value of an ingredient.
         :param raw: Whether the value is modified by other ingredient's modifiers or just the raw value.
+        :param name: The name of the linear expression.
         """
         pass
 
@@ -33,7 +34,7 @@ class CPRequirements:
         self.lin_expr_gen = lin_expr_gen
 
     def __getattr__(self, item):
-        expr = self.lin_expr_gen.generate(lambda i: getattr(i.requirements, item))
+        expr = self.lin_expr_gen.generate(lambda i: getattr(i.requirements, item), name=f"requirements.{item}")
         setattr(self, item, expr)
         return expr
 
@@ -69,7 +70,8 @@ class CPIdentificationValue:
         self.name = name
 
     def __getattr__(self, item):
-        expr = self.lin_expr_gen.generate(lambda i: getattr(i.identifications[self.name], item))
+        expr = self.lin_expr_gen.generate(lambda i: getattr(i.identifications[self.name], item),
+                                          name=f"identifications.{self.name}.{item}")
         setattr(self, item, expr)
         return expr
 

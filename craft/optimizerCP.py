@@ -202,8 +202,8 @@ class _RecipeLinExprGenerator(LinearExprGenerator):
     def __init__(self, model):
         self.model = model
 
-    def generate(self, value_func: Callable[[ingredient.Ingredient], int], raw: bool = False) -> LinearExpr:
+    def generate(self, value_func: Callable[[ingredient.Ingredient], int], raw: bool = False, name=None) -> LinearExpr:
         if not raw:
-            return sum(self.model.effective_values(value_func))
+            return sum(self.model.effective_values(value_func, name=name))
         else:
             return sum(self.model.raw_values(value_func))

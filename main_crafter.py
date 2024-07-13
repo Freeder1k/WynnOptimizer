@@ -4,7 +4,7 @@ import wynndata.ingredient
 
 def main():
     ingredients = list(i for i in wynndata.ingredient.get_all_ingredients().values()
-                       if wynndata.ingredient.Profession('armouring') in i.skills
+                       if wynndata.ingredient.Profession('jeweling') in i.skills
                        and (i.durability > 0
                             or i.identifications.healingEfficiency.abs_max != 0
                             # or i.identifications.manaRegen.abs_max != 0
@@ -28,8 +28,8 @@ def main():
     health_var = solver.model.new_int_var(20000, 40000, "health")
     healing_eff_var = solver.model.new_int_var(0, 500, "healing_eff")
 
-    solver.model.add(water_dmg_var == 3 * recipe.identifications.waterDamage.abs_max + 1000 + 93)
-    solver.model.add(health_var == recipe.identifications.rawHealth.abs_max + 27408)
+    solver.model.add(water_dmg_var == 3 * recipe.identifications.waterDamage.abs_max + 1000 + 3 * 32)
+    solver.model.add(health_var == recipe.identifications.rawHealth.abs_max + 28090)
     solver.model.add(healing_eff_var == recipe.identifications.healingEfficiency.abs_max + 100 + 160)
 
     water_x_hp = solver.model.new_int_var(0, 160000000, "water_x_hp")
