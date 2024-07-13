@@ -4,7 +4,9 @@ from ortools.sat.python import cp_model
 from ortools.sat.python.cp_model import LinearExpr, BoundedLinearExpression
 
 from craft.CPRecipe import CPRecipe, LinearExprGenerator
+from utils.integer import Base64
 from wynndata import ingredient
+from wynndata.recipe import Recipe
 
 T = TypeVar('T')
 SLOTS = (0, 1, 2, 3, 4, 5)
@@ -38,31 +40,15 @@ class CPRecipeOptimizer:
                                for i in SLOTS]
         for i in SLOTS:
             for j in range(self.ingr_count):
-                self.model.add(self._mod_variables[i][j] == self._mods[i]).only_enforce_if(self._ingredient_variables[i][j])
-                self.model.add(self._mod_variables[i][j] == 0).only_enforce_if(self._ingredient_variables[i][j].negated())
+                self.model.add(self._mod_variables[i][j] == self._mods[i]).only_enforce_if(
+                    self._ingredient_variables[i][j])
+                self.model.add(self._mod_variables[i][j] == 0).only_enforce_if(
+                    self._ingredient_variables[i][j].negated())
 
         # Define objective
         self._objective = score_function(self.recipe)
 
         self.model.maximize(self._objective)
-
-        # requirements
-        # self.model.add(sum(self.effective_values(lambda i: i.requirements.intelligence)) <= 60 * 100)
-        # self.model.add(sum(self.effective_values(lambda i: i.identifications.rawIntelligence.max)) >= 0)
-        # self.model.add(sum(self.effective_values(lambda i: i.identifications.rawHealth.max)) >= 0)
-        # self.model.add(sum(self.effective_values(lambda i: i.identifications.manaRegen.max)) >= 10 * 100)
-        # self.model.add(sum(self.effective_values(lambda i: i.requirements.strength)) <= 10 * 100)
-        # self.model.add(sum(self.effective_values(lambda i: i.requirements.dexterity)) <= 90 * 100)
-        # self.model.add(sum(self.effective_values(lambda i: i.requirements.intelligence)) <= 120 * 100)
-        # self.model.add(sum(self.effective_values(lambda i: i.requirements.defence)) <= 0 * 100)
-        # self.model.add(sum(self.effective_values(lambda i: i.requirements.agility)) <= 0 * 100)
-        # self.model.add(sum(self.effective_values(lambda i: i.requirements.intelligence)) <= 60)
-        # self.model.add(sum(sum(self.ingredients[j].durability * self._ingredient_variables[i][j]
-        #                        for j in range(self.ingr_count))
-        #                    for i in range(6)) > (-735 + 20) * 1000)
-        # self.model.add(sum(sum(self.ingredients[j].duration * self.ingredient_variables[i][j]
-        #                        for j in range(self.ingr_count))
-        #                    for i in range(6)) > -3800)
 
     def raw_values(self, value_func: Callable[[ingredient.Ingredient], int]):
         """
@@ -73,27 +59,32 @@ class CPRecipeOptimizer:
 
     def effective_values(self, value_func: Callable[[ingredient.Ingredient], int], name: str = None):
         """
-        Return variables corresponding to the value of each slot (rounded down by 100).
+        Add and return variables corresponding to the modified value of each slot.
         """
-        return [sum(value_func(self.ingredients[j]) * self._mod_variables[i][j] for j in range(self.ingr_count))
-                for i in SLOTS]
-        # if name is None:
-        #     name = self._values_count
-        #     self._values_count += 1
-        #
-        # vars = [self.model.new_int_var_from_domain(cp_model.Domain.all_values(), f"val_{i}_{name}")
-        #         for i in SLOTS]
-        # mod_vars = [self.model.new_int_var_from_domain(cp_model.Domain.all_values(), f"val_{i}_{name}_mod")
-        #             for i in SLOTS]
-        #
-        # base_vals = [sum(value_func(self.ingredients[j]) * self._mod_variables[i][j] for j in range(self.ingr_count))
-        #         for i in SLOTS]
-        #
-        # for i in SLOTS:
-        #     self.model.add_modulo_equality(mod_vars[i], base_vals[i], 100)
-        #     self.model.add(vars[i] == base_vals[i] - mod_vars[i])
-        #
-        # return vars
+        if name is None:
+            name = self._values_count
+            self._values_count += 1
+
+        values = [value_func(ingr) for ingr in self.ingredients]
+        max_val = abs(max(values, key=abs))
+
+        base_vals = [sum(values[j] * self._mod_variables[i][j] for j in range(self.ingr_count)) for i in SLOTS]
+        base_vars = [self.model.new_int_var(-max_val * 1000, max_val * 1000, f"val_{i}_{name}_base") for i in SLOTS]
+
+        slot_vars = [self.model.new_int_var(-max_val * 1000, max_val * 1000, f"val_{i}_{name}") for i in SLOTS]
+
+        for i in SLOTS:
+            # Add -99 if negative
+            is_neg_var = self.model.new_bool_var(f"val_{i}_{name}_is_neg")
+            self.model.add(base_vars[i] < 0).only_enforce_if(is_neg_var)
+            self.model.add(base_vars[i] >= 0).only_enforce_if(is_neg_var.Not())
+
+            self.model.add(base_vars[i] == base_vals[i]).only_enforce_if(is_neg_var.Not())
+            self.model.add(base_vars[i] == base_vals[i] - 99).only_enforce_if(is_neg_var)
+
+            self.model.AddDivisionEquality(slot_vars[i], base_vars[i], 100)
+
+        return slot_vars
 
     def _calc_mods(self):
         mod_left = [sum(self.ingredients[j].modifiers.left * self._ingredient_variables[i][j]
@@ -162,6 +153,7 @@ class CPRecipeOptimizer:
         :return: The score of the best recipe and the ingredients in that recipe.
         """
         solver = cp_model.CpSolver()
+        solver.parameters.num_workers = 6
         printer = SolutionPrinter(self)
         status = solver.solve(self.model, printer)
 
@@ -169,6 +161,8 @@ class CPRecipeOptimizer:
             return solver.ObjectiveValue(), [self.ingredients[j] for i in range(6) for j in range(self.ingr_count) if
                                              solver.Value(self._ingredient_variables[i][j])]
         else:
+            print(self.model.validate())
+            print(f"Status = {solver.StatusName(status)}")
             return 0, []
 
     def add(self, constraint: BoundedLinearExpression):
@@ -189,6 +183,11 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
                        self.Value(self.optimizer._ingredient_variables[i][j])]
         print(
             f"Solution {self.count}, time = {self.WallTime()} s, objective = {self.ObjectiveValue()}, ingredients = {ingredients}")
+
+        print(self.Value(self.optimizer.recipe.identifications.spellDamage.abs_max))
+        print(self.Value(self.optimizer.recipe.identifications.healingEfficiency.max))
+        recipe = Recipe(*reversed(ingredients))
+        print(f"https://hppeng-wynn.github.io/crafter/#1{Base64.fromInt(recipe.id, order=12)}9i91")
 
 
 class _RecipeLinExprGenerator(LinearExprGenerator):
