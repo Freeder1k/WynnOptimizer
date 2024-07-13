@@ -13,8 +13,7 @@ SLOTS = (0, 1, 2, 3, 4, 5)
 
 
 class CPRecipeOptimizer:
-    def __init__(self, ingredients: list[ingredient.Ingredient],
-                 score_function: Callable[[CPRecipe], LinearExpr]):
+    def __init__(self, ingredients: list[ingredient.Ingredient]):
         """
         Create a linear programming optimizer for a recipe.
         :param ingredients: A list of ingredients to use in the recipe.
@@ -45,10 +44,7 @@ class CPRecipeOptimizer:
                 self.model.add(self._mod_variables[i][j] == 0).only_enforce_if(
                     self._ingredient_variables[i][j].negated())
 
-        # Define objective
-        self._objective = score_function(self.recipe)
-
-        self.model.maximize(self._objective)
+        self._objective = None
 
     def raw_values(self, value_func: Callable[[ingredient.Ingredient], int]):
         """
@@ -147,12 +143,22 @@ class CPRecipeOptimizer:
 
         return mod_arr
 
+    def set_objective(self, objective: LinearExpr):
+        """
+        Set the objective of the model.
+        """
+        self._objective = objective
+
     def find_best(self):
         """
         Find the recipe where the sum of the scores of the ingredients in that recipe is maximized and the constraints
         are satisfied.
         :return: The score of the best recipe and the ingredients in that recipe.
         """
+        if self._objective is None:
+            raise ValueError("Objective not set")
+
+        self.model.maximize(self._objective)
         solver = cp_model.CpSolver()
         solver.parameters.num_workers = 6
         printer = SolutionPrinter(self)
@@ -167,6 +173,9 @@ class CPRecipeOptimizer:
             return 0, []
 
     def add(self, constraint: BoundedLinearExpression):
+        """
+        Add a constraint to the model.
+        """
         self.model.add(constraint)
 
 
