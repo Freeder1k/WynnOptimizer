@@ -1,10 +1,10 @@
 import craft.old.base_recipes
-import craft.config.example.spell_ring
+import craft.old.config.example.spell_ring
 import craft.old.fastHybridOptimizer
 import craft.old.ingredient
 import craft.old.optimizerBruteForce
 import craft.old.recipe
-from craft.config.base import HybridOptimizerConfig
+from craft.old.config import HybridOptimizerConfig
 import craft.optimizerCP
 
 

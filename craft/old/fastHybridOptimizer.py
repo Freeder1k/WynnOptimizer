@@ -5,7 +5,7 @@ import craft.old.base_recipes
 import craft.old.ingredient
 import craft.old.optimizerLP
 import craft.old.recipe
-from craft.config.base import HybridOptimizerConfig
+from craft.old.config.base import HybridOptimizerConfig
 
 
 def _runLPOptimizer(mods, base_r, cfg):

@@ -1,10 +1,10 @@
 import cupy
 
 from ..base import OptimalCrafterConfigBase
-from ...old import ingredient
+from craft.old import ingredient
 
 
-class SpellRingConfig(OptimalCrafterConfigBase):
+class DmgConfig(OptimalCrafterConfigBase):
     __create_key = object()
 
     def __init__(self, create_key, ingredients, ids, min_score):

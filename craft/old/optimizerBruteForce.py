@@ -9,7 +9,7 @@ import numpy as np
 from numba import cuda
 
 from craft.old import recipe
-from craft.config.base import OptimalCrafterConfigBase
+from craft.old.config.base import OptimalCrafterConfigBase
 from craft.old.cuda_utils import calc_mods, get_permutation_cuda, cuda_clock64, calc_recipe_cuda_function_factory
 from craft.old.utils import get_permutation_py
 
