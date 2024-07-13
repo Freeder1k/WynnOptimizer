@@ -185,7 +185,6 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         print(
             f"Solution {self.count}, time = {self.WallTime()} s, objective = {self.ObjectiveValue()}, ingredients = {ingredients}")
 
-        # TODO why reversed?
         recipe = Recipe(*ingredients)
         print(f"https://hppeng-wynn.github.io/crafter/#1{Base64.fromInt(recipe.id, order=12)}9i91")
 
