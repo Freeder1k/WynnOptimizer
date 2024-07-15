@@ -19,21 +19,20 @@ def base_dmg(weapon, spellmod, masteries):
     base_dmg_max = [0,0,0,0,0,0]
     for i, dmg in enumerate(weapon_dmg_max):
         base_dmg_max[i] = dmg * spellmod[0]  # neutral modifier applies to individual element
-        base_dmg_max[i] += sum(weapon_dmg_max) * spellmod[i]  # elemental modifier applies to total damage
+        if i > 0:
+            base_dmg_max[i] += sum(weapon_dmg_max) * spellmod[i]  # elemental modifier applies to total damage
         base_dmg_max[i] *= speedmod
-        if base_dmg_max[i] != 0:
+        if base_dmg_max[i] > 0:
             base_dmg_max[i] += int(masteries[i]) * mastery_max[i]
-    # neutral base only uses neutral dmg
-    base_dmg_max[0] = weapon_dmg_max[0] * speedmod * spellmod[0]
+
     base_dmg_min = [0,0,0,0,0,0]
     for i, dmg in enumerate(weapon_dmg_min):
         base_dmg_min[i] = dmg * spellmod[0]  # neutral modifier applies to individual element
-        base_dmg_min[i] += sum(weapon_dmg_min) * spellmod[i]  # elemental modifier applies to total damage
+        if i > 0:
+            base_dmg_min[i] += sum(weapon_dmg_min) * spellmod[i]  # elemental modifier applies to total damage
         base_dmg_min[i] *= speedmod
-        if base_dmg_min[i] != 0:
+        if base_dmg_min[i] > 0:
             base_dmg_min[i] += int(masteries[i]) * mastery_min[i]
-    # neutral base only uses neutral dmg
-    base_dmg_min[0] = weapon_dmg_min[0] * speedmod * spellmod[0]
 
     return base_dmg_max, base_dmg_min
 
