@@ -12,9 +12,9 @@ def healing(identifications: CPIdentifications, model: CpModel, base_water_dmg=0
     The result is an IntVar representing the healing value times 400000.
     This does not work for negative stat values.
     """
-    wd_ub = 3 * 1000 + 3 * base_water_dmg
+    wd_ub = 3 * 1000 + 1000 + 3 * base_water_dmg
     hp_ub = 100000 + base_health
-    he_ub = 500 + base_healing_efficiency
+    he_ub = 500 + 100 + base_healing_efficiency
 
     water_dmg_var = model.new_int_var(0, wd_ub, "water_dmg")
     health_var = model.new_int_var(0, hp_ub, "health")
