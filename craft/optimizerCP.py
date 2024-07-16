@@ -3,7 +3,8 @@ from typing import Callable, TypeVar
 from ortools.sat.python import cp_model
 from ortools.sat.python.cp_model import LinearExpr, BoundedLinearExpression
 
-from craft.CPRecipe import CPRecipe, LinearExprGenerator
+from cp_utils.LinearExprFactory import LinearExprFactory
+from craft.CPRecipe import CPRecipe
 from utils.integer import Base64
 from wynndata import ingredient
 from wynndata.recipe import Recipe
@@ -20,7 +21,7 @@ class CPRecipeOptimizer:
         :param score_function: A function that returns the score of an individual ingredient.
         :param modifiers: The modifier values of the recipe.
         """
-        self.recipe = CPRecipe(_RecipeLinExprGenerator(self))
+        self.recipe = CPRecipe(_LinExprFactoryRaw(self), _LinExprFactoryEffective(self))
         self.model = cp_model.CpModel()
 
         self.ingredients = ingredients
@@ -198,12 +199,17 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         print(f"https://hppeng-wynn.github.io/crafter/#1{Base64.fromInt(recipe.id, order=12)}9i91")
 
 
-class _RecipeLinExprGenerator(LinearExprGenerator):
+class _LinExprFactoryEffective(LinearExprFactory):
     def __init__(self, model):
         self.model = model
 
-    def generate(self, value_func: Callable[[ingredient.Ingredient], int], raw: bool = False, name=None) -> LinearExpr:
-        if not raw:
-            return sum(self.model.effective_values(value_func, name=name))
-        else:
-            return sum(self.model.raw_values(value_func))
+    def generate(self, value_func: Callable[[ingredient.Ingredient], int], lb=None, ub=None, name=None) -> LinearExpr:
+        return sum(self.model.effective_values(value_func, name=name))
+
+
+class _LinExprFactoryRaw(LinearExprFactory):
+    def __init__(self, model):
+        self.model = model
+
+    def generate(self, value_func: Callable[[ingredient.Ingredient], int], lb=None, ub=None, name=None) -> LinearExpr:
+        return sum(self.model.raw_values(value_func))
