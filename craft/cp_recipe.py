@@ -1,8 +1,8 @@
 from ortools.sat.python.cp_model import LinearExpr
 
-from cp_utils.CPIdentifications import CPIdentifications
-from cp_utils.CPRequirements import CPRequirements
-from cp_utils.LinearExprFactory import LinearExprFactory
+from cp_utils.cp_identifications import CPIdentifications
+from cp_utils.cp_requirements import CPRequirements
+from cp_utils.linear_expr_factory import LinearExprFactory
 
 
 class CPRecipe:

@@ -3,7 +3,7 @@ from typing import Callable, TypeVar
 from ortools.sat.python import cp_model
 from ortools.sat.python.cp_model import LinearExpr, BoundedLinearExpression
 
-from craft.CPRecipe import CPRecipe
+from craft.cp_recipe import CPRecipe
 from wynndata.recipe import Recipe
 from wynndata import ingredient
 

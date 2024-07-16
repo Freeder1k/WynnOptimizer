@@ -5,7 +5,6 @@ import craft.old.ingredient
 import craft.old.optimizerBruteForce
 import craft.old.recipe
 from craft.old.config import HybridOptimizerConfig
-import craft.optimizerCP
 
 
 def score(ingr: craft.old.ingredient.Ingredient) -> float:

@@ -1,4 +1,4 @@
-import craft.optimizerCP
+import craft.optimizer_cp
 import wynndata.ingredient
 
 
@@ -19,7 +19,7 @@ def main():
                             or i.modifiers.abs_total() != 0))
     # ingredients = [i for i in ingredients if i.name != "Elephelk Trunk"]
     print(len(ingredients))
-    solver = craft.optimizerCP.CPRecipeOptimizer(
+    solver = craft.optimizer_cp.CPRecipeOptimizer(
         ingredients=ingredients,
     )
 

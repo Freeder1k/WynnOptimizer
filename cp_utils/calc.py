@@ -1,6 +1,6 @@
 from ortools.sat.python.cp_model import CpModel, IntVar
 
-from cp_utils.CPIdentifications import CPIdentifications
+from cp_utils.cp_identifications import CPIdentifications
 
 
 def healing(identifications: CPIdentifications, model: CpModel, base_water_dmg=0, base_health=0,

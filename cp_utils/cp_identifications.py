@@ -1,6 +1,6 @@
 from ortools.sat.python.cp_model import LinearExpr
 
-from cp_utils.LinearExprFactory import LinearExprFactory
+from cp_utils.linear_expr_factory import LinearExprFactory
 from wynndata.base import SkillpointsTuple
 
 
