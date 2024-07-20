@@ -6,10 +6,10 @@ from cp_utils.linear_expr_factory import LinearExprFactory
 
 
 class CPRecipe:
-    def __init__(self, lin_expr_fac_raw: LinearExprFactory, lin_expr_fac_effective: LinearExprFactory):
-        self.lin_expr_fac = lin_expr_fac_raw
-        self.requirements = CPRequirements(lin_expr_fac_effective)
-        self.identifications = CPIdentifications(lin_expr_fac_effective)
+    def __init__(self, base_lin_expr_fac: LinearExprFactory, ids_lin_expr_fac: LinearExprFactory, reqs_lin_expr_fac: LinearExprFactory):
+        self.lin_expr_fac = base_lin_expr_fac
+        self.requirements = CPRequirements(reqs_lin_expr_fac)
+        self.identifications = CPIdentifications(ids_lin_expr_fac)
         self._charges = None
         self._duration = None
         self._durability = None

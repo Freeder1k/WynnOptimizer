@@ -21,7 +21,8 @@ class CPRecipeOptimizer:
         :param score_function: A function that returns the score of an individual ingredient.
         :param modifiers: The modifier values of the recipe.
         """
-        self.recipe = CPRecipe(_LinExprFactoryRaw(self), _LinExprFactoryEffective(self))
+        self.recipe = CPRecipe(_BaseLinExprFactory(self), _IdentificationsLinExprFactory(self),
+                               _RequirementsLinExprFactory(self))
         self.model = cp_model.CpModel()
 
         self.ingredients = ingredients
@@ -54,7 +55,8 @@ class CPRecipeOptimizer:
         return [sum(value_func(self.ingredients[j]) * self._ingredient_variables[i][j] for j in range(self.ingr_count))
                 for i in SLOTS]
 
-    def effective_values(self, value_func: Callable[[ingredient.Ingredient], int], name: str = None):
+    def effective_values(self, value_func: Callable[[ingredient.Ingredient], int], name: str = None,
+                         round_up: bool = False):
         """
         Add and return variables corresponding to the modified value of each slot.
         Each call to this function adds 12 new variables, 24 new linear constraints and 6 new division constraints.
@@ -62,6 +64,10 @@ class CPRecipeOptimizer:
         if name is None:
             name = self._values_count
             self._values_count += 1
+
+        if all(value_func(ingr) == 0 for ingr in self.ingredients):
+            slot_vars = [self.model.new_constant(0) for _ in SLOTS]
+            return slot_vars
 
         values = [value_func(ingr) for ingr in self.ingredients]
         max_val = abs(max(values, key=abs))
@@ -76,9 +82,13 @@ class CPRecipeOptimizer:
             self.model.add(base_vars[i] < 0).only_enforce_if(is_neg_var)
             self.model.add(base_vars[i] >= 0).only_enforce_if(is_neg_var.Not())
 
-            # Add -99 if negative
-            self.model.add(base_vars[i] == base_vals[i]).only_enforce_if(is_neg_var.Not())
-            self.model.add(base_vars[i] == base_vals[i] - 99).only_enforce_if(is_neg_var)
+            # round up/down
+            if round_up:
+                self.model.add(base_vars[i] == base_vals[i]).only_enforce_if(is_neg_var)
+                self.model.add(base_vars[i] == base_vals[i] + 99).only_enforce_if(is_neg_var.Not())
+            else:
+                self.model.add(base_vars[i] == base_vals[i]).only_enforce_if(is_neg_var.Not())
+                self.model.add(base_vars[i] == base_vals[i] - 99).only_enforce_if(is_neg_var)
 
             self.model.AddDivisionEquality(slot_vars[i], base_vars[i], 100)
 
@@ -199,7 +209,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         print(f"https://hppeng-wynn.github.io/crafter/#1{Base64.fromInt(recipe.id, order=12)}9i91")
 
 
-class _LinExprFactoryEffective(LinearExprFactory):
+class _IdentificationsLinExprFactory(LinearExprFactory):
     def __init__(self, model):
         self.model = model
 
@@ -207,7 +217,15 @@ class _LinExprFactoryEffective(LinearExprFactory):
         return sum(self.model.effective_values(value_func, name=name))
 
 
-class _LinExprFactoryRaw(LinearExprFactory):
+class _RequirementsLinExprFactory(LinearExprFactory):
+    def __init__(self, model):
+        self.model = model
+
+    def generate(self, value_func: Callable[[ingredient.Ingredient], int], lb=None, ub=None, name=None) -> LinearExpr:
+        return sum(self.model.effective_values(value_func, name=name, round_up=True))
+
+
+class _BaseLinExprFactory(LinearExprFactory):
     def __init__(self, model):
         self.model = model
 
