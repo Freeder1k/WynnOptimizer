@@ -90,8 +90,8 @@ def true_dmg_model(model, basemin, basemax, items, item_vars, sp_vars, weapon, s
     item_sp[1] = item_sp[1] + free_sp - extrastr3
     for i in range(5):
         if base[i] != 0 or i<=1:
-            skillpoints[i+1] = spToPct_model2(model, item_sp[i], sptypes[i])
-    strdexvar = model.new_int_var(100, 400, f"strdexvar")
+            skillpoints[i+1] = spToPct_model(model, item_sp[i], sptypes[i])
+    strdexvar = model.new_int_var(100, 300, f"strdexvar")
     model.add(strdexvar == 100 + skillpoints[1] + skillpoints[2])
 
     # Damage percentages
@@ -138,7 +138,7 @@ def spToPct_model(model, sp, sptype): # seems to break the model
     model.add_max_equality(skillpoint, [0, sp])
     skillpointpct = model.new_int_var(0, 80, f"{sptype}_pct")
     model.add_element(skillpoint, sppctre, skillpointpct)
-    return skillpoint
+    return skillpointpct
 
 
 def true_dmg_model2(model, basemin, basemax, items, item_vars, sp_vars, weapon, spellmod, mastery, crit=True):
