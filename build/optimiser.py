@@ -30,7 +30,7 @@ def _runCPModelSolver(cfg):
 
         print(solver.model.model_stats())
         print(solver.model.validate())
-        solver.find_allbest()
+        solver.find_best_new()
         # best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
         # with open('tempoutput.txt', 'w') as f:
         #     f.write("")

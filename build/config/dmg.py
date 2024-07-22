@@ -23,10 +23,10 @@ def score(itm: build.item.Item, ) -> float:
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
 items = itemfilter.remove_bad_items(base_dmg_max, items)
-itemnames = ("Caesura", "Soul Signal", "Chaos-Woven Greaves", "Broken Balance", "Yang", "Yang", "Diamond Hydro Bracelet", "Amanuensis")
-items = []
-for i in itemnames:
-    items.append(build.item.get_item(i))
+# itemnames = ("Caesura", "Soul Signal", "Chaos-Woven Greaves", "Broken Balance", "Yang", "Yang", "Diamond Hydro Bracelet", "Amanuensis")
+# items = []
+# for i in itemnames:
+#     items.append(build.item.get_item(i))
 
 
 class DmgConfig(OptimizerConfig):
