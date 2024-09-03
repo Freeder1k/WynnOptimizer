@@ -30,14 +30,15 @@ def _runCPModelSolver(cfg):
 
         print(solver.model.model_stats())
         print(solver.model.validate())
-        solver.find_best_new()
-        # best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
-        # with open('tempoutput.txt', 'w') as f:
-        #     f.write("")
-        # factor = 0.96  # WIP
-        # print(f"Min objective score = {int(factor*best_score)}")
+        solver.find_best(cfg.sdfactor)
+        best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
+        with open('tempoutput.txt', 'w') as f:
+            f.write("")
+        factor = 0.95  # WIP
+        print(f"Min objective score = {int(factor*best_score)}")
         # solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
-        # solver.find_allbest()
+        solver.add_min_score(int(factor*best_score))
+        solver.find_allbest()
     except:
         with open('.isrunning', 'w') as f:
             f.write("False")
@@ -54,7 +55,7 @@ def process_results(cfg, sort: int, check_valid=True, factor=0):
         lines = f.readlines()
     for line in lines:
         builds.append(ast.literal_eval(line)[0])
-        test_vars.append(ast.literal_eval(line)[1][0]/100000)
+        test_vars.append(ast.literal_eval(line)[1][0])
 
     results = []
     for i, entry in enumerate(builds):
@@ -102,5 +103,5 @@ def optimise(cfg):
     else:
         print(f"Number of valid builds found: {len(results)}")
         print(f"Best build: {results[0][0]}, score: {results[0][1]}")
-        print(results[0][0].generate_link(cfg.skilltree))
+        # print(results[0][0].generate_link(cfg.skilltree)) Currently broken
     return results

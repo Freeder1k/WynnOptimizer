@@ -280,10 +280,14 @@ class Item:  # TODO: Add base stats (like base HP)
     @classmethod
     def from_api_json(cls, name, data: dict):
         try:
-            if 'type' in data:
-                type = data['type']
-            else:
+            if 'armourType' in data:
+                type = data['armourType']
+            elif 'accessoryType' in data:
                 type = data['accessoryType']
+            elif 'weaponType' in data:
+                type = data['weaponType']
+            else:
+                type = data['type']
             return cls(
                 name,
                 type,
@@ -337,7 +341,7 @@ class Item:  # TODO: Add base stats (like base HP)
 NO_ITEM = Item("No Item", "none", IdentificationList(), Requirements(0, 0, 0, 0, 0, 0))
 
 powderConv = {"e":(0.46,13,11),"t":(0.28,20,5),"w":(0.32,11,9),"a":(0.35,14,8),"f":(0.37,12,10)}
-dConv = {"n":"damage", "e":"earthDamage", "t":"thunderDamage",  "w":"waterDamage", "f":"fireDamage", "a":"airDamage"}
+dConv = {"n":"baseDamage", "e":"baseEarthDamage", "t":"baseThunderDamage",  "w":"baseWaterDamage", "f":"baseFireDamage", "a":"baseAirDamage"}
 
 
 @dataclass
@@ -361,15 +365,23 @@ class Weapon(Item):
 
     def set_powders(self, powders: list[str]):
         self.powders = powders
-        neutral_max = self.damage['damage'].max
-        neutral_min = self.damage['damage'].min
+        neutral_max = self.damage['baseDamage'].max
+        neutral_min = self.damage['baseDamage'].min
         for p in powders:
-            self.damage[dConv[p]].max += neutral_max*powderConv[p][0] + powderConv[p][1]
-            self.damage['damage'].max -= neutral_max*powderConv[p][0]
-            self.damage[dConv[p]].min += neutral_min*powderConv[p][0] + powderConv[p][2]
-            self.damage['damage'].min -= neutral_min*powderConv[p][0]
+            if neutral_max*powderConv[p][0] < self.damage['baseDamage'].max:
+                self.damage[dConv[p]].max += neutral_max*powderConv[p][0] + powderConv[p][1]
+                self.damage['baseDamage'].max -= neutral_max*powderConv[p][0]
+            else:
+                self.damage[dConv[p]].max += self.damage['baseDamage'].max + powderConv[p][1]
+                self.damage['baseDamage'].max = 0
+            if neutral_min*powderConv[p][0] < self.damage['baseDamage'].min:
+                self.damage[dConv[p]].min += neutral_min*powderConv[p][0] + powderConv[p][2]
+                self.damage['baseDamage'].min -= neutral_min*powderConv[p][0]
+            else:
+                self.damage[dConv[p]].min += self.damage['baseDamage'].min + powderConv[p][2]
+                self.damage['baseDamage'].min = 0
             self.damage[dConv[p]].raw = 0.5 * (self.damage[dConv[p]].max + self.damage[dConv[p]].min)
-        self.damage['damage'].raw = 0.5 * (self.damage['damage'].max + self.damage['damage'].min)
+        self.damage['baseDamage'].raw = 0.5 * (self.damage['baseDamage'].max + self.damage['baseDamage'].min)
         return self
 
 
@@ -385,7 +397,7 @@ def get_all_items() -> dict[str, Item]:
 
     items_ = {}
     for k, v in items.items():
-        if v.get('type', '') in ['helmet', 'chestplate', 'leggings', 'boots'] or 'accessoryType' in v:
+        if 'armourType' in v or 'accessoryType' in v:
             items_[k] = Item.from_api_json(k, v)
     return items_
 

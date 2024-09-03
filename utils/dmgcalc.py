@@ -2,18 +2,21 @@ speed_conv = {"super_slow": 0.51, "very_slow": 0.83, "slow": 1.5, "normal": 2.05
 mastery_max = [0,4,8,4,5,4]
 mastery_min = [0,2,1,2,3,3]
 damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
+baseDamageTypes = ["baseDamage", "baseEarthDamage", "baseThunderDamage",  "baseWaterDamage", "baseFireDamage", "baseAirDamage"]
 elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
 Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']
 skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
 sptypes = ['str','dex','int','def','agi']
 
 
-def base_dmg(weapon, spellmod, masteries):
+def base_dmg(weapon, spellmod, masteries, melee=False):
     if len(masteries) == 5:
         masteries = [False] + masteries
     speedmod = speed_conv[weapon.attackSpeed]
-    weapon_dmg_max = [weapon.damage[dtype].max for dtype in damageTypes]
-    weapon_dmg_min = [weapon.damage[dtype].min for dtype in damageTypes]  # do this not for max?
+    if melee:
+        speedmod = 1
+    weapon_dmg_max = [weapon.damage[dtype].max for dtype in baseDamageTypes]
+    weapon_dmg_min = [weapon.damage[dtype].min for dtype in baseDamageTypes]  # do this not for max?
 
     # calculate base dmg without IDs
     base_dmg_max = [0,0,0,0,0,0]
@@ -36,26 +39,30 @@ def base_dmg(weapon, spellmod, masteries):
 
     return base_dmg_max, base_dmg_min
 
-def avg_dmg(min, max, ids, spellmodsum, crit=True):
-    return sum(true_dmg(min, ids, spellmodsum, crit) + true_dmg(max, ids, spellmodsum, crit))/2
-    #return sum(true_dmg(max, ids, spellmodsum, crit))
+def avg_dmg(min, max, ids, spellmodsum, crit=True, melee=False):
+    return sum(true_dmg(min, ids, spellmodsum, crit, melee) + true_dmg(max, ids, spellmodsum, crit, melee))/2
 
-def true_dmg(base, ids, spellmodsum, crit=True):
-    pct = [ids["spellDamage"].max] + 5 * [ids["spellDamage"].max + ids['elementalSpellDamage'].max]
+def true_dmg(base, ids, spellmodsum, crit=True, melee=False):
+    smstr = 'spell'
+    smStr = 'Spell'
+    if melee:
+        smstr = 'mainAttack'
+        smStr = 'MainAttack'
+    pct = [ids[f"{smstr}Damage"].max] + 5 * [ids[f"{smstr}Damage"].max + ids[f'elemental{smStr}Damage'].max]
     for i in range(6):
-        pct[i] += ids[damageTypes[i]].max + ids[elements[i]+'SpellDamage'].max
+        pct[i] += ids[damageTypes[i]].max + ids[elements[i]+f'{smStr}Damage'].max
         pct[i] += 100*spToPct(ids[skillPoints[i]].max)
         pct[i] = pct[i]*0.01
 
     strePct = spToPct(ids["rawStrength"].max)
     dexPct = spToPct(ids["rawDexterity"].max)
-    raw = [ids["rawSpellDamage"].max] + 5 * [ids["rawSpellDamage"].max + ids['rawElementalDamage'].max + ids['rawElementalSpellDamage'].max]
+    raw = [ids[f"raw{smStr}lDamage"].max] + 5 * [ids[f"raw{smStr}Damage"].max + ids['rawElementalDamage'].max + ids[f'rawElemental{smStr}Damage'].max]
 
     # add IDs for final damage
     damage = [0,0,0,0,0,0]
     for i, dmg in enumerate(base):
         damage[i] = dmg * (1 + pct[i])
-        damage[i] += spellmodsum * (dmg/sum(base) * raw[i] + ids["raw"+Elements[i]+"SpellDamage"].max + ids["raw"+Elements[i]+"Damage"].max)
+        damage[i] += spellmodsum * (dmg/sum(base) * raw[i] + ids["raw"+Elements[i]+f"{smStr}Damage"].max + ids["raw"+Elements[i]+"Damage"].max)
         damage[i] *= 1 + strePct + int(crit) * dexPct  # (since dex is crit chance, it's just an average)
     return damage
 

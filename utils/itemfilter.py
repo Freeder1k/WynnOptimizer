@@ -6,18 +6,23 @@ Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']
 damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
 set_rings = ['Intensity', 'Breezehands', 'Coral Ring', 'Moon Pool Circlet']
 
-def remove_bad_items(base_dmg, items: list[build.item.Item]) -> list[build.item.Item]:
+def remove_bad_items(base_dmg, items: list[build.item.Item], melee=False, extra=[]) -> list[build.item.Item]:
     '''
     Removes items that have explicitly worse stats than items with same or lower requirements.
     :param base_dmg: Base damage to see what Identifications are relevant for the check.
     :param items: List of items to prune.
     :return: Pruned list of items.
     '''
-    relevant_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility", 'rawSpellDamage',
-                    'spellDamage', "elementalDamage", "rawElementalDamage", "rawElementalSpellDamage", "elementalSpellDamage"]
+    smstr = 'spell'
+    smStr = 'Spell'
+    if melee:
+        smstr = 'mainAttack'
+        smStr = 'MainAttack'
+    relevant_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility", f'raw{smStr}Damage',
+                    f'{smstr}Damage', "elementalDamage", "rawElementalDamage", f"rawElemental{smStr}Damage", f"elemental{smStr}Damage"] + extra
     for i in range(6):
         if base_dmg[i] > 0:
-            relevant_ids += [damageTypes[i], elements[i]+'SpellDamage', 'raw'+Elements[i]+'Damage', 'raw'+Elements[i]+'SpellDamage']
+            relevant_ids += [damageTypes[i], elements[i]+f'{smStr}Damage', 'raw'+Elements[i]+'Damage', 'raw'+Elements[i]+f'{smStr}Damage']
 
     good_items = []
     for t in types:
@@ -58,4 +63,8 @@ def set_items_of_type(itemlist: list[build.item.Item], items:  list[build.item.I
     '''
     itemlist = [i for i in itemlist if i.type != typ]
     itemlist += items
+    return itemlist
+
+def remove_item(itemlist: list[build.item.Item], name: str) -> list[build.item.Item]:
+    itemlist = [i for i in itemlist if i.name != name]
     return itemlist
