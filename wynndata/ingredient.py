@@ -156,11 +156,7 @@ NO_INGREDIENT = Ingredient(
 
 @ttl(3600)
 def get_all_ingredients() -> dict[str, Ingredient]:
-    try:
-        items = item.database()
-    except TimeoutError:
-        with open("data/database.json", "r") as f:
-            items = json.load(f)
+    items = item.database()
 
     return {k: Ingredient.from_api_json(k, v) for k, v in items.items()
             if 'itemOnlyIDs' in v or 'consumableOnlyIDs' in v}

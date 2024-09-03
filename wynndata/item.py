@@ -145,10 +145,7 @@ class Crafted(Item):
 
 @ttl(3600)
 def get_all_items() -> dict[str, Item]:
-    try:
-        items = item.database()
-    except TimeoutError:
-        items = item.database()
+    items = item.database()
 
     items_ = {}
     for k, v in items.items():
@@ -163,11 +160,7 @@ def get_item(name: str):
 
 
 def get_weapon(name: str):
-    try:
-        items = item.database()
-    except TimeoutError:
-        with open("data/database.json", "r") as f:
-            items = json.load(f)
+    items = item.database()
     it = items.get(name, {})
     if "base" not in it:
         raise ValueError(f"{name} not a weapon")
