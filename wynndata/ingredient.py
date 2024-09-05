@@ -172,7 +172,7 @@ _ing_ids = {}
 
 def _get_ing_ids():
     if not _ing_ids:
-        with open("data/ingreds_clean.json") as f:
+        with open("data/ingreds.json") as f:
             _ing_ids.update({i['name']: i['id'] for i in json.load(f)})
         _ing_ids["No Ingredient"] = 4000
     return _ing_ids

@@ -50,7 +50,7 @@ class Build:
         return str(self.items)
 
     def generate_link(self, skilltree = "1T"):
-        build_string = 'https://hppeng-wynn.github.io/builder?v=7#9_'
+        build_string = 'https://hppeng-wynn.github.io/builder?v=8#9_'
         for itm in self.items:
             if isinstance(itm, Crafted):
                 build_string += "CR-"+itm.name

@@ -204,11 +204,11 @@ class Requirements:
     @classmethod
     def from_api_data(cls, requirements: dict):
         return cls(
-            requirements.get('strength', 0),
-            requirements.get('dexterity', 0),
-            requirements.get('intelligence', 0),
-            requirements.get('defence', 0),
-            requirements.get('agility', 0),
+            requirements.get('strength', requirements.get('str', 0)),
+            requirements.get('dexterity', requirements.get('dex', 0)),
+            requirements.get('intelligence', requirements.get('int', 0)),
+            requirements.get('defence', requirements.get('def', 0)),
+            requirements.get('agility', requirements.get('agi', 0)),
             requirements.get('level', 0)
         )
 
@@ -392,6 +392,7 @@ class Crafted(Item):
     durability: int
 
 
+@ttl(3600)
 def get_all_items() -> dict[str, Item]:
     items = item.database()
 
@@ -410,14 +411,13 @@ _item_ids = {}
 
 def _get_item_ids():
     if not _item_ids:
-        with open("data/items_clean.json", 'rb') as f:
+        with open("data/items.json", 'rb') as f:
             _item_ids.update({i['name']: i['id'] for i in json.load(f)['items']})
         _item_ids["No Item"] = 10000
     return _item_ids
 
 def get_item_id(name: str):
     return _get_item_ids().get(name, 4095)
-
 
 def get_weapon(name: str):
     items = item.database()

@@ -13,11 +13,13 @@ def remove_bad_items(base_dmg, items: list[build.item.Item], melee=False, extra=
     :param items: List of items to prune.
     :return: Pruned list of items.
     '''
-    smstr = 'spell'
-    smStr = 'Spell'
     if melee:
         smstr = 'mainAttack'
         smStr = 'MainAttack'
+    else:
+        smstr = 'spell'
+        smStr = 'Spell'
+
     relevant_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility", f'raw{smStr}Damage',
                     f'{smstr}Damage', "elementalDamage", "rawElementalDamage", f"rawElemental{smStr}Damage", f"elemental{smStr}Damage"] + extra
     for i in range(6):
@@ -33,6 +35,8 @@ def remove_bad_items(base_dmg, items: list[build.item.Item], melee=False, extra=
                 if all(itm.requirements >= itm2.requirements) and itm2.name not in set_rings:
                     if all(itm2.identifications[id].max >= itm.identifications[id].max for id in relevant_ids):
                         if any(itm2.identifications[id].max > itm.identifications[id].max for id in relevant_ids):
+                            if itm.name == 'Contrast':
+                                print(itm2)
                             good = False
                             break
             if good:

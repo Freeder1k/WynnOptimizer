@@ -34,7 +34,7 @@ def _runCPModelSolver(cfg):
         best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
         with open('tempoutput.txt', 'w') as f:
             f.write("")
-        factor = 0.95  # WIP
+        factor = 0.90  # WIP
         print(f"Min objective score = {int(factor*best_score)}")
         # solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
         solver.add_min_score(int(factor*best_score))
@@ -57,8 +57,12 @@ def process_results(cfg, sort: int, check_valid=True, factor=0):
         builds.append(ast.literal_eval(line)[0])
         test_vars.append(ast.literal_eval(line)[1][0])
 
+    # temp fix
+    cfg.weapon.requirements += build.item.Requirements.from_api_data(cfg.min_sp)
+
     results = []
     for i, entry in enumerate(builds):
+
         items = []
         for n in entry:
             items.append(build.item.get_item(n))
@@ -103,5 +107,5 @@ def optimise(cfg):
     else:
         print(f"Number of valid builds found: {len(results)}")
         print(f"Best build: {results[0][0]}, score: {results[0][1]}")
-        # print(results[0][0].generate_link(cfg.skilltree)) Currently broken
+        print(results[0][0].generate_link(cfg.skilltree))
     return results
