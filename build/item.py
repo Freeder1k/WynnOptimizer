@@ -51,6 +51,7 @@ class IdentificationType(Enum):
     SPRINT_REGEN = "sprintRegen"
     HEALING_EFFICIENCY = "healingEfficiency"
     RAW_HEALTH = "rawHealth"
+    BASE_HEALTH = "baseHealth"
     RAW_2ND_SPELL_COST = "raw2ndSpellCost"
     FIRST_SPELL_COST = "1stSpellCost"
     RAW_4TH_SPELL_COST = "raw4thSpellCost"
@@ -71,6 +72,9 @@ class IdentificationType(Enum):
     RAW_FIRE_MAIN_ATTACK_DAMAGE = "rawFireMainAttackDamage"
     THUNDER_SPELL_DAMAGE = "thunderSpellDamage"
     ELEMENTAL_DAMAGE = "elementalDamage"
+    DAMAGE = "damage"
+    RAW_DAMAGE = "rawDamage"
+    ELEMENTAL_MAIN_ATTACK_DAMAGE = "elementalMainAttackDamage"
     EARTH_SPELL_DAMAGE = "earthSpellDamage"
     RAW_THUNDER_SPELL_DAMAGE = "rawThunderSpellDamage"
     RAW_AIR_SPELL_DAMAGE = "rawAirSpellDamage"
@@ -288,11 +292,17 @@ class Item:  # TODO: Add base stats (like base HP)
                 type = data['weaponType']
             else:
                 type = data['type']
+            if 'base' in data:
+                if 'baseHealth' in data['base']:
+                    if 'identifications' not in data:
+                        data['identifications'] = {}
+                    data['identifications']['baseHealth'] = data['base']['baseHealth']
+
             return cls(
                 name,
                 type,
                 IdentificationList.from_api_data(data['identifications'] if 'identifications' in data else {}),
-                Requirements.from_api_data(data['requirements']),
+                Requirements.from_api_data(data['requirements'])
             )
         except Exception as e:
             print(name)

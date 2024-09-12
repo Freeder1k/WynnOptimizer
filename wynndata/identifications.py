@@ -86,6 +86,9 @@ class Identifications:
     rawElementalSpellDamage: MinMaxValue
     healing: MinMaxValue
     rawElementalMainAttackDamage: MinMaxValue
+    damage: MinMaxValue
+    rawDamage: MinMaxValue
+    elementalMainAttackDamage: MinMaxValue
     airMainAttackDamage: MinMaxValue
     thunderMainAttackDamage: MinMaxValue
     leveledLootBonus: MinMaxValue

@@ -17,7 +17,6 @@ sptypes = ['str','dex','int','def','agi']
 
 class CPModelSolver:
     def __init__(self, items: list[item.Item],
-                 score_function: Callable[[item.Item], int],
                  weapon: item.Item,
                  min_sp: dict[str, int]):
         """
@@ -87,11 +86,21 @@ class CPModelSolver:
             self.model.add_max_equality(sp_assign + sum(sp_bonus), sp_req)
 
         # Set the objective function
-        # self.damage, self.testvars = dmgcalc.true_dmg_model(self.model, dmg.base_dmg_min, dmg.base_dmg_max, self._items, self.item_variables, self.sp_assignment_vars, self._weapon, dmg.spellmod, [False] + dmg.mastery)
-
-        self._objective = [int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)]
+        self._objective = None
 
         print(item_count)
+
+    def set_objective_sum(self, score_function: Callable[[item.Item], int],factor):
+        # itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
+        # assignsp = self.sp_assignment_vars[0] + self.sp_assignment_vars[1]
+        # self.model.maximize(factor*(assignsp + sum(itembonusses)) + sum(self._objective))
+
+        self._objective = sum([int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)])
+        self.model.maximize(self._objective)
+
+    def set_objective_model(self, score_function):
+        self._objective = score_function(self.model, self._items, self.item_variables, self.sp_assignment_vars, self._weapon)
+        self.model.maximize(self._objective)
 
     def add_upper_bound(self, value: T, item_lambda: Callable[[item.Item], T]):
         """
@@ -136,13 +145,13 @@ class CPModelSolver:
             self.model.add(value >= sum(a) + self.sp_assignment_vars[sptypes.index(skillpoint)])
 
     def add_min_score(self, value: int):
-        self.model.add(sum(self._objective) >= value)
+        self.model.add(self._objective >= value)
 
     def add_min_score_sp(self, value: int, factor):
         itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
         itembonusses += [self._weapon.identifications.skillpoints[0] + self._weapon.identifications.skillpoints[1]]
         assignsp = 200 - (self.sp_assignment_vars[2] + self.sp_assignment_vars[3] + self.sp_assignment_vars[4])
-        self.model.add(factor*(assignsp + sum(itembonusses)) + sum(self._objective) >= value)
+        self.model.add(factor*(assignsp + sum(itembonusses)) + self._objective >= value)
 
     def mutual_exclude(self, set_items: list[item.Item]):
         """
@@ -158,7 +167,7 @@ class CPModelSolver:
 
     def _find(self, silent=False):
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, [sum(self._objective)], silent)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, [self._objective], silent)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
         if not silent:
@@ -168,25 +177,13 @@ class CPModelSolver:
 
         return solution_printer.solution_count
 
-    def find_best_new(self):
-        #self.model.maximize(self.damage)
-        # self.model.maximize(self._objective)
-        #self.model.clear_objective()
-        #self.model.add(self.damage >= 50000000)
-        return self._find()
 
-    def find_best(self, factor):
+    def find_best(self):
         """
         Find the build where the sum of the scores of the items in that build is maximized and the constraints
         are satisfied.
         :return: Results.
         """
-        # itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
-        # assignsp = self.sp_assignment_vars[0] + self.sp_assignment_vars[1]
-        # self.model.maximize(factor*(assignsp + sum(itembonusses)) + sum(self._objective))
-
-        self.model.maximize(sum(self._objective))
-
         return self._find(silent=True)
 
     def find_allbest(self):

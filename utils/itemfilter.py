@@ -35,8 +35,6 @@ def remove_bad_items(base_dmg, items: list[build.item.Item], melee=False, extra=
                 if all(itm.requirements >= itm2.requirements) and itm2.name not in set_rings:
                     if all(itm2.identifications[id].max >= itm.identifications[id].max for id in relevant_ids):
                         if any(itm2.identifications[id].max > itm.identifications[id].max for id in relevant_ids):
-                            if itm.name == 'Contrast':
-                                print(itm2)
                             good = False
                             break
             if good:

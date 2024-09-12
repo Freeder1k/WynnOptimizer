@@ -15,7 +15,7 @@ def _runCPModelSolver(cfg):
     with open('.isrunning', 'w') as f:
         f.write("True")
     try:
-        solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.score_function, cfg.weapon, cfg.min_sp)
+        solver = build.cpmodelsolver.CPModelSolver(cfg.items, cfg.weapon, cfg.min_sp)
 
         for key, value in cfg.max_ids.items():
             solver.add_upper_bound(value + cfg.weapon.identifications[key].max, lambda itm: itm.identifications[key].max)
@@ -30,15 +30,31 @@ def _runCPModelSolver(cfg):
 
         print(solver.model.model_stats())
         print(solver.model.validate())
-        solver.find_best(cfg.sdfactor)
-        best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
-        with open('tempoutput.txt', 'w') as f:
-            f.write("")
-        factor = 0.90  # WIP
-        print(f"Min objective score = {int(factor*best_score)}")
-        # solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
-        solver.add_min_score(int(factor*best_score))
-        solver.find_allbest()
+        if not cfg.useModelFunction:
+            solver.set_objective_sum(cfg.score_function, cfg.sdfactor)
+            solver.find_best()
+            best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
+            with open('tempoutput.txt', 'w') as f:
+                f.write("")
+            factor = 0.95  # WIP
+            print(f"Min objective score = {int(factor*best_score)}")
+            # solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
+            solver.add_min_score(int(factor*best_score))
+            solver.find_allbest()
+        else:
+            if cfg.model_function is None:
+                raise Exception("Model function not specified")
+            solver.set_objective_model(cfg.model_function)
+            solver.find_best()
+            best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
+            with open('tempoutput.txt', 'w') as f:
+                f.write("")
+            factor = 0.97
+            print(f"Min objective score = {int(factor*best_score)}")
+            solver.add_min_score(int(factor*best_score))
+            solver.find_allbest()
+
+
     except:
         with open('.isrunning', 'w') as f:
             f.write("False")

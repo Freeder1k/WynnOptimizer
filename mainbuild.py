@@ -1,4 +1,4 @@
-from build.config.quake import DmgConfig
+from build.config.heal import DmgConfig
 import build.optimiser as optimiser
 import os
 import faulthandler

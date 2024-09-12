@@ -41,6 +41,8 @@ class OptimizerConfig:
         self.mastery = [False, False, False, False, False, False]
         self.skilltree = ''
         self.sdfactor = 0
+        self.useModelFunction = False
+        self.model_function = None
 
     def set_requirement_max(self, element: str, value: int):
         self.max_reqs[element] = value
@@ -76,4 +78,12 @@ class OptimizerConfig:
 
     def set_sdfactor(self, value):
         self.sdfactor = value
+        return self
+
+    def set_useModelFunction(self, value: bool):
+        self.useModelFunction = value
+        return self
+
+    def set_model_function(self, f):
+        self.model_function = f
         return self

@@ -21,15 +21,46 @@ def skillpoints(build):
 
     return req_sp, bon_sp
 
+def uncrafted_sp(items):
+    bon_sp=[0,0,0,0,0]
+    req_sp = [0,0,0,0,0]
+    for i in range(5):
+        # if i!=3: continue
+        reqs = []
+        bons = []
+        nbon = 0
+        for item in items:
+            req = item.requirements[sp[i]]
+            bon = item.identifications[skillPoints[i]].max
+            if req == 0:
+                req = -1000
+            if bon < 0:
+                nbon += bon
+                bon = 0
+            reqs.append(req)
+            bons.append(bon)
+
+        s = sorted(zip(reqs,bons), key=lambda x:x[0])
+        for r,b in s[:-1]:
+            req_sp[i] += max(0, r - (bon_sp[i]+req_sp[i]))
+            bon_sp[i] += b
+        bon_sp[i] += nbon
+        req_sp[i] += max(0, s[-1][0] - (bon_sp[i]+req_sp[i]))
+        bon_sp[i] += s[-1][1]
+
+
+    return req_sp, bon_sp
+
 # There are very few cases in which this is incorrect:
 # (https://hppeng-wynn.github.io/builder/?v=7#9_07F0mG0uS06n2SK2SL2SM2SN05e0t190y-v-v1g000000z0z0+0+0+0+0-1Tjdxa+LQK30)
 # returns: ([52, 50, 32, 0, 0], [3, 13, 28, -7, -7]) instead of ([52, 60, 32, 0, 0], [3, 13, 28, -7, -7])
 # There are probably also complete (good) builds that this would apply to,
 # but it's a very specific problem and the rigorous method is much slower.
-def uncrafted_sp(items):
+def uncrafted_sp_old(items):
     bon_sp=[0,0,0,0,0]
     req_sp = [0,0,0,0,0]
     for i in range(5):
+        if i != 2: continue
         reqs = []
         bons = []
         nbons = []
@@ -51,12 +82,13 @@ def uncrafted_sp(items):
             elif req + bon == max_sum:
                 if bon > bons[max_index]:
                     max_index = j
-
+            print(reqs, bons)
+        print(max_index)
         max_req = reqs[max_index]-sum(nbons)
         max_bon = bons[max_index]
         bons[max_index] = 0
         bonus = sum(min(bon,max(0,max_req-req)) for req, bon in zip(reqs, bons))
-        #print(reqs, bons, max_req, bonus)
+        print(reqs, bons, max_req, max_bon, nbons, bonus)
         req_sp[i] = max(0, reqs[max_index] - bonus)
         bon_sp[i] = sum(bons) + max_bon
 
