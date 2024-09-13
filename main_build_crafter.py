@@ -1,11 +1,10 @@
-import craft.optimizer_cp
+import craft.build_optimizer_cp
 import wynndata.ingredient
 
 
 def main():
     ingredients = list(i for i in wynndata.ingredient.get_all_ingredients().values()
-                       if wynndata.ingredient.Profession('weaponsmithing') in i.skills
-                       and (i.durability > 0
+                       if (i.durability > 0
                             # or i.identifications.healingEfficiency.abs_max != 0
                             # or i.identifications.manaSteal.abs_max != 0
                             # or i.identifications.rawHealth.abs_max != 0
@@ -31,10 +30,13 @@ def main():
                             # or i.identifications.elementalDamage.abs_max != 0
                             # or i.identifications.elementalMainAttackDamage.abs_max != 0
                             or i.modifiers.abs_total() != 0))
-    ingredients = [i for i in ingredients if i.name != "Void Particulates"]
-    print(len(ingredients))
-    solver = craft.optimizer_cp.CPRecipeOptimizer(
-        ingredients=ingredients,
+    ingredients_lists = []
+    professions = ['tailoring', 'tailoring']
+    for prof in professions:
+        ingredients_lists.append(list(i for i in ingredients if wynndata.ingredient.Profession(prof) in i.skills))
+    print([f"{p}: {len(i)}" for p, i in zip(professions, ingredients_lists)])
+    solver = craft.build_optimizer_cp.CPBuildRecipeOptimizer(
+        ingredients_lists=ingredients_lists,
     )
 
     recipes = solver.recipes
@@ -53,33 +55,19 @@ def main():
     # healing = solver.model.new_int_var(0, 80000000000, "healing")
     # solver.model.add_multiplication_equality(healing, water_x_hp, healing_eff_var)
     #
-    solver.set_objective((recipe.identifications.lootQuality.abs_max * 10000000
-                            + recipe.identifications.lootBonus.abs_max * 100000
-                            + recipe.identifications.rawHealth.abs_max * 1000
-                          # + recipe.identifications.rawDamage.abs_max * 40000
-                          # + recipe.identifications.rawEarthMainAttackDamage.abs_max * 40000
-                          # + recipe.identifications.rawEarthDamage.abs_max * 40000
-                          # + recipe.identifications.rawElementalDamage.abs_max * 40000
-                          # + recipe.identifications.rawElementalMainAttackDamage.abs_max * 40000
-                          # + recipe.identifications.mainAttackDamage.abs_max * 604900
-                          # + recipe.identifications.damage.abs_max * 604900
-                          # + recipe.identifications.earthDamage.abs_max * 604900
-                          # + recipe.identifications.elementalDamage.abs_max * 604900
-                          # + recipe.identifications.earthMainAttackDamage.abs_max * 604900
-                          # + recipe.identifications.elementalMainAttackDamage.abs_max * 604900
-                          # + recipe.identifications.manaRegen.abs_max * 300000
-                          # + recipe.identifications.manaSteal.abs_max * 300000
-                          # + recipe.identifications.walkSpeed.abs_max * 300000
-                          + recipe.durability))
+    solver.set_objective(sum(r.identifications.lootQuality.abs_max * 100
+                           + r.identifications.lootBonus.abs_max
+                             for r in recipes))
 
-    solver.add(recipe.durability >= -1000)
+    # solver.add(recipe.durability >= 108)
     # solver.add(recipe.identifications.manaRegen.abs_max >= 0)
     # solver.add(recipe.identifications.walkSpeed.abs_max >= 0)
-    solver.add(recipe.requirements.strength <= 0)
-    solver.add(recipe.requirements.dexterity <= 0)
-    solver.add(recipe.requirements.intelligence <= 0)
-    solver.add(recipe.requirements.defence <= 0)
-    solver.add(recipe.requirements.agility <= 0)
+    for recipe in recipes:
+        solver.add(recipe.requirements.strength <= 0)
+        solver.add(recipe.requirements.dexterity <= 0)
+        solver.add(recipe.requirements.intelligence <= 0)
+        solver.add(recipe.requirements.defence <= 0)
+        solver.add(recipe.requirements.agility <= 0)
 
     print(solver.find_best())
 
