@@ -6,7 +6,8 @@ from cp_utils.linear_expr_factory import LinearExprFactory
 
 
 class CPRecipe:
-    def __init__(self, base_lin_expr_fac: LinearExprFactory, ids_lin_expr_fac: LinearExprFactory, reqs_lin_expr_fac: LinearExprFactory):
+    def __init__(self, base_lin_expr_fac: LinearExprFactory, ids_lin_expr_fac: LinearExprFactory, reqs_lin_expr_fac: LinearExprFactory, profession):
+        self.prof = profession
         self.lin_expr_fac = base_lin_expr_fac
         self.requirements = CPRequirements(reqs_lin_expr_fac)
         self.identifications = CPIdentifications(ids_lin_expr_fac)
@@ -22,8 +23,9 @@ class CPRecipe:
 
     @property
     def duration(self) -> LinearExpr:
+        durations = {'cooking': 4060, 'alchemism': 1350, 'scribing': 1350}
         if self._duration is None:
-            self._duration = self.lin_expr_fac.generate(lambda i: i.duration)
+            self._duration = self.lin_expr_fac.generate(lambda i: i.duration) + durations.get(self.prof, 0)
         return self._duration
 
     @property

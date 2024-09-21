@@ -99,7 +99,7 @@ class CPModelSolver:
         self.model.maximize(self._objective)
 
     def set_objective_model(self, score_function):
-        self._objective = score_function(self.model, self._items, self.item_variables, self.sp_assignment_vars, self._weapon)
+        self._objective = score_function(self.model, self._items, self.item_variables, self.sp_assignment_vars)
         self.model.maximize(self._objective)
 
     def add_upper_bound(self, value: T, item_lambda: Callable[[item.Item], T]):

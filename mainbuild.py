@@ -1,4 +1,3 @@
-from build.config.heal import DmgConfig
 import build.optimiser as optimiser
 import os
 import faulthandler
@@ -10,6 +9,7 @@ def main():
           "/　 　ο—ヽ二二ラ))\n"
           "し———J\n")
 
+    from build.config.modeldmg import DmgConfig
     cfg = DmgConfig()
     results = optimiser.optimise(cfg)
 

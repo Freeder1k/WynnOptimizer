@@ -21,6 +21,8 @@ def _runCPModelSolver(cfg):
             solver.add_upper_bound(value + cfg.weapon.identifications[key].max, lambda itm: itm.identifications[key].max)
         for key, value in cfg.min_ids.items():
             solver.add_lower_bound(value - cfg.weapon.identifications[key].max, lambda itm: itm.identifications[key].max)
+        for key, value in cfg.lower_bounds.items():
+            solver.add_lower_bound(value - key(cfg.weapon), key)
         for key, value in cfg.max_reqs.items():
             solver.add_max_assignable_sp(value, key)
         for key, value in cfg.max_sp.items():
@@ -28,10 +30,10 @@ def _runCPModelSolver(cfg):
         for s in cfg.exclusive_sets:
             solver.mutual_exclude(s)
 
-        print(solver.model.model_stats())
-        print(solver.model.validate())
         if not cfg.useModelFunction:
             solver.set_objective_sum(cfg.score_function, cfg.sdfactor)
+            print(solver.model.model_stats())
+            print(solver.model.validate())
             solver.find_best()
             best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
             with open('tempoutput.txt', 'w') as f:
@@ -45,6 +47,8 @@ def _runCPModelSolver(cfg):
             if cfg.model_function is None:
                 raise Exception("Model function not specified")
             solver.set_objective_model(cfg.model_function)
+            print(solver.model.model_stats())
+            print(solver.model.validate())
             solver.find_best()
             best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
             with open('tempoutput.txt', 'w') as f:

@@ -34,6 +34,7 @@ class OptimizerConfig:
         self.score_function = score_function
         self.max_ids = {}
         self.min_ids = {}
+        self.lower_bounds = {}
         self.max_reqs = {}
         self.max_sp = {}
         self.min_sp = {}
@@ -63,6 +64,9 @@ class OptimizerConfig:
     def set_identification_min(self, identification: str, value: int):
         self.min_ids[identification] = value
         return self
+
+    def add_lower_bound(self, func, value):
+        self.lower_bounds[func] = value
 
     def set_weapon(self, i: item.Weapon):
         self.weapon = i

@@ -8,7 +8,7 @@ spellmod = [0.3, 0, 0.15, 0.1, 0, 0]  # multihit https://wynnbuilder.github.io/b
 # skilltree = '1TldxagIZu07'  # TODO: actual calculations with skilltree (THIS WILL BE PAIN)
 # mastery = [False, False, True, True, True]  # Elemental masteries from skilltree [ETWFA]
 weapon = build.item.get_weapon("Nirvana").set_powders(["w", "w", "w"])
-skilltree = '1Tjdxa+LQK30'
+skilltree = '1TldfUnUrX7'
 mastery = [False, False, True, True, False]  # Elemental masteries from skilltree [ETWFA]
 # weapon = build.item.get_weapon("Cataclysm").set_powders(["t", "t", "t"])
 # weapon = build.item.get_weapon("Oblivion").set_powders(["t", "t", "t", "t"])
@@ -16,9 +16,11 @@ mastery = [False, False, True, True, False]  # Elemental masteries from skilltre
 base_dmg_max, base_dmg_min = dmgcalc.base_dmg(weapon, spellmod, mastery)
 spellmodsum = sum(spellmod)
 
-
 def score(itm: build.item.Item, ) -> float:
     return dmgcalc.avg_dmg(base_dmg_min, base_dmg_max, itm.identifications, spellmodsum)
+
+def score_model(model, items, item_vars, sp_assignment_vars):
+    return dmgcalc.true_dmg_model2(model, base_dmg_max, base_dmg_min, items, item_vars, sp_assignment_vars, weapon, spellmod, mastery, crit=True)[0]
 
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
@@ -33,8 +35,11 @@ class DmgConfig(OptimizerConfig):
 
     def __init__(self):
         super().__init__(items, score)
+        self.set_model_function(score_model)
+        self.set_useModelFunction(True)
         # self.set_requirement_max('def', 0)
         # self.set_requirement_max('agi', 0)
+        self.add_lower_bound(lambda itm: itm.identifications['baseHealth'].max + itm.identifications['rawHealth'].max, 8000)
         self.set_identification_min("manaRegen", 70)
         self.set_weapon(weapon)
         self.set_elemental_mastery(mastery)

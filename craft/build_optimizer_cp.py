@@ -11,10 +11,10 @@ from wynndata.recipe import Recipe
 
 T = TypeVar('T')
 SLOTS = (0, 1, 2, 3, 4, 5)
-
+profstrings = {'armouring': '9d91', 'tailoring': '9i91', 'jeweling': '9m91', 'weaponsmithing': '9e91', 'woodworking': '9k91', 'cooking': '9f91', 'alchemism': '9j91', 'scribing': '9o91'}
 
 class CPBuildRecipeOptimizer:
-    def __init__(self, ingredients_lists: list[list[ingredient.Ingredient]]):
+    def __init__(self, ingredients_lists: list[list[ingredient.Ingredient]], professions):
         """
         Create a linear programming optimizer for a recipe.
         :param ingredients: A list of ingredients to use in the recipe.
@@ -23,10 +23,11 @@ class CPBuildRecipeOptimizer:
         """
         self.n = len(ingredients_lists)
         self.recipes = []
+        self.professions = professions
 
         for i in range(self.n):
             self.recipes.append(CPRecipe(_BaseLinExprFactory(self, i), _IdentificationsLinExprFactory(self, i),
-                                         _RequirementsLinExprFactory(self, i)))
+                                         _RequirementsLinExprFactory(self, i), self.professions[i]))
 
         self.model = cp_model.CpModel()
 
@@ -229,9 +230,9 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         print(
             f"Solution {self.count}, time = {self.WallTime()} s, objective = {self.ObjectiveValue()}, ingredients = {ingrs}")
 
-        for ingredients in ingrs:
+        for ingredients, prof in zip(ingrs, self.optimizer.professions):
             recipe = Recipe(*ingredients)
-            print(f"https://hppeng-wynn.github.io/crafter/#1{Base64.fromInt(recipe.id, order=12)}9i91") # TODO: make this correct item
+            print(f"https://hppeng-wynn.github.io/crafter/#1{Base64.fromInt(recipe.id, order=12)}{profstrings.get(prof, '9d91')}") # TODO: make this correct item
 
 
 class _IdentificationsLinExprFactory(LinearExprFactory):

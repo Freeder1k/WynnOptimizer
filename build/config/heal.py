@@ -13,7 +13,7 @@ def score(itm: build.item.Item, ) -> float:
             * (1 + min(itm.identifications['waterDamage'].max,75)/100*0.3))
 
 
-def score_model(model, items, item_vars, sp_assignment_vars, weapon):
+def score_model(model, items, item_vars, sp_assignment_vars):
     healths = []
     healeffs = []
     waterdmgs = [45]
