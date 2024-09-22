@@ -6,7 +6,7 @@ from cp_utils.linear_expr_factory import LinearExprFactory
 
 
 class CPRecipe:
-    def __init__(self, base_lin_expr_fac: LinearExprFactory, ids_lin_expr_fac: LinearExprFactory, reqs_lin_expr_fac: LinearExprFactory, profession):
+    def __init__(self, base_lin_expr_fac: LinearExprFactory, ids_lin_expr_fac: LinearExprFactory, reqs_lin_expr_fac: LinearExprFactory, profession=None):
         self.prof = profession
         self.lin_expr_fac = base_lin_expr_fac
         self.requirements = CPRequirements(reqs_lin_expr_fac)
