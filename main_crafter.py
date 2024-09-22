@@ -37,7 +37,7 @@ def main():
         ingredients=ingredients,
     )
 
-    recipes = solver.recipes
+    recipe = solver.recipe
 
     # water_dmg_var = solver.model.new_int_var(0, 5000, "water_dmg")
     # health_var = solver.model.new_int_var(20000, 40000, "health")
