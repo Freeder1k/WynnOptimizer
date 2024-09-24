@@ -34,8 +34,8 @@ def main():
                             # or i.identifications.elementalMainAttackDamage.abs_max != 0
                             # or i.identifications.elementalSpellDamage.abs_max != 0
                            # or i.identifications.rawDexterity.abs_max != 0
-                           or i.identifications.gatherSpeed.abs_max != 0
-                           or i.identifications.gatherXpBonus.abs_max != 0
+                           or i.identifications.walkSpeed.abs_max != 0
+                           # or i.identifications.gatherXpBonus.abs_max != 0
                             or i.modifiers.abs_total() != 0)
                             and i.requirements.level <= 103
                        )
@@ -43,7 +43,7 @@ def main():
     ingredients = [i for i in ingredients if i.name != "Squid Beak"]
     # add a filter?
     # armouring, tailoring, jeweling, weaponsmithing, woodworking, cooking, alchemism, scribing
-    professions = ['cooking', 'alchemism', 'scribing']
+    professions = ['woodworking']
     # professions = ['tailoring']
     for prof in professions:
         ingredients_lists.append(list(i for i in ingredients if wynndata.ingredient.Profession(prof) in i.skills))
@@ -70,8 +70,7 @@ def main():
     # solver.model.add_multiplication_equality(healing, water_x_hp, healing_eff_var)
     #
     # noinspection PyTypeChecker
-    solver.set_objective(sum(r.identifications.gatherSpeed.abs_max * 100000
-                             + r.identifications.gatherXpBonus.abs_max * 1000
+    solver.set_objective(sum(r.identifications.walkSpeed.abs_max * 1000
                              + r.durability
                              for r in recipes))
     # solver.set_objective(sum(r.identifications.rawDamage.abs_max * 54999
@@ -96,12 +95,12 @@ def main():
     # solver.add(sum(r.identifications.manaRegen.abs_max for r in recipes) >= 0)
     # solver.add(sum(r.identifications.rawHealth.abs_max for r in recipes) >= 0)
     for recipe in recipes:
-        solver.add(recipe.duration >= 150)
-        # solver.add(recipe.requirements.strength <= 60)
-        # solver.add(recipe.requirements.dexterity <= 60)
-        # solver.add(recipe.requirements.intelligence <= 129)
-        # solver.add(recipe.requirements.defence <= 0)
-        # solver.add(recipe.requirements.agility <= 0)
+        # solver.add(recipe.duration >= 300)
+        solver.add(recipe.requirements.strength <= 0)
+        solver.add(recipe.requirements.dexterity <= 0)
+        solver.add(recipe.requirements.intelligence <= 0)
+        solver.add(recipe.requirements.defence <= 0)
+        solver.add(recipe.requirements.agility <= 0)
         # solver.add(recipe.identifications.rawStrength.abs_max >= 0)
         # solver.add(recipe.identifications.rawDexterity.abs_max >= 0)
 

@@ -10,7 +10,7 @@ mastery = [True, True, True, False, True] # Elemental masteries from skilltree [
 def score(itm: build.item.Item, ) -> float:
     return ((535 + itm.identifications['baseHealth'].max + itm.identifications['rawHealth'].max)*0.18
             * (1 + itm.identifications['healingEfficiency'].max/100)
-            * (1 + min(itm.identifications['waterDamage'].max,75)/100*0.3))
+            * (1 + min(itm.identifications['waterDamage'].max,250)/100*0.3))
 
 
 def score_model(model, items, item_vars, sp_assignment_vars):
