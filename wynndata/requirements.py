@@ -86,6 +86,10 @@ class Requirements:
     def sp_total(self):
         return sum(sp for sp in self.skillpoints if sp > 0)
 
+    @property
+    def abs_sp_total(self):
+        return sum(abs(sp) for sp in self.skillpoints)
+
     @classmethod
     def from_api_data(cls, requirements: dict, item_only_ids: dict = None):
         if item_only_ids is None:

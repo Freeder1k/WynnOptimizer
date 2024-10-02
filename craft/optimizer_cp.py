@@ -14,7 +14,7 @@ SLOTS = (0, 1, 2, 3, 4, 5)
 
 
 class CPRecipeOptimizer:
-    def __init__(self, ingredients: list[ingredient.Ingredient]):
+    def __init__(self, ingredients: list[ingredient.Ingredient], profession: str):
         """
         Create a linear programming optimizer for a recipe.
         :param ingredients: A list of ingredients to use in the recipe.
@@ -22,7 +22,7 @@ class CPRecipeOptimizer:
         :param modifiers: The modifier values of the recipe.
         """
         self.recipe = CPRecipe(_BaseLinExprFactory(self), _IdentificationsLinExprFactory(self),
-                               _RequirementsLinExprFactory(self))
+                               _RequirementsLinExprFactory(self), profession)
         self.model = cp_model.CpModel()
 
         self.ingredients = ingredients
