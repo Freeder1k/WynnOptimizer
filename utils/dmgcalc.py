@@ -1,6 +1,7 @@
 speed_conv = {"super_slow": 0.51, "very_slow": 0.83, "slow": 1.5, "normal": 2.05, "fast": 2.5, "very_fast": 3.1, "super_fast": 4.3}  # weapon speed modifier
 mastery_max = [0,4,8,4,5,4]
 mastery_min = [0,2,1,2,3,3]
+mastery_pct = [0,20,10,15,15,15]
 damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
 baseDamageTypes = ["baseDamage", "baseEarthDamage", "baseThunderDamage",  "baseWaterDamage", "baseFireDamage", "baseAirDamage"]
 elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
@@ -56,8 +57,7 @@ def true_dmg(base, ids, spellmodsum, crit=True, melee=False):
 
     strePct = spToPct(ids["rawStrength"].max)
     dexPct = spToPct(ids["rawDexterity"].max)
-    raw = [ids[f"raw{smStr}lDamage"].max] + 5 * [ids[f"raw{smStr}Damage"].max + ids['rawElementalDamage'].max + ids[f'rawElemental{smStr}Damage'].max]
-
+    raw = [ids[f"raw{smStr}Damage"].max] + 5 * [ids[f"raw{smStr}Damage"].max + ids['rawElementalDamage'].max + ids[f'rawElemental{smStr}Damage'].max]
     # add IDs for final damage
     damage = [0,0,0,0,0,0]
     for i, dmg in enumerate(base):
@@ -98,7 +98,7 @@ def true_dmg_model(model, basemin, basemax, items, item_vars, sp_vars, weapon, s
     model.add(strdexvar == f*100 + skillpoints[1] + skillpoints[2])
 
     # Damage percentages
-    pcts = [[int(f*15*mastery[i]*base[i])] for i in range(6)]
+    pcts = [[int(f*mastery_pct[i]*mastery[i]*base[i])] for i in range(6)]
     for itm, x in zip(items + [weapon], item_vars + [1]):
         item_pct = [itm.identifications["spellDamage"].max] + 5 * [itm.identifications["spellDamage"].max + itm.identifications['elementalSpellDamage'].max]
         for i in range(6):
@@ -166,7 +166,7 @@ def true_dmg_model2(model, basemin, basemax, items, item_vars, sp_vars, weapon, 
     model.add(strdexvar == f*100 + skillpoints[1] + skillpoints[2])
 
     # damage bonus
-    item_dmg = [[int(f*15*mastery[i]*base[i])] for i in range(6)]
+    item_dmg = [[int(f*mastery_pct[i]*mastery[i]*base[i])] for i in range(6)]
     for itm, x in zip(items + [weapon], item_vars + [1]):
         item_pct = [itm.identifications["spellDamage"].max] + 5 * [itm.identifications["spellDamage"].max + itm.identifications['elementalSpellDamage'].max]
         item_raw_n = itm.identifications["rawSpellDamage"].max
@@ -230,7 +230,7 @@ def true_dmg_model_nosp(model, basemin, basemax, items, item_vars, sp_vars, weap
 
     spellmodsum = sum(spellmod)
 
-    item_dmg = [[int(f*15*mastery[i]*base[i])] for i in range(6)]
+    item_dmg = [[int(f*mastery_pct[i]*mastery[i]*base[i])] for i in range(6)]
     for itm, x in zip(items + [weapon], item_vars + [1]):
         item_pct = [itm.identifications["spellDamage"].max] + 5 * [itm.identifications["spellDamage"].max + itm.identifications['elementalSpellDamage'].max]
         item_raw_n = itm.identifications["rawSpellDamage"].max

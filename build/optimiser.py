@@ -7,7 +7,7 @@ import utils.skillpoints as sp
 import ast
 
 masterybonus = [20, 10, 15, 15 ,15]
-damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
+damageTypes = ["earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
 
 def _runCPModelSolver(cfg):
     with open('tempoutput.txt', 'w') as f:
@@ -38,7 +38,7 @@ def _runCPModelSolver(cfg):
             best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
             with open('tempoutput.txt', 'w') as f:
                 f.write("")
-            factor = 0.95  # WIP
+            factor = 0.98  # WIP
             print(f"Min objective score = {int(factor*best_score)}")
             # solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
             solver.add_min_score(int(factor*best_score))
