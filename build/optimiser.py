@@ -6,8 +6,8 @@ import build.build
 import utils.skillpoints as sp
 import ast
 
-masterybonus = [20, 10, 15, 15 ,15]
-damageTypes = ["earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
+masterybonus = [0, 20, 10, 15, 15 ,15]
+damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDamage", "airDamage"]
 
 def _runCPModelSolver(cfg):
     with open('tempoutput.txt', 'w') as f:
@@ -38,7 +38,7 @@ def _runCPModelSolver(cfg):
             best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
             with open('tempoutput.txt', 'w') as f:
                 f.write("")
-            factor = 0.98  # WIP
+            factor = 0.95  # WIP
             print(f"Min objective score = {int(factor*best_score)}")
             # solver.add_min_score_sp(int(factor*best_score), cfg.sdfactor)
             solver.add_min_score(int(factor*best_score))
@@ -53,7 +53,7 @@ def _runCPModelSolver(cfg):
             best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
             with open('tempoutput.txt', 'w') as f:
                 f.write("")
-            factor = 0.97
+            factor = 0.95
             print(f"Min objective score = {int(factor*best_score)}")
             solver.add_min_score(int(factor*best_score))
             solver.find_allbest()
@@ -95,6 +95,7 @@ def process_results(cfg, sort: int, check_valid=True, factor=0):
         builditem = sp.add_sp(b.build(), *b.calc_sp())
         for typ,mas,bon in zip(damageTypes, cfg.mastery, masterybonus):
             builditem.identifications[typ] += bon*mas
+        builditem.identifications += cfg.consus.identifications
         buildscore = cfg.score_function(builditem)
         objectivevalue = test_vars[i]
         # objectivevalue = factor*(builditem.identifications['rawStrength'].max + builditem.identifications['rawDexterity'].max) + sum(cfg.score_function(it) for it in b.items)

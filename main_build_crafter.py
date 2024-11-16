@@ -2,9 +2,13 @@ import craft.build_optimizer_cp
 import wynndata.ingredient
 
 
+stat = "dsfgsdf"
+extradura = 0#382
+
 def main():
     ingredients = list(i for i in wynndata.ingredient.get_all_ingredients().values()
                        if (i.durability > 0
+                            or i.duration > 0
                             # or i.identifications.healingEfficiency.abs_max != 0
                             # or i.identifications.manaSteal.abs_max != 0
                             # or i.identifications.rawHealth.abs_max != 0
@@ -12,9 +16,14 @@ def main():
                             # or i.identifications.thunderDamage.abs_max != 0
                             # or i.identifications.spellDamage.abs_max != 0
                             # or i.identifications.walkSpeed.abs_max != 0
-                            # or i.identifications.lootBonus.abs_max != 0
-                            # or i.identifications.lootQuality.abs_max != 0
-                            # or i.identifications.manaRegen.abs_max != 0
+                            or i.identifications.lootBonus.abs_max != 0
+                            or i.identifications.lootQuality.abs_max != 0
+                           # or i.identifications[stat].abs_max != 0
+                           # or i.identifications.thunderDamage.abs_max != 0
+                           # or i.identifications.waterDamage.abs_max != 0
+                           # or i.identifications.fireDamage.abs_max != 0
+                           # or i.identifications.airDamage.abs_max != 0
+                           # or i.identifications.elementalDamage.abs_max != 0
                             # or i.requirements.sp_total != 0
                             # or i.identifications.rawSpellDamage.abs_max != 0
                             # or i.identifications.rawMainAttackDamage.abs_max != 0
@@ -34,17 +43,23 @@ def main():
                             # or i.identifications.elementalMainAttackDamage.abs_max != 0
                             # or i.identifications.elementalSpellDamage.abs_max != 0
                            # or i.identifications.rawDexterity.abs_max != 0
-                           or i.identifications.walkSpeed.abs_max != 0
+                           # or i.identifications.walkSpeed.abs_max != 0
                            # or i.identifications.gatherXpBonus.abs_max != 0
                             or i.modifiers.abs_total() != 0)
-                            and i.requirements.level <= 103
+                            # and i.requirements.level <= 103
                        )
+    # ingredients = [i for i in wynndata.ingredient.get_all_ingredients().values()]
+
     ingredients_lists = []
-    ingredients = [i for i in ingredients if i.name != "Squid Beak"]
-    # add a filter?
+    # ingredients = [i for i in ingredients if i.name != "Ancient Heart"]
+    # ingredients = [i for i in ingredients if i.name != "Borange Fluff"]
+    # ingredients = [i for i in ingredients if i.name != "Condensed Darkness"]
+    # ingredients = [i for i in ingredients if i.name != "Aspect of the Void"]
+    # ingredients = [i for i in ingredients if i.name != "Dominant Force"]
+    # ingredients = [i for i in ingredients if i.name != "Lashing Hellfire"]
+
     # armouring, tailoring, jeweling, weaponsmithing, woodworking, cooking, alchemism, scribing
-    professions = ['woodworking']
-    # professions = ['tailoring']
+    professions = ['jeweling']
     for prof in professions:
         ingredients_lists.append(list(i for i in ingredients if wynndata.ingredient.Profession(prof) in i.skills))
     print([f"{p}: {len(i)}" for p, i in zip(professions, ingredients_lists)])
@@ -54,6 +69,7 @@ def main():
     )
 
     recipes = solver.recipes
+
 
     # water_dmg_var = solver.model.new_int_var(0, 5000, "water_dmg")
     # health_var = solver.model.new_int_var(20000, 40000, "health")
@@ -69,9 +85,37 @@ def main():
     # healing = solver.model.new_int_var(0, 80000000000, "healing")
     # solver.model.add_multiplication_equality(healing, water_x_hp, healing_eff_var)
     #
+    # for identification in
+
+
+    # r = recipes[0]
+    #
+    # boolvars = []
+    #
+    # import wynndata.identifications as iden
+    # idenlist = list(iden.Identifications.__dataclass_fields__.keys())
+    # #idenlist.remove()
+    # for i in idenlist:
+    #     boolvar = solver.model.new_bool_var(i+"bool")
+    #     absvar = solver.model.new_int_var(0, 5000, i+"abs")
+    #
+    #     solver.model.add_abs_equality(absvar, r.identifications[i].abs_max)
+    #     solver.model.add_min_equality(boolvar, [absvar, 1])
+    #
+    #     boolvars.append(boolvar)
+    #
+    # # noinspection PyTypeChecker
+    # solver.set_objective(sum(boolvars) * 10000 + r.durability)
+
+
+
     # noinspection PyTypeChecker
-    solver.set_objective(sum(r.identifications.walkSpeed.abs_max * 1000
+    solver.set_objective(sum(r.identifications[stat].abs_max * 1000
                              + r.durability
+                             + r.identifications.lootBonus.abs_max * 1000
+                             + r.identifications.lootQuality.abs_max * 1000
+                             # + r.identifications.fireDamage.abs_max * 1000
+                             # + r.identifications.airDamage.abs_max * 1000
                              for r in recipes))
     # solver.set_objective(sum(r.identifications.rawDamage.abs_max * 54999
     #                          + r.identifications.rawWaterSpellDamage.abs_max * 40109
@@ -94,15 +138,23 @@ def main():
 
     # solver.add(sum(r.identifications.manaRegen.abs_max for r in recipes) >= 0)
     # solver.add(sum(r.identifications.rawHealth.abs_max for r in recipes) >= 0)
-    for recipe in recipes:
-        # solver.add(recipe.duration >= 300)
-        solver.add(recipe.requirements.strength <= 0)
-        solver.add(recipe.requirements.dexterity <= 0)
-        solver.add(recipe.requirements.intelligence <= 0)
-        solver.add(recipe.requirements.defence <= 0)
-        solver.add(recipe.requirements.agility <= 0)
-        # solver.add(recipe.identifications.rawStrength.abs_max >= 0)
-        # solver.add(recipe.identifications.rawDexterity.abs_max >= 0)
+    for recipe, prof in zip(recipes, professions):
+        if prof in ["armouring", "tailoring", "jeweling", "weaponsmithing", "woodworking"]:
+            solver.add(recipe.durability >= 130+extradura)
+        else:
+            solver.add(recipe.duration >= 200+extradura)
+        # solver.add(recipe.identifications.spellDamage.abs_max != 0)
+        # solver.add(recipe.identifications.rawHealth.abs_max != 0)
+        # solver.add(recipe.requirements.strength != 0)
+        # solver.add(recipe.requirements.dexterity != 0)
+        # solver.add(recipe.requirements.intelligence != 0)
+        # solver.add(recipe.requirements.defence != 0)
+        # solver.add(recipe.requirements.agility != 0)
+        # solver.add(recipe.identifications.rawStrength.abs_max != 0)
+        # solver.add(recipe.identifications.rawDexterity.abs_max != 0)
+        # solver.add(recipe.identifications.rawIntelligence.abs_max != 0)
+        # solver.add(recipe.identifications.rawDefence.abs_max != 0)
+        # solver.add(recipe.identifications.rawAgility.abs_max != 0)
 
     print(solver.find_best())
 

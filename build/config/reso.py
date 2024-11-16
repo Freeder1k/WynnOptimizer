@@ -6,7 +6,7 @@ from utils import itemfilter
 
 spellmod = [7, 0, 0, 0.2, 0, 0]
 weapon = build.item.get_weapon("Resonance").set_powders(["w", "w", "w"])
-skilltree = '1TjFldZnk7'
+skilltree = '1Tj-jKFwkE'
 mastery = [True, False, True, True, False]  # Elemental masteries from skilltree [ETWFA]
 base_dmg_max, base_dmg_min = dmgcalc.base_dmg(weapon, spellmod, mastery)
 spellmodsum = sum(spellmod)
@@ -18,7 +18,7 @@ def score(itm: build.item.Item, ) -> float:
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
 items = itemfilter.remove_bad_items(base_dmg_max, items)
-items = itemfilter.set_item(items, build.item.get_item("Crusade Sabatons"))
+# items = itemfilter.set_item(items, build.item.get_item("Crusade Sabatons"))
 # itemnames = ("Caesura", "Soul Signal", "Chaos-Woven Greaves", "Broken Balance", "Yang", "Yang", "Diamond Hydro Bracelet", "Amanuensis")
 # items = []
 # for i in itemnames:
@@ -40,4 +40,4 @@ class DmgConfig(OptimizerConfig):
         # self.set_sp_min('str', 40)
         self.set_sp_max('dex', 150)
         # self.set_sp_min('dex', 40)
-        self.set_sp_min('def', 115)
+        # self.set_sp_min('def', 115)

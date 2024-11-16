@@ -4,7 +4,6 @@ from utils import dmgcalc
 from utils import itemfilter
 
 
-# Divzer is basically just thunder damage so gonna simplyfy a bit
 spellmods = [[1.8,0,0,0,0.2,0], [1.4,0,0,0,0,0]]
 weapon = build.item.get_weapon("Divzer").set_powders(["t", "t", "t"])
 skilltree = '1Tl-x37BNd0'
@@ -19,12 +18,20 @@ for spellmod in spellmods:
         base_dmg_max[i] += ma[i]
         base_dmg_min[i] += mi[i]
 
-def score(itm: build.item.Item, ) -> float:
+consus = build.item.Item("consus",
+                         "consumable",
+                         build.item.IdentificationList.from_api_data(
+                             {"rawStrength": 50, "rawDexterity": 55, "rawIntelligence": 45, "manaRegen": 12, "manaSteal": 56, "rawSpellDamage": 575, "spellDamage": 206, "elementalDamage": 33, "thunderDamage": 150}),
+                         build.item.Requirements(0, 0, 0, 0, 0, 0))
+
+def score(itm: build.item.Item) -> float:
     dmg = 0
     for spellmod, base_dmg_max, base_dmg_min in zip(spellmods, base_dmg_maxs, base_dmg_mins):
         dmg += dmgcalc.avg_dmg(base_dmg_min, base_dmg_max, itm.identifications, sum(spellmod))
     return dmg
 
+# Divzer is basically just thunder damage so gonna simplyfy a bit
+spellmodsum = sum(sum(spellmod) for spellmod in spellmods)
 def score_model(model, items, item_vars, sp_vars):
     f = 1
     base = (base_dmg_max[2] + base_dmg_min[2])/2
@@ -71,7 +78,7 @@ def score_model(model, items, item_vars, sp_vars):
     model.add(dmgvar == dmg)
     damage = model.new_int_var(0, 2147483647, f"damage")
     model.add_multiplication_equality(damage, [dmgvar,strdexvar])
-    return damage
+    return damage + 650000*f*(item_sp[0] + item_sp[1] ), *item_sp
 
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
@@ -97,6 +104,7 @@ class DmgConfig(OptimizerConfig):
         self.set_elemental_mastery(mastery)
         self.set_skilltree(skilltree)
         self.set_sdfactor(2)
+        self.set_consus(consus)
         # self.set_sp_max('str', 150)
         # self.set_sp_min('str', 40)
         # self.set_sp_max('dex', 150)

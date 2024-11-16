@@ -44,6 +44,7 @@ class OptimizerConfig:
         self.sdfactor = 0
         self.useModelFunction = False
         self.model_function = None
+        self.consus = item.NO_ITEM
 
     def set_requirement_max(self, element: str, value: int):
         self.max_reqs[element] = value
@@ -90,4 +91,8 @@ class OptimizerConfig:
 
     def set_model_function(self, f):
         self.model_function = f
+        return self
+
+    def set_consus(self, consus: item):
+        self.consus = consus
         return self

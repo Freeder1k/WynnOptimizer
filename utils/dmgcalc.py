@@ -61,7 +61,7 @@ def true_dmg(base, ids, spellmodsum, crit=True, melee=False):
     # add IDs for final damage
     damage = [0,0,0,0,0,0]
     for i, dmg in enumerate(base):
-        damage[i] = dmg * (1 + pct[i])
+        damage[i] = max(dmg * (1 + pct[i]), 0)
         damage[i] += spellmodsum * (dmg/sum(base) * raw[i] + ids["raw"+Elements[i]+f"{smStr}Damage"].max + ids["raw"+Elements[i]+"Damage"].max)
         damage[i] *= 1 + strePct + int(crit) * dexPct  # (since dex is crit chance, it's just an average)
     return damage

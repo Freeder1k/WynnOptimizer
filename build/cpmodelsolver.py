@@ -87,6 +87,7 @@ class CPModelSolver:
 
         # Set the objective function
         self._objective = None
+        self._testvars = []
 
         print(item_count)
 
@@ -99,7 +100,12 @@ class CPModelSolver:
         self.model.maximize(self._objective)
 
     def set_objective_model(self, score_function):
-        self._objective = score_function(self.model, self._items, self.item_variables, self.sp_assignment_vars)
+        result = score_function(self.model, self._items, self.item_variables, self.sp_assignment_vars)
+        if isinstance(result, tuple):
+            self._objective, *self._testvars = result
+        else:
+            self._objective = result
+
         self.model.maximize(self._objective)
 
     def add_upper_bound(self, value: T, item_lambda: Callable[[item.Item], T]):
@@ -167,7 +173,7 @@ class CPModelSolver:
 
     def _find(self, silent=False):
         solver = cp_model.CpSolver()
-        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, [self._objective], silent)
+        solution_printer = VarArraySolutionPrinter(self.item_variables, self._items, self._weapon, [self._objective] + self._testvars, silent)
         solver.parameters.enumerate_all_solutions = True
         status = solver.solve(self.model, solution_printer)
         if not silent:
@@ -213,9 +219,9 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         for itm, x in zip(self._items, self._x):
             if self.Value(x) == 1:
                 res_items.append(itm)
+
         test = []
         for var in self.testvars:
-            #skps.append(self.Value(skp))
             test += [self.Value(var)]
 
         with open('tempoutput.txt', 'a') as f:
