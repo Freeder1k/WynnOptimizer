@@ -87,7 +87,6 @@ def process_results(cfg, sort: int, check_valid=True, factor=0):
         for n in entry:
             items.append(build.item.get_item(n))
         b = build.build.Build(cfg.weapon, *items)
-
         reqsp, bonsp = b.calc_sp()
         if sum(reqsp) >= 205 and check_valid:
             continue

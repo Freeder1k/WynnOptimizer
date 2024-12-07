@@ -38,7 +38,6 @@ class Build:
     def calc_sp(self):
         if self._required_sp is not None:
             return self._required_sp, self._bonus_sp
-
         self._required_sp, self._bonus_sp = sp.skillpoints(self)
 
         return self._required_sp, self._bonus_sp
@@ -50,7 +49,7 @@ class Build:
         return str(self.items)
 
     def generate_link(self, skilltree = "1T"):
-        build_string = 'https://hppeng-wynn.github.io/builder?v=8#9_'
+        build_string = 'https://hppeng-wynn.github.io/builder?v=10#9_'
         for itm in self.items:
             if isinstance(itm, Crafted):
                 build_string += "CR-"+itm.name
