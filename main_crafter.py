@@ -44,7 +44,7 @@ def main():
     solver.add(recipe.requirements.agility <= 40)
 
     print(f"Finding optimal recipe with {len(ingredients)} unique ingredients...")
-    print(solver.find_best())
+    print(solver.find_best(num_workers=4))
 
 
 if __name__ == '__main__':
