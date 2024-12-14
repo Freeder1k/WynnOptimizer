@@ -11,7 +11,7 @@ def main():
                        and (i.durability > 0
                             #or i.duration > 0
                             or i.modifiers.abs_total() != 0
-                            # or i.requirements.abs_sp_total != 0
+                            or i.requirements.abs_sp_total != 0
                             or i.identifications.rawHealth.abs_max != 0
                             or i.identifications.rawDefence.abs_max != 0
                             or i.identifications.rawAgility.abs_max != 0
@@ -36,7 +36,7 @@ def main():
 
     solver.add(recipe.identifications.manaRegen.abs_max >= -5)
 
-    solver.add(recipe.durability >= 200)
+    solver.add(recipe.durability >= 180)
     solver.add(recipe.requirements.strength <= 24)
     solver.add(recipe.requirements.dexterity <= 30)
     solver.add(recipe.requirements.intelligence <= 120)
