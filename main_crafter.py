@@ -40,7 +40,7 @@ def main():
     solver.add(recipe.requirements.strength <= 24)
     solver.add(recipe.requirements.dexterity <= 30)
     solver.add(recipe.requirements.intelligence <= 120)
-    solver.add(recipe.requirements.defence <= 40)
+    solver.add(recipe.requirements.defence <= 27)
     solver.add(recipe.requirements.agility <= 40)
 
     print(f"Finding optimal recipe with {len(ingredients)} unique ingredients...")
