@@ -24,11 +24,9 @@ class CPIdentificationValue:
     @property
     def avg(self) -> LinearExpr:
         """
-        Returns min + max
+        Wrapper for self.min + self.max
         """
-        avg = self.min + self.max
-        setattr(self, "avg", avg)
-        return avg
+        return self.min + self.max
 
 
 class CPIdentifications:
