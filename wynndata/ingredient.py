@@ -54,6 +54,7 @@ class Ingredient:
     @classmethod
     def from_api_json(cls, name, data: dict):
         try:
+            data['ingredientPositionModifiers']['notTouching'] = data['ingredientPositionModifiers'].pop('not_touching', 0)
             return cls(
                 name,
                 get_ing_id(name),
