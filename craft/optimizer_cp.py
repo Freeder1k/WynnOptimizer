@@ -160,7 +160,7 @@ class CPRecipeOptimizer:
         """
         self._objective = objective
 
-    def find_best(self):
+    def find_best(self, num_workers=1):
         """
         Find the recipe where the sum of the scores of the ingredients in that recipe is maximized and the constraints
         are satisfied.
@@ -171,7 +171,7 @@ class CPRecipeOptimizer:
 
         self.model.maximize(self._objective)
         solver = cp_model.CpSolver()
-        solver.parameters.num_workers = 6
+        solver.parameters.num_workers = num_workers
         printer = SolutionPrinter(self)
         status = solver.solve(self.model, printer)
 

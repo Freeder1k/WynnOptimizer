@@ -21,6 +21,13 @@ class CPIdentificationValue:
         setattr(self, item, expr)
         return expr
 
+    @property
+    def avg(self) -> LinearExpr:
+        """
+        Wrapper for self.min + self.max
+        """
+        return self.min + self.max
+
 
 class CPIdentifications:
     rawMainAttackDamage: CPIdentificationValue
