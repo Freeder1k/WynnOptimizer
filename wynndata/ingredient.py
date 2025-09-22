@@ -21,11 +21,11 @@ class Modifier:
     above: int = 0
     under: int = 0
     touching: int = 0
-    notTouching: int = 0
+    not_touching: int = 0
 
     def abs_total(self):
         return abs(self.left) + abs(self.right) + abs(self.above) + abs(self.under) + abs(self.touching) + abs(
-            self.notTouching)
+            self.not_touching)
 
 
 class Profession(Enum):
@@ -83,7 +83,7 @@ class Ingredient:
                          self.modifiers.above,
                          self.modifiers.under,
                          self.modifiers.touching,
-                         self.modifiers.notTouching,
+                         self.modifiers.not_touching,
                          *itertools.chain(*((self.identifications[i].min, self.identifications[i].max)
                                             for i in ids))
                          ],

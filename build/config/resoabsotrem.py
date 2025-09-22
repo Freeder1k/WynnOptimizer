@@ -32,6 +32,7 @@ items = itemfilter.remove_bad_items(base_dmg_max, items)
 items = itemfilter.remove_item(items, "Blue Mask")
 items = itemfilter.set_item(items, build.item.get_item("Brilliant Diamond Chestplate"))
 items = itemfilter.set_item(items, build.item.get_item("Crusade Sabatons"))
+items = itemfilter.set_item(items, build.item.get_item("Pain Cycle"))
 
 
 class DmgConfig(OptimizerConfig):

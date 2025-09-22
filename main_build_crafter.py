@@ -3,7 +3,7 @@ import wynndata.ingredient
 
 
 stat = "dsfgsdf"
-extradura = 0#211#382
+extradura = 90#211#382
 
 def main():
     ingredients = list(i for i in wynndata.ingredient.get_all_ingredients().values()
@@ -16,8 +16,8 @@ def main():
                             # or i.identifications.thunderDamage.abs_max != 0
                             # or i.identifications.spellDamage.abs_max != 0
                             # or i.identifications.walkSpeed.abs_max != 0
-                            # or i.identifications.lootBonus.abs_max != 0
-                            # or i.identifications.lootQuality.abs_max != 0
+                            or i.identifications.lootBonus.abs_max != 0
+                            or i.identifications.lootQuality.abs_max != 0
                            # or i.identifications[stat].abs_max != 0
                            # or i.identifications.thunderDamage.abs_max != 0
                            # or i.identifications.waterDamage.abs_max != 0
@@ -44,7 +44,7 @@ def main():
                             # or i.identifications.elementalSpellDamage.abs_max != 0
                            # or i.identifications.rawDexterity.abs_max != 0
                            # or i.identifications.walkSpeed.abs_max != 0
-                           or i.identifications.gatherXpBonus.abs_max != 0
+                           # or i.identifications.gatherXpBonus.abs_max != 0
                             or i.modifiers.abs_total() != 0)
                             and i.requirements.level <= 105
                        )
@@ -57,9 +57,10 @@ def main():
     # ingredients = [i for i in ingredients if i.name != "Aspect of the Void"]
     # ingredients = [i for i in ingredients if i.name != "Dominant Force"]
     # ingredients = [i for i in ingredients if i.name != "Lashing Hellfire"]
+    # ingredients = [i for i in ingredients if i.name != "Negative Rafflesia"]
 
     # armouring, tailoring, jeweling, weaponsmithing, woodworking, cooking, alchemism, scribing
-    professions = ['armouring']
+    professions = ['jeweling']
     for prof in professions:
         ingredients_lists.append(list(i for i in ingredients if wynndata.ingredient.Profession(prof) in i.skills))
     print([f"{p}: {len(i)}" for p, i in zip(professions, ingredients_lists)])
@@ -112,7 +113,8 @@ def main():
     # noinspection PyTypeChecker
     solver.set_objective(sum(r.identifications[stat].abs_max * 0
                              + r.durability
-                             + r.identifications.gatherXpBonus.abs_max * 1000
+                             + r.identifications.lootQuality.abs_max * 1000
+                             + r.identifications.lootBonus.abs_max * 1000
                              # + r.identifications.fireDamage.abs_max * 1000
                              # + r.identifications.airDamage.abs_max * 1000
                              for r in recipes))

@@ -81,9 +81,9 @@ def score_model(model, items, item_vars, sp_vars):
     return damage + 650000*f*(item_sp[0] + item_sp[1] ), *item_sp
 
 
-items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
+items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM) and itm.requirements.level <= 100)
 items = itemfilter.remove_bad_items(base_dmg_max, items)
-items = itemfilter.set_item(items, build.item.get_item("Time Rift"))
+# items = itemfilter.set_item(items, build.item.get_item("Time Rift"))
 # itemnames = ("Caesura", "Soul Signal", "Chaos-Woven Greaves", "Broken Balance", "Yang", "Yang", "Diamond Hydro Bracelet", "Amanuensis")
 # items = []
 # for i in itemnames:
@@ -98,8 +98,8 @@ class DmgConfig(OptimizerConfig):
         self.set_useModelFunction(True)
         # self.set_requirement_max('def', 0)
         # self.set_requirement_max('agi', 0)
-        # self.add_lower_bound(lambda itm: itm.identifications['baseHealth'].max + itm.identifications['rawHealth'].max, 8000)
-        # self.set_identification_min("manaRegen", 70)
+        self.add_lower_bound(lambda itm: itm.identifications['baseHealth'].max + itm.identifications['rawHealth'].max, 5000)
+        self.set_identification_min("manaRegen", 70)
         self.set_weapon(weapon)
         self.set_elemental_mastery(mastery)
         self.set_skilltree(skilltree)

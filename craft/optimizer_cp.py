@@ -110,8 +110,8 @@ class CPRecipeOptimizer:
         mod_touch = [sum(self.ingredients[j].modifiers.touching * self._ingredient_variables[i][j]
                          for j in range(self.ingr_count) if self.ingredients[j].modifiers.touching != 0)
                      for i in range(6)]
-        mod_not_touch = [sum(self.ingredients[j].modifiers.notTouching * self._ingredient_variables[i][j]
-                             for j in range(self.ingr_count) if self.ingredients[j].modifiers.notTouching != 0)
+        mod_not_touch = [sum(self.ingredients[j].modifiers.not_touching * self._ingredient_variables[i][j]
+                             for j in range(self.ingr_count) if self.ingredients[j].modifiers.not_touching != 0)
                          for i in range(6)]
 
         mod_arr = []
