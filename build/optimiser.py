@@ -53,7 +53,7 @@ def _runCPModelSolver(cfg):
             best_score = process_results(cfg, 2, check_valid=False, factor=cfg.sdfactor)[0][2]
             with open('tempoutput.txt', 'w') as f:
                 f.write("")
-            factor = 0.95
+            factor = 0.90
             print(f"Min objective score = {int(factor*best_score)}")
             solver.add_min_score(int(factor*best_score))
             solver.find_allbest()

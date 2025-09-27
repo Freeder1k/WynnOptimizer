@@ -33,6 +33,7 @@ class DmgConfig(OptimizerConfig):
         # self.set_requirement_max('def', 0)
         # self.set_requirement_max('agi', 0)
         self.set_identification_min("manaRegen", 70)
+        self.add_lower_bound(lambda itm: itm.identifications['baseHealth'].max + itm.identifications['rawHealth'].max, 5000)
         self.set_weapon(weapon)
         self.set_elemental_mastery(mastery)
         self.set_skilltree(skilltree)

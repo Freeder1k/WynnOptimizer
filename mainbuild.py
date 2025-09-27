@@ -9,7 +9,7 @@ def main():
           "/　 　ο—ヽ二二ラ))\n"
           "し———J\n")
 
-    from build.config.herald import DmgConfig
+    from build.config.mlmodel import DmgConfig
     cfg = DmgConfig()
     results = optimiser.optimise(cfg)
 

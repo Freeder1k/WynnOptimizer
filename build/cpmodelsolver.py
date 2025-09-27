@@ -92,10 +92,10 @@ class CPModelSolver:
         print(item_count)
 
     def set_objective_sum(self, score_function: Callable[[item.Item], int],factor):
-        # itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
-        # assignsp = self.sp_assignment_vars[0] + self.sp_assignment_vars[1]
+        itembonusses = [(itm.identifications.skillpoints[0] + itm.identifications.skillpoints[1]) * x for itm, x in zip(self._items, self.item_variables)]
+        assignsp = self.sp_assignment_vars[0] + self.sp_assignment_vars[1]
         # self.model.maximize(factor*(assignsp + sum(itembonusses)) + sum(self._objective))
-
+        self.model.add(sum([assignsp] + itembonusses) >= 75)
         self._objective = sum([int(score_function(itm)) * x for itm, x in zip(self._items, self.item_variables)])
         self.model.maximize(self._objective)
 

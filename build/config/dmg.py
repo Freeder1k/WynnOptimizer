@@ -44,4 +44,4 @@ class DmgConfig(OptimizerConfig):
         # self.set_sp_min('str', 40)
         self.set_sp_max('dex', 150)
         # self.set_sp_min('dex', 40)
-        self.set_sp_min('def', 50)
+        # self.set_sp_min('def', 50)

@@ -186,6 +186,9 @@ class IdentificationList:
 
         return IdentificationList({k: v * scale for k, v in self.identifications.items()})
 
+    def items(self):
+        return self.identifications.items()
+
     @property
     def skillpoints(self):
         str = self['rawStrength'].raw
