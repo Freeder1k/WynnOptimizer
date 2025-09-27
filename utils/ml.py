@@ -1,5 +1,4 @@
 import numpy as np
-import utils.dmgcalc as dmg
 import build.item
 import build.build
 import pandas as pd
@@ -8,10 +7,6 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import r2_score, mean_squared_error
-import matplotlib.pyplot as plt
-from utils import itemfilter
-import copy
-import ast
 
 elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
 Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']

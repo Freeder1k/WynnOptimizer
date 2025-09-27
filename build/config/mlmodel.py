@@ -2,7 +2,7 @@ from build.config.base import OptimizerConfig
 import build.item
 from utils import dmgcalc
 from utils import itemfilter
-from utils import aproxdmg
+from utils import ml
 
 
 spellmod = [1, 0.1, 0.1, 0.1, 0.1, 0.1]  # kinda random but acrobat has a lot of neutral modifiers with a bit of each element sprinkled in
@@ -20,16 +20,16 @@ def score(itm: build.item.Item, ) -> float:
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
 items = itemfilter.remove_bad_items(base_dmg_max, items)
-relevant_ids = aproxdmg.relevant_ids(base_dmg_max)
+relevant_ids = ml.relevant_ids(base_dmg_max)
 sp_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
 
 
 def score_model(model, items, item_vars, sp_vars):
     print("Generating training data")
-    X, y = aproxdmg.generate_valid_dataset(weapon, items, score, mastery, relevant_ids + sp_ids, n=10000)
+    X, y = ml.generate_valid_dataset(weapon, items, score, mastery, relevant_ids + sp_ids, n=10000)
     print("Training regression")
-    net = aproxdmg.train_model(X, y)
-    net = aproxdmg.quantize_model(net)
+    net = ml.train_model(X, y)
+    net = ml.quantize_model(net)
     mins = net.named_steps["scaler"].min_
     scales = net.named_steps["scaler"].scale_
 
