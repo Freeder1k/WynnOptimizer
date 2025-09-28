@@ -4,9 +4,11 @@ import build.build
 import pandas as pd
 import utils.skillpoints as sp
 from sklearn.neural_network import MLPRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import r2_score, mean_squared_error
+import ast
 
 elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
 Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']
@@ -43,14 +45,53 @@ def generate_valid_dataset(weapon, items, score_fn, mastery, relevant_ids, n=500
     rows, scores = [], []
     for i in range(n):
         b = generate_valid_build(weapon, items)
-        builditem = sp.add_sp(b.build(), *b.calc_sp())
+        reqsp, bonsp = b.calc_sp()
+        builditem = sp.add_sp(b.build(), *b.calc_sp()) # For some reason this works better?
+        # builditem = b.build()
         for typ,mas,bon in zip(damageTypes, mastery, masterybonus):
             builditem.identifications[typ] += bon*mas
         buildscore = score_fn(builditem)
+        itemscores = sum(int(score_fn(itm)) for itm in b.items)
 
         x = {iden: builditem.identifications[iden].max for iden in relevant_ids}
+        x['freesp'] = 204 - sum(reqsp)
+        x['itmscore'] = itemscores
         rows.append(x)
         scores.append(buildscore)
+    print("generated dataset")
+    return pd.DataFrame(rows, columns=relevant_ids), np.array(scores)
+
+def get_dataset(weapon, file, score_fn, mastery, relevant_ids, n=None, random=False):
+    with open(file, 'r') as f:
+        lines = f.readlines()
+    rows, scores = [], []
+    if n is None:
+        n = len(lines)
+
+    if random:
+        N = np.random.choice(len(lines), n)
+    else:
+        N = range(n)
+    for i in N:
+        text = lines[i]
+        data = ast.literal_eval(text)
+
+        items = [build.item.get_item(n) for n in data[0]]
+        b = build.build.Build(weapon, *items)
+        reqsp, bonsp = b.calc_sp()
+
+        builditem = sp.add_sp(b.build(), *b.calc_sp())
+        # builditem = b.build()
+        for typ,mas,bon in zip(damageTypes, mastery, masterybonus):
+            builditem.identifications[typ] += bon*mas
+        # buildscore = score_fn(builditem)
+        itemscores = sum(int(score_fn(itm)) for itm in b.items)
+
+        x = {iden: builditem.identifications[iden].max for iden in relevant_ids}
+        x['freesp'] = 204 - sum(reqsp)
+        x['itmscore'] = itemscores
+        rows.append(x)
+        scores.append(data[1])
     print("generated dataset")
     return pd.DataFrame(rows, columns=relevant_ids), np.array(scores)
 
@@ -67,21 +108,54 @@ def relevant_ids(base_dmg, melee=False):
             relevant_ids += [damageTypes[i], elements[i]+f'{smStr}Damage', 'raw'+Elements[i]+'Damage', 'raw'+Elements[i]+f'{smStr}Damage']
     return relevant_ids
 
-def train_model(X, y, hidden_layer_sizes=(2)):
-    net = Pipeline([
-        ("scaler", MinMaxScaler()),
-        ("mlp", MLPRegressor(
-            hidden_layer_sizes=hidden_layer_sizes,
-            activation="identity",
-            solver="adam",
-            learning_rate_init=0.001,
-            max_iter=2000,
-            # random_state=42,
-            verbose = False
-        ))
-    ])
+class LinReg(LinearRegression):
+    @property
+    def coefs_(self):
+        return [np.array([self.coef_]).T]
+    @coefs_.setter
+    def coefs_(self, value):
+        # Expect a list like MLPRegressor produces
+        if not isinstance(value, list) or len(value) != 1:
+            print(len(value), isinstance(value, list))
+            raise ValueError("coefs_ must be a list of length 1, like MLPRegressor.")
+        # if not isinstance(value[0], list) or len(value[0].T) != 1:
+        #     raise ValueError("coefs_ must be a list of length 1, like MLPRegressor.")
+        self.coef_ = value[0].T[0]
+    @property
+    def intercepts_(self):
+        return [np.array([self.intercept_]).T]
+    @intercepts_.setter
+    def intercepts_(self, value):
+        # Expect a list like MLPRegressor produces
+        if not isinstance(value, list) or len(value) != 1:
+            raise ValueError("intercepts_ must be a list of length 1, like MLPRegressor.")
+        if not isinstance(value, list) or len(value[0].T) != 1:
+            raise ValueError("intercepts_ must be a list of length 1, like MLPRegressor.")
+        self.intercept_ = value[0].T[0]
+
+def train_model(X, y, hidden_layer_sizes=()):
+    mlp = MLPRegressor(
+        hidden_layer_sizes=hidden_layer_sizes,
+        activation="identity",
+        solver="adam",
+        learning_rate_init=0.001,
+        max_iter=2000,
+        # random_state=42,
+        verbose = False
+    )
+    if hidden_layer_sizes == ():
+        net = Pipeline([
+            ("scaler", MinMaxScaler()),
+            ("model", LinReg())
+        ])
+    else:
+        net = Pipeline([
+            ("scaler", MinMaxScaler()),
+            ("model", mlp)
+        ])
 
     net.fit(X, y)
+
 
     print("R^2:", r2_score(y, net.predict(X)))
     print("MSE:", mean_squared_error(y, net.predict(X)))
@@ -89,7 +163,7 @@ def train_model(X, y, hidden_layer_sizes=(2)):
     return net
 
 def quantize_model(net):
-    mlp = net.named_steps["mlp"]   # or just your MLPRegressor if no pipeline
+    mlp = net.named_steps["model"]
     scaler = net.named_steps["scaler"]
 
     weights = mlp.coefs_
@@ -100,8 +174,8 @@ def quantize_model(net):
     factor = 10**3
 
     mlp.coefs_ = [np.round(W * factor).astype(int) for W in weights]
-    mlp.intercepts_ = [np.round(b * factor).astype(int) for b in biases]
-    scaler.min_ = np.round(means * factor).astype(int)
-    scaler.scale_ = np.round(scales * factor).astype(int)
+    mlp.intercepts_ = [np.round(b * factor**(i+2)).astype(int) for i,b in enumerate(biases)]
+    scaler.min_ = np.round(means * factor * 10).astype(int)
+    scaler.scale_ = np.round(scales * factor * 10).astype(int)
 
     return net

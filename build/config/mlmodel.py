@@ -3,6 +3,8 @@ import build.item
 from utils import dmgcalc
 from utils import itemfilter
 from utils import ml
+import pandas as pd
+import numpy as np
 
 
 spellmod = [1, 0.1, 0.1, 0.1, 0.1, 0.1]  # kinda random but acrobat has a lot of neutral modifiers with a bit of each element sprinkled in
@@ -26,7 +28,9 @@ sp_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAg
 
 def score_model(model, items, item_vars, sp_vars):
     print("Generating training data")
-    X, y = ml.generate_valid_dataset(weapon, items, score, mastery, relevant_ids + sp_ids, n=10000)
+    X_random, y_random = ml.generate_valid_dataset(weapon, items, score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=10000)
+    X_data, y_data = ml.get_dataset(weapon, 'output/Hanafubuki133318.txt', score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=10000, random=True)
+    X, y = pd.concat([X_data, X_random]), np.concatenate([y_data, y_random])
     print("Training regression")
     net = ml.train_model(X, y)
     net = ml.quantize_model(net)
@@ -35,14 +39,15 @@ def score_model(model, items, item_vars, sp_vars):
 
     # Skillpoints
     skillpoints = [0,0,0,0,0,0]
-    # free_sp = 204 - sum(sp_vars) # probably dont need this
+    free_sp = 204 - sum(sp_vars) # probably dont need this
     item_sp = [] # This array represents the total skillpoints of a build
     for i in range(5):
         a = [weapon.identifications[dmgcalc.skillPoints[i+1]].max, sp_vars[i]]
         for itm, x in zip(items, item_vars):
             if itm.identifications[dmgcalc.skillPoints[i+1]].max != 0:
                 a.append(itm.identifications[dmgcalc.skillPoints[i+1]].max * x)
-        item_sp.append(sum(a)*int(scales[-5+i]) + int(mins[-5+i]))
+        item_sp.append(sum(a)*int(scales[-7+i]) + int(mins[-7+i]))
+    item_sp.append(free_sp)
 
     item_ids = []
     for i, id in enumerate(relevant_ids):
@@ -52,10 +57,12 @@ def score_model(model, items, item_vars, sp_vars):
                 a.append(itm.identifications[id].max * x)
         item_ids.append(sum(a)*int(scales[i]) + int(mins[i]))
 
-    X = item_ids + item_sp
+    itemscores = [sum(int(score(itm))*x for itm, x in zip(items, item_vars))]
 
-    weights = net.named_steps["mlp"].coefs_
-    biases = net.named_steps["mlp"].intercepts_
+    X = item_ids + item_sp + itemscores
+
+    weights = net.named_steps["model"].coefs_
+    biases = net.named_steps["model"].intercepts_
     for W, b in zip(weights, biases):
         X_ = []
         for i in range(W.shape[1]):
