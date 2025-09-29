@@ -176,7 +176,7 @@ def quantize_model(net):
     factor = 10**3
 
     mlp.coefs_ = [np.round(W * factor).astype(int) for W in weights]
-    mlp.intercepts_ = [np.round(b * factor**(i+2)).astype(int) for i,b in enumerate(biases)]
+    mlp.intercepts_ = [np.round(b * factor**(i+2)*10).astype(int) for i,b in enumerate(biases)]
     scaler.min_ = np.round(means * factor * 10).astype(int)
     scaler.scale_ = np.round(scales * factor * 10).astype(int)
 

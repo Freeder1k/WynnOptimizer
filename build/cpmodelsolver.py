@@ -5,8 +5,6 @@ from build.item import SkillpointsTuple
 import numpy as np
 from ortools.sat.python import cp_model
 from build import item, build
-from utils import dmgcalc
-from build.config import dmg
 
 np.set_printoptions(threshold=sys.maxsize)
 T = TypeVar('T')
