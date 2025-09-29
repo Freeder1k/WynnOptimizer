@@ -7,12 +7,10 @@ import pandas as pd
 import numpy as np
 
 
-spellmod = [1, 0.1, 0.1, 0.1, 0.1, 0.1]  # kinda random but acrobat has a lot of neutral modifiers with a bit of each element sprinkled in
-# skilltree = '1TldxagIZu07'  # TODO: actual calculations with skilltree (THIS WILL BE PAIN)
-# mastery = [False, False, True, True, True]  # Elemental masteries from skilltree [ETWFA]
-weapon = build.item.get_weapon("Hanafubuki")
-skilltree = '1Tjdxa+LQK30'
-mastery = [False, False, True, True, False]  # Elemental masteries from skilltree [ETWFA]
+spellmod = [0.15, 0.05, 0, 0, 0.1, 0.05]  # Smoke bomb
+weapon = build.item.get_weapon("Grimtrap").set_powders(["e","e","e"])
+skilltree = ''
+mastery = [True, True, False, True, False]  # Elemental masteries from skilltree [ETWFA]
 base_dmg_max, base_dmg_min = dmgcalc.base_dmg(weapon, spellmod, mastery)
 spellmodsum = sum(spellmod)
 
@@ -22,21 +20,19 @@ def score(itm: build.item.Item, ) -> float:
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM))
 items = itemfilter.remove_bad_items(base_dmg_max, items)
-relevant_ids = regression.relevant_ids(base_dmg_max)
+relevant_ids = ml.relevant_ids(base_dmg_max)
 sp_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
 
 
 def score_model(model, items, item_vars, sp_vars):
     print("Generating training data")
-    X_random, y_random = regression.generate_valid_dataset(weapon, items, score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=10000)
-
-    # For some builds it seems adding higher scoring builds from a previous run improve the interpolation.
-    X_data, y_data = regression.get_dataset(weapon, 'output/Hanafubuki133318.txt', score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=10000, random=True)
-    X, y = pd.concat([X_data, X_random]), np.concatenate([y_data, y_random])
-
+    X_random, y_random = ml.generate_valid_dataset(weapon, items, score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=10000)
+    # X_data, y_data = ml.get_dataset(weapon, 'output/results.txt', score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=10000, random=True)
+    # X, y = pd.concat([X_data, X_random]), np.concatenate([y_data, y_random])
+    X, y = X_random, y_random
     print("Training regression")
-    net = regression.train_model(X, y)
-    net = regression.quantize_model(net)
+    net = ml.train_model(X, y)
+    net = ml.quantize_model(net)
     mins = net.named_steps["scaler"].min_
     scales = net.named_steps["scaler"].scale_
 
@@ -84,13 +80,13 @@ class DmgConfig(OptimizerConfig):
         # self.set_requirement_max('def', 0)
         # self.set_requirement_max('agi', 0)
         self.add_lower_bound(lambda itm: itm.identifications['baseHealth'].max + itm.identifications['rawHealth'].max, 5000)
-        self.set_identification_min("manaRegen", 60)
+        self.set_identification_min("manaRegen", 30)
         self.set_weapon(weapon)
         self.set_elemental_mastery(mastery)
         self.set_skilltree(skilltree)
-        self.set_sdfactor(2)
+        # self.set_sdfactor(2)
         # self.set_sp_max('str', 150)
-        # self.set_sp_min('str', 40)
+        self.set_sp_min('int', 40)
         # self.set_sp_max('dex', 150)
         # self.set_sp_min('dex', 40)
         # self.set_sp_min('def', 50)

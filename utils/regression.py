@@ -67,7 +67,9 @@ def get_dataset(weapon, file, score_fn, mastery, relevant_ids, n=None, random=Fa
     rows, scores = [], []
     if n is None:
         n = len(lines)
-
+    if n > len(lines):
+        print(f"Number of builds available ({len(lines)}) less than amount selected ({n})!")
+        n = len(lines)
     if random:
         N = np.random.choice(len(lines), n)
     else:
