@@ -9,7 +9,7 @@ def main():
           "/　 　ο—ヽ二二ラ))\n"
           "し———J\n")
 
-    from build.config.quakereg import DmgConfig
+    from build.config.grimreg import DmgConfig
     cfg = DmgConfig()
     results = optimiser.optimise(cfg)
 

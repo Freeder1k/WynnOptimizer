@@ -22,9 +22,11 @@ requirements_min = [
     ("manaRegen", -5),
     ("manaSteal", 20),
     ("lifeSteal", 1000),
-    ("walkSpeed", 100)
+    ("walkSpeed", 190)
 ]
-requirements_max = []
+requirements_max = [
+    ("raw2ndSpellCost", 0)
+]
 req_ids = [req[0] for req in requirements_min]
 relevant_ids = regression.relevant_ids(base_dmg_max, melee=melee)
 sp_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefence", "rawAgility"]

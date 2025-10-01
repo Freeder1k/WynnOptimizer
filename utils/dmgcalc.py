@@ -9,6 +9,7 @@ elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
 Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']
 skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefence", "rawAgility"]
 sptypes = ['str','dex','int','def','agi']
+spmul = [0, 1, 1, 1, 0.867, 0.951]
 
 
 def base_dmg(weapon, spellmod, masteries, melee=False):
@@ -53,7 +54,7 @@ def true_dmg(base, ids, spellmodsum, crit=True, melee=False):
     pct = [ids[f"{smstr}Damage"].max] + 5 * [ids[f"{smstr}Damage"].max + ids[f'elemental{smStr}Damage'].max]
     for i in range(6):
         pct[i] += ids[damageTypes[i]].max + ids[elements[i]+f'{smStr}Damage'].max
-        pct[i] += 100*spToPct(ids[skillPoints[i]].max)
+        pct[i] += 100*spToPct(ids[skillPoints[i]].max)*spmul[i]
         pct[i] = pct[i]*0.01
 
     strePct = spToPct(ids["rawStrength"].max)

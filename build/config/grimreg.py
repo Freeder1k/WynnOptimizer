@@ -16,7 +16,9 @@ base_dmg_max, base_dmg_min = dmgcalc.base_dmg(weapon, spellmod, mastery)
 spellmodsum = sum(spellmod)
 
 requirements_min = [
-    ("manaRegen", 30)
+    ("manaRegen", 40),
+    ("lifeSteal", 1000),
+    ("walkSpeed", 50)
 ]
 requirements_max = []
 req_ids = [req[0] for req in requirements_min]
@@ -29,11 +31,14 @@ def score(itm: build.item.Item, ) -> float:
 
 items = list(itm for itm in build.item.get_all_items().values() if score(itm) > score(build.item.NO_ITEM) or any(itm.identifications[r].max > 0 for r in req_ids))
 items = itemfilter.remove_bad_items(base_dmg_max, items, melee=melee, extra=req_ids)
+# items = [itm for itm in items if not itm.name == "Broken Balance"]
+items = [itm for itm in items if not itm.name == "Titanomachia"]
+items = itemfilter.set_item(items, build.item.get_item("Crusade Sabatons"))
 
 def score_model(model, items, item_vars, sp_vars):
     print("Generating training data")
-    X_random, y_random = regression.generate_valid_dataset(weapon, items, score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=10000)
-    # X_data, y_data = regression.get_dataset(weapon, 'output/results.txt', score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=10000, random=True)
+    X_random, y_random = regression.generate_valid_dataset(weapon, items, score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=5000)
+    # X_data, y_data = regression.get_dataset(weapon, 'output/results.txt', score, mastery, relevant_ids + sp_ids + ['freesp','itmscore'], n=5000, random=True)
     # X, y = pd.concat([X_data, X_random]), np.concatenate([y_data, y_random])
     X, y = X_random, y_random
     print("Training regression")
@@ -85,7 +90,7 @@ class DmgConfig(OptimizerConfig):
         self.set_useModelFunction(True)
         # self.set_requirement_max('def', 0)
         # self.set_requirement_max('agi', 0)
-        self.add_lower_bound(lambda itm: itm.identifications['baseHealth'].max + itm.identifications['rawHealth'].max, 5000)
+        self.add_lower_bound(lambda itm: itm.identifications['baseHealth'].max + itm.identifications['rawHealth'].max, 10000)
         for req in requirements_min:
             self.set_identification_min(*req)
         for req in requirements_max:
@@ -97,4 +102,5 @@ class DmgConfig(OptimizerConfig):
         self.set_sp_min('int', 40)
         # self.set_sp_max('dex', 150)
         # self.set_sp_min('dex', 40)
-        # self.set_sp_min('def', 50)
+        self.set_sp_min('def', 60)
+        # self.set_sp_min('agi', 0)
