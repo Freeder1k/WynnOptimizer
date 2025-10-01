@@ -23,7 +23,7 @@ requirements_min = [
 requirements_max = []
 req_ids = [req[0] for req in requirements_min]
 relevant_ids = regression.relevant_ids(base_dmg_max, melee=melee)
-sp_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
+sp_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefence", "rawAgility"]
 
 def score(itm: build.item.Item, ) -> float:
     return dmgcalc.avg_dmg(base_dmg_min, base_dmg_max, itm.identifications, spellmodsum, melee=melee)

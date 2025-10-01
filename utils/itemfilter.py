@@ -20,7 +20,7 @@ def remove_bad_items(base_dmg, items: list[build.item.Item], melee=False, extra=
         smstr = 'spell'
         smStr = 'Spell'
 
-    relevant_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility", f'raw{smStr}Damage',
+    relevant_ids = ["rawStrength", "rawDexterity", "rawIntelligence", "rawDefence", "rawAgility", f'raw{smStr}Damage',
                     f'{smstr}Damage', "elementalDamage", "rawElementalDamage", f"rawElemental{smStr}Damage", f"elemental{smStr}Damage"] + extra
     for i in range(6):
         if base_dmg[i] > 0:

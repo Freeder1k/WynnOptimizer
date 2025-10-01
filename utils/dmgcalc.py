@@ -7,7 +7,7 @@ damageTypes = ["damage", "earthDamage", "thunderDamage",  "waterDamage", "fireDa
 baseDamageTypes = ["baseDamage", "baseEarthDamage", "baseThunderDamage",  "baseWaterDamage", "baseFireDamage", "baseAirDamage"]
 elements = ['neutral', 'earth', 'thunder', 'water', 'fire', 'air']
 Elements = ['Neutral', 'Earth', 'Thunder', 'Water', 'Fire', 'Air']
-skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefense", "rawAgility"]
+skillPoints = ["", "rawStrength", "rawDexterity", "rawIntelligence", "rawDefence", "rawAgility"]
 sptypes = ['str','dex','int','def','agi']
 
 

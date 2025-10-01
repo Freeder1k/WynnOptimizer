@@ -109,7 +109,6 @@ class CPIdentifications:
     leveledLootBonus: CPIdentificationValue
     damageFromMobs: CPIdentificationValue
     leveledXpBonus: CPIdentificationValue
-    elementalDefense: CPIdentificationValue
     rawAirDamage: CPIdentificationValue
     rawEarthDamage: CPIdentificationValue
     rawFireDamage: CPIdentificationValue

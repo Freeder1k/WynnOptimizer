@@ -20,7 +20,7 @@ masterybonus = [0, 20, 10, 15, 15 ,15]
 def build_loop(weapon, items, typs, build_items, i):
     t_items = [itm for itm in items if itm.type == typs[0]]
     found = False
-    b = None
+    b = build_items
     while not found and len(t_items) > 0:
         build_items[i] = np.random.choice(t_items)
         b = build.build.Build(weapon, *build_items)
@@ -36,12 +36,21 @@ def build_loop(weapon, items, typs, build_items, i):
     return b, found
 
 def generate_valid_build(weapon, items):
-    typs = np.random.permutation(types)
+    t1 = []
+    t2 = []
+    for typ in types:
+        if len([itm for itm in items if itm.type == typ]) > 5:
+            t1.append(typ)
+        else:
+            t2.append(typ)
+    typs = t2 + np.random.permutation(t1).tolist()
     build_items = 8*[build.item.NO_ITEM]
     b, f = build_loop(weapon, items, typs, build_items, 0)
     return b
 
 def generate_valid_dataset(weapon, items, score_fn, mastery, relevant_ids, n=5000):
+    if len(mastery) == 5:
+        mastery = [False] + mastery
     rows, scores = [], []
     for i in range(n):
         b = generate_valid_build(weapon, items)
@@ -62,6 +71,8 @@ def generate_valid_dataset(weapon, items, score_fn, mastery, relevant_ids, n=500
     return pd.DataFrame(rows, columns=relevant_ids), np.array(scores)
 
 def get_dataset(weapon, file, score_fn, mastery, relevant_ids, n=None, random=False):
+    if len(mastery) == 5:
+        mastery = [False] + mastery
     with open(file, 'r') as f:
         lines = f.readlines()
     rows, scores = [], []

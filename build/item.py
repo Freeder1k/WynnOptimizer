@@ -96,7 +96,6 @@ class IdentificationType(Enum):
     LEVELED_XP_BONUS = "leveledXpBonus"
     DAMAGE_FROM_MOBS = "damageFromMobs"
     LEVELED_LOOT_BONUS = "leveledLootBonus"
-    ELEMENTAL_DEFENSE = "elementalDefense"
     RAW_FIRE_DAMAGE = "rawFireDamage"
     RAW_NEUTRAL_DAMAGE = "rawNeutralDamage"
     RAW_AIR_DAMAGE = "rawAirDamage"
