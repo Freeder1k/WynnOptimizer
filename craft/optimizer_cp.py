@@ -5,6 +5,7 @@ from ortools.sat.python.cp_model import LinearExpr, BoundedLinearExpression
 
 from cp_utils.linear_expr_factory import LinearExprFactory
 from craft.cp_recipe import CPRecipe
+from utils import gridUtils
 from utils.integer import Base64
 from wynndata import ingredient
 from wynndata.recipe import Recipe
@@ -29,31 +30,27 @@ class CPRecipeOptimizer:
         self.ingr_count = len(ingredients)
         self._values_count = 0
 
-        # Define ingredient variables for each slot
-        self._ingredient_variables = [[self.model.new_bool_var(f"{ingr.name}_{i}") for ingr in ingredients]
-                                      for i in SLOTS]
-        for i in SLOTS:
-            self.model.add_exactly_one(self._ingredient_variables[i])
+        # Ingredient in each slot is represented by its index.
+        self._ingredient_variables = [self.model.new_int_var(0, self.ingr_count - 1, f"slot_{i}_ingredient") for i in
+                                      SLOTS]
 
         # Define modifier variables
         self._mods = self._calc_mods()
-        self._mod_variables = [[self.model.new_int_var(-1000, 1000, f"{ingr.name}_mod_{i}") for ingr in ingredients]
-                               for i in SLOTS]
-        for i in SLOTS:
-            for j in range(self.ingr_count):
-                self.model.add(self._mod_variables[i][j] == self._mods[i]).only_enforce_if(
-                    self._ingredient_variables[i][j])
-                self.model.add(self._mod_variables[i][j] == 0).only_enforce_if(
-                    self._ingredient_variables[i][j].negated())
 
         self._objective = None
 
-    def raw_values(self, value_func: Callable[[ingredient.Ingredient], int]):
+    def base_values(self, value_func: Callable[[ingredient.Ingredient], int], name: str = None):
         """
-        Return lin exprs corresponding to the value of each slot (unmodified).
+        Return variables corresponding to the value of each slot (unmodified).
         """
-        return [sum(value_func(self.ingredients[j]) * self._ingredient_variables[i][j] for j in range(self.ingr_count))
-                for i in SLOTS]
+        all_base_values = [value_func(ingr) for ingr in self.ingredients]
+        max_val = abs(max(all_base_values, key=abs))
+        base_vars = [self.model.new_int_var(-max_val, max_val, f"slot_{i}_{name}_base") for i in SLOTS]
+
+        for i in SLOTS:
+            self.model.add_element(self._ingredient_variables[i], all_base_values, base_vars[i])
+
+        return base_vars
 
     def effective_values(self, value_func: Callable[[ingredient.Ingredient], int], name: str = None,
                          round_up: bool = False):
@@ -69,90 +66,75 @@ class CPRecipeOptimizer:
             slot_vars = [self.model.new_constant(0) for _ in SLOTS]
             return slot_vars
 
-        values = [value_func(ingr) for ingr in self.ingredients]
-        max_val = abs(max(values, key=abs))
+        all_base_values = [value_func(ingr) for ingr in self.ingredients]
+        max_val = abs(max(all_base_values, key=abs))
 
-        base_vals = [sum(values[j] * self._mod_variables[i][j] for j in range(self.ingr_count)) for i in SLOTS]
-        base_vars = [self.model.new_int_var(-max_val * 1000, max_val * 1000, f"val_{i}_{name}_base") for i in SLOTS]
+        base_vars = self.base_values(value_func, name=name)
 
-        slot_vars = [self.model.new_int_var(-max_val * 10, max_val * 10, f"val_{i}_{name}") for i in SLOTS]
+        slot_vars = [self.model.new_int_var(-max_val * 10, max_val * 10, f"slot_{i}_{name}_value") for i in SLOTS]
 
         for i in SLOTS:
-            is_neg_var = self.model.new_bool_var(f"val_{i}_{name}_is_neg")
-            self.model.add(base_vars[i] < 0).only_enforce_if(is_neg_var)
-            self.model.add(base_vars[i] >= 0).only_enforce_if(is_neg_var.Not())
+            v = self.model.NewIntVar(-max_val * 1000, max_val * 1000, f"slot_{i}_{name}_modified")
+            self.model.add_multiplication_equality(v, [base_vars[i], self._mods[i]])
 
-            # round up/down
+            is_neg = self.model.new_bool_var(f"slot_{i}_{name}_is_neg")
+
+            # Wynncraft rounds up/down to +/-infinity instead of 0.
+            v2 = self.model.new_int_var(-max_val * 1000, max_val * 1000, f"slot_{i}_{name}_modified_offset")
+            self.model.add(v < 0).only_enforce_if(is_neg)
+            self.model.add(v >= 0).only_enforce_if(is_neg.Not())
             if round_up:
-                self.model.add(base_vars[i] == base_vals[i]).only_enforce_if(is_neg_var)
-                self.model.add(base_vars[i] == base_vals[i] + 99).only_enforce_if(is_neg_var.Not())
+                offset = is_neg.Not() * 99
             else:
-                self.model.add(base_vars[i] == base_vals[i]).only_enforce_if(is_neg_var.Not())
-                self.model.add(base_vars[i] == base_vals[i] - 99).only_enforce_if(is_neg_var)
-
-            self.model.AddDivisionEquality(slot_vars[i], base_vars[i], 100)
+                offset = is_neg * -99
+            self.model.add(v2 == v + offset)
+            self.model.AddDivisionEquality(slot_vars[i], v2, 100)
 
         return slot_vars
 
     def _calc_mods(self):
-        mod_left = [sum(self.ingredients[j].modifiers.left * self._ingredient_variables[i][j]
-                        for j in range(self.ingr_count) if self.ingredients[j].modifiers.left != 0)
-                    for i in range(6)]
-        mod_right = [sum(self.ingredients[j].modifiers.right * self._ingredient_variables[i][j]
-                         for j in range(self.ingr_count) if self.ingredients[j].modifiers.right != 0)
-                     for i in range(6)]
-        mod_above = [sum(self.ingredients[j].modifiers.above * self._ingredient_variables[i][j]
-                         for j in range(self.ingr_count) if self.ingredients[j].modifiers.above != 0)
-                     for i in range(6)]
-        mod_under = [sum(self.ingredients[j].modifiers.under * self._ingredient_variables[i][j]
-                         for j in range(self.ingr_count) if self.ingredients[j].modifiers.under != 0)
-                     for i in range(6)]
-        mod_touch = [sum(self.ingredients[j].modifiers.touching * self._ingredient_variables[i][j]
-                         for j in range(self.ingr_count) if self.ingredients[j].modifiers.touching != 0)
-                     for i in range(6)]
-        mod_not_touch = [sum(self.ingredients[j].modifiers.not_touching * self._ingredient_variables[i][j]
-                             for j in range(self.ingr_count) if self.ingredients[j].modifiers.not_touching != 0)
-                         for i in range(6)]
+        mods = []
+        for i in SLOTS:
+            mod = 100
+            for j in SLOTS:
+                if j == i:
+                    continue
+                if gridUtils.is_left(i, j):
+                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_left")
+                    self.model.add_element(self._ingredient_variables[j],
+                                           [ingr.modifiers.left for ingr in self.ingredients], v)
+                    mod += v
+                if gridUtils.is_right(i, j):
+                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_right")
+                    self.model.add_element(self._ingredient_variables[j],
+                                           [ingr.modifiers.right for ingr in self.ingredients], v)
+                    mod += v
+                if gridUtils.is_above(i, j):
+                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_above")
+                    self.model.add_element(self._ingredient_variables[j],
+                                           [ingr.modifiers.above for ingr in self.ingredients], v)
+                    mod += v
+                if gridUtils.is_under(i, j):
+                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_under")
+                    self.model.add_element(self._ingredient_variables[j],
+                                           [ingr.modifiers.under for ingr in self.ingredients], v)
+                    mod += v
+                if gridUtils.is_touching(i, j):
+                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_touching")
+                    self.model.add_element(self._ingredient_variables[j],
+                                           [ingr.modifiers.touching for ingr in self.ingredients], v)
+                    mod += v
+                if gridUtils.is_not_touching(i, j):
+                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_not_touching")
+                    self.model.add_element(self._ingredient_variables[j],
+                                           [ingr.modifiers.not_touching for ingr in self.ingredients], v)
+                    mod += v
 
-        mod_arr = []
-        mod_arr.append(100
-                       + mod_left[1] + mod_touch[1]
-                       + mod_above[2] + mod_touch[2]
-                       + mod_not_touch[3]
-                       + mod_above[4] + mod_not_touch[4]
-                       + mod_not_touch[5])
-        mod_arr.append(100
-                       + mod_right[0] + mod_touch[0]
-                       + mod_not_touch[2]
-                       + mod_above[3] + mod_touch[3]
-                       + mod_not_touch[4]
-                       + mod_above[5] + mod_not_touch[5])
-        mod_arr.append(100
-                       + mod_under[0] + mod_touch[0]
-                       + mod_not_touch[1]
-                       + mod_left[3] + mod_touch[3]
-                       + mod_above[4] + mod_touch[4]
-                       + mod_not_touch[5])
-        mod_arr.append(100
-                       + mod_not_touch[0]
-                       + mod_under[1] + mod_touch[1]
-                       + mod_right[2] + mod_touch[2]
-                       + mod_not_touch[4]
-                       + mod_above[5] + mod_touch[5])
-        mod_arr.append(100
-                       + mod_under[0] + mod_not_touch[0]
-                       + mod_not_touch[1]
-                       + mod_under[2] + mod_touch[2]
-                       + mod_not_touch[3]
-                       + mod_left[5] + mod_touch[5])
-        mod_arr.append(100
-                       + mod_not_touch[0]
-                       + mod_under[1] + mod_not_touch[1]
-                       + mod_not_touch[2]
-                       + mod_under[3] + mod_touch[3]
-                       + mod_right[4] + mod_touch[4])
+            mod_var = self.model.new_int_var(-1000, 1000, f"slot_{i}_mod")
+            self.model.add(mod_var == mod)
+            mods.append(mod_var)
 
-        return mod_arr
+        return mods
 
     def set_objective(self, objective: LinearExpr):
         """
@@ -176,8 +158,8 @@ class CPRecipeOptimizer:
         status = solver.solve(self.model, printer)
 
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-            return solver.ObjectiveValue(), [self.ingredients[j] for i in range(6) for j in range(self.ingr_count) if
-                                             solver.Value(self._ingredient_variables[i][j])]
+            return solver.ObjectiveValue(), [self.ingredients[solver.Value(self._ingredient_variables[i])] for i in
+                                             range(6)]
         else:
             print(self.model.validate())
             print(f"Status = {solver.StatusName(status)}")
@@ -200,8 +182,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def on_solution_callback(self) -> None:
         self.count += 1
-        ingredients = [self.optimizer.ingredients[j] for i in range(6) for j in range(self.optimizer.ingr_count) if
-                       self.Value(self.optimizer._ingredient_variables[i][j])]
+        ingredients = [self.optimizer.ingredients[self.Value(self.optimizer._ingredient_variables[i])] for i in SLOTS]
         print(
             f"Solution {self.count}, time = {self.WallTime()} s, objective = {self.ObjectiveValue()}, ingredients = {ingredients}")
 
@@ -230,4 +211,4 @@ class _BaseLinExprFactory(LinearExprFactory):
         self.model = model
 
     def generate(self, value_func: Callable[[ingredient.Ingredient], int], lb=None, ub=None, name=None) -> LinearExpr:
-        return sum(self.model.raw_values(value_func))
+        return sum(self.model.base_values(value_func, name=name))

@@ -259,4 +259,4 @@ class _BaseLinExprFactory(LinearExprFactory):
         self.index = index
 
     def generate(self, value_func: Callable[[ingredient.Ingredient], int], lb=None, ub=None, name=None) -> LinearExpr:
-        return sum(self.model.raw_values(value_func)[self.index])
+        return sum(self.model.base_values(value_func)[self.index])
