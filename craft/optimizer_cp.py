@@ -17,10 +17,9 @@ SLOTS = (0, 1, 2, 3, 4, 5)
 class CPRecipeOptimizer:
     def __init__(self, ingredients: list[ingredient.Ingredient], profession: str):
         """
-        Create a linear programming optimizer for a recipe.
+        Create a constraint programming optimizer for a recipe.
         :param ingredients: A list of ingredients to use in the recipe.
-        :param score_function: A function that returns the score of an individual ingredient.
-        :param modifiers: The modifier values of the recipe.
+        :param profession: The profession of the recipe.
         """
         self.recipe = CPRecipe(_BaseLinExprFactory(self), _IdentificationsLinExprFactory(self),
                                _RequirementsLinExprFactory(self), profession)
@@ -28,27 +27,25 @@ class CPRecipeOptimizer:
 
         self.ingredients = ingredients
         self.ingr_count = len(ingredients)
-        self._values_count = 0
 
         # Ingredient in each slot is represented by its index.
-        self._ingredient_variables = [self.model.new_int_var(0, self.ingr_count - 1, f"slot_{i}_ingredient") for i in
-                                      SLOTS]
+        self._ingredient_vars = [self.model.new_int_var(0, self.ingr_count - 1, f"slot_{i}_ingredient") for i in SLOTS]
 
         # Define modifier variables
-        self._mods = self._calc_mods()
+        self._mod_vars = self._define_mods()
 
         self._objective = None
 
     def base_values(self, value_func: Callable[[ingredient.Ingredient], int], name: str = None):
         """
-        Return variables corresponding to the value of each slot (unmodified).
+        Return variables corresponding to the base value of each slot (unmodified).
         """
         all_base_values = [value_func(ingr) for ingr in self.ingredients]
         max_val = abs(max(all_base_values, key=abs))
         base_vars = [self.model.new_int_var(-max_val, max_val, f"slot_{i}_{name}_base") for i in SLOTS]
 
         for i in SLOTS:
-            self.model.add_element(self._ingredient_variables[i], all_base_values, base_vars[i])
+            self.model.add_element(self._ingredient_vars[i], all_base_values, base_vars[i])
 
         return base_vars
 
@@ -56,43 +53,37 @@ class CPRecipeOptimizer:
                          round_up: bool = False):
         """
         Add and return variables corresponding to the modified value of each slot.
-        Each call to this function adds 12 new variables, 24 new linear constraints and 6 new division constraints.
         """
-        if name is None:
-            name = self._values_count
-            self._values_count += 1
+        max_val = max([abs(value_func(ingr)) for ingr in self.ingredients])
 
-        if all(value_func(ingr) == 0 for ingr in self.ingredients):
-            slot_vars = [self.model.new_constant(0) for _ in SLOTS]
-            return slot_vars
-
-        all_base_values = [value_func(ingr) for ingr in self.ingredients]
-        max_val = abs(max(all_base_values, key=abs))
+        if max_val == 0:
+            value_vars = [self.model.new_constant(0) for _ in SLOTS]
+            return value_vars
 
         base_vars = self.base_values(value_func, name=name)
-
-        slot_vars = [self.model.new_int_var(-max_val * 10, max_val * 10, f"slot_{i}_{name}_value") for i in SLOTS]
+        value_vars = [self.model.new_int_var(-max_val * 10, max_val * 10, f"slot_{i}_{name}_value") for i in SLOTS]
 
         for i in SLOTS:
-            v = self.model.NewIntVar(-max_val * 1000, max_val * 1000, f"slot_{i}_{name}_modified")
-            self.model.add_multiplication_equality(v, [base_vars[i], self._mods[i]])
-
-            is_neg = self.model.new_bool_var(f"slot_{i}_{name}_is_neg")
+            v_modified = self.model.NewIntVar(-max_val * 1000, max_val * 1000, f"slot_{i}_{name}_modified")
+            self.model.add_multiplication_equality(v_modified, [base_vars[i], self._mod_vars[i]])  # x = base * modifier
 
             # Wynncraft rounds up/down to +/-infinity instead of 0.
-            v2 = self.model.new_int_var(-max_val * 1000, max_val * 1000, f"slot_{i}_{name}_modified_offset")
-            self.model.add(v < 0).only_enforce_if(is_neg)
-            self.model.add(v >= 0).only_enforce_if(is_neg.Not())
+            is_neg = self.model.new_bool_var(f"slot_{i}_{name}_is_neg")
+            v_offset = self.model.new_int_var(-max_val * 1000, max_val * 1000, f"slot_{i}_{name}_modified_offset")
+            self.model.add(v_modified < 0).only_enforce_if(is_neg)
+            self.model.add(v_modified >= 0).only_enforce_if(is_neg.Not())
             if round_up:
                 offset = is_neg.Not() * 99
             else:
                 offset = is_neg * -99
-            self.model.add(v2 == v + offset)
-            self.model.AddDivisionEquality(slot_vars[i], v2, 100)
+            self.model.add(v_offset == v_modified + offset)  # y = x + offset
 
-        return slot_vars
+            self.model.add_division_equality(value_vars[i], v_offset, 100)  # y = x // 100
 
-    def _calc_mods(self):
+        return value_vars
+
+    def _define_mods(self):
+        lb, ub = -1000, 1000
         mods = []
         for i in SLOTS:
             mod = 100
@@ -100,37 +91,37 @@ class CPRecipeOptimizer:
                 if j == i:
                     continue
                 if gridUtils.is_left(i, j):
-                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_left")
-                    self.model.add_element(self._ingredient_variables[j],
-                                           [ingr.modifiers.left for ingr in self.ingredients], v)
+                    v = self.model.new_int_var(lb, ub, f"mod_{i}_{j}_left")
+                    self.model.add_element(self._ingredient_vars[j], [ingr.modifiers.left for ingr in self.ingredients],
+                                           v)
                     mod += v
                 if gridUtils.is_right(i, j):
-                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_right")
-                    self.model.add_element(self._ingredient_variables[j],
+                    v = self.model.new_int_var(lb, ub, f"mod_{i}_{j}_right")
+                    self.model.add_element(self._ingredient_vars[j],
                                            [ingr.modifiers.right for ingr in self.ingredients], v)
                     mod += v
                 if gridUtils.is_above(i, j):
-                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_above")
-                    self.model.add_element(self._ingredient_variables[j],
+                    v = self.model.new_int_var(lb, ub, f"mod_{i}_{j}_above")
+                    self.model.add_element(self._ingredient_vars[j],
                                            [ingr.modifiers.above for ingr in self.ingredients], v)
                     mod += v
                 if gridUtils.is_under(i, j):
-                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_under")
-                    self.model.add_element(self._ingredient_variables[j],
+                    v = self.model.new_int_var(lb, ub, f"mod_{i}_{j}_under")
+                    self.model.add_element(self._ingredient_vars[j],
                                            [ingr.modifiers.under for ingr in self.ingredients], v)
                     mod += v
                 if gridUtils.is_touching(i, j):
-                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_touching")
-                    self.model.add_element(self._ingredient_variables[j],
+                    v = self.model.new_int_var(lb, ub, f"mod_{i}_{j}_touching")
+                    self.model.add_element(self._ingredient_vars[j],
                                            [ingr.modifiers.touching for ingr in self.ingredients], v)
                     mod += v
                 if gridUtils.is_not_touching(i, j):
-                    v = self.model.new_int_var(-1000, 1000, f"mod_{i}_{j}_not_touching")
-                    self.model.add_element(self._ingredient_variables[j],
+                    v = self.model.new_int_var(lb, ub, f"mod_{i}_{j}_not_touching")
+                    self.model.add_element(self._ingredient_vars[j],
                                            [ingr.modifiers.not_touching for ingr in self.ingredients], v)
                     mod += v
 
-            mod_var = self.model.new_int_var(-1000, 1000, f"slot_{i}_mod")
+            mod_var = self.model.new_int_var(lb, ub, f"slot_{i}_mod")
             self.model.add(mod_var == mod)
             mods.append(mod_var)
 
@@ -158,8 +149,7 @@ class CPRecipeOptimizer:
         status = solver.solve(self.model, printer)
 
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-            return solver.ObjectiveValue(), [self.ingredients[solver.Value(self._ingredient_variables[i])] for i in
-                                             range(6)]
+            return solver.ObjectiveValue(), [self.ingredients[solver.Value(self._ingredient_vars[i])] for i in range(6)]
         else:
             print(self.model.validate())
             print(f"Status = {solver.StatusName(status)}")
@@ -182,7 +172,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def on_solution_callback(self) -> None:
         self.count += 1
-        ingredients = [self.optimizer.ingredients[self.Value(self.optimizer._ingredient_variables[i])] for i in SLOTS]
+        ingredients = [self.optimizer.ingredients[self.Value(self.optimizer._ingredient_vars[i])] for i in SLOTS]
         print(
             f"Solution {self.count}, time = {self.WallTime()} s, objective = {self.ObjectiveValue()}, ingredients = {ingredients}")
 
