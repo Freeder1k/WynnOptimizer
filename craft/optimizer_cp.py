@@ -35,6 +35,7 @@ class CPRecipeOptimizer:
         self._mod_vars = self._define_mods()
 
         self._objective = None
+        self._solver = None
 
     def base_values(self, value_func: Callable[[ingredient.Ingredient], int], name: str = None):
         """
@@ -144,6 +145,7 @@ class CPRecipeOptimizer:
 
         self.model.maximize(self._objective)
         solver = cp_model.CpSolver()
+        self._solver = solver
         solver.parameters.num_workers = num_workers
         printer = SolutionPrinter(self)
         status = solver.solve(self.model, printer)
@@ -160,6 +162,14 @@ class CPRecipeOptimizer:
         Add a constraint to the model.
         """
         self.model.add(constraint)
+
+    def get(self, var: LinearExpr):
+        """
+        Get the value of a variable in the current solution.
+        """
+        if self._solver is None:
+            raise ValueError("Solver not initialized")
+        return self._solver.Value(var)
 
 
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
