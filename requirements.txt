@@ -2,3 +2,4 @@ numpy
 requests
 scipy
 ortools
+python-dotenv

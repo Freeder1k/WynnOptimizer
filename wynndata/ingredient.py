@@ -23,6 +23,17 @@ class Modifier:
     touching: int = 0
     not_touching: int = 0
 
+    def __init__(self, left: int=0, right: int=0, above: int=0, under: int=0, touching: int=0, notTouching: int=0, not_touching: int=0):
+        self.left = left
+        self.right = right
+        self.above = above
+        self.under = under
+        self.touching = touching
+        if notTouching != 0:
+            self.not_touching = notTouching
+        else:
+            self.not_touching = not_touching
+
     def abs_total(self):
         return abs(self.left) + abs(self.right) + abs(self.above) + abs(self.under) + abs(self.touching) + abs(
             self.not_touching)

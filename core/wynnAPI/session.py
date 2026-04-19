@@ -1,9 +1,17 @@
+import os
 import time
 
 import requests
 
 from utils.rateLimit import RateLimit
 from utils.type.jsonTypes import JsonType
+
+from dotenv import load_dotenv
+load_dotenv()
+
+_headers = {
+    "Authorization": f"Bearer {os.getenv('WYNN_API_KEY')}"
+}
 
 _rate_limit = RateLimit(180, 1)
 _rl_reset = 0
@@ -19,7 +27,7 @@ def get(url: str, **params: str) -> JsonType:
     :return: the response in json format.
     """
     with _rate_limit:
-        resp = requests.get(f"https://api.wynncraft.com/v3{url}", params=params, timeout=5)
+        resp = requests.get(f"https://api.wynncraft.com/v3{url}", params=params, headers=_headers, timeout=5)
         resp.raise_for_status()
         global _rl_reset, _last_req_time
         _last_req_time = time.time()

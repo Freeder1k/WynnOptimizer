@@ -8,7 +8,6 @@ from . import session
 @ttl(t=3600)
 def _from_api() -> dict[str, JsonType]:
     print('Fetching item database from API...')
-    # db = session.get(f"/item/database", fullResult="True")
     db = session.get(f"/item/database?full_result")
     with open("data/database.json", "w") as f:
         json.dump(db, f, indent=4)

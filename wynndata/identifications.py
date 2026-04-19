@@ -12,98 +12,124 @@ def replace_num(s: str):
 
 @dataclass
 class Identifications:
-    rawMainAttackDamage: MinMaxValue
-    rawSpellDamage: MinMaxValue
-    healthRegenRaw: MinMaxValue
-    manaSteal: MinMaxValue
-    walkSpeed: MinMaxValue
-    thunderDamage: MinMaxValue
-    rawStrength: MinMaxValue
-    rawDexterity: MinMaxValue
+    baseHealth: MinMaxValue
+    baseEarthDefence: MinMaxValue
+    healthRegen: MinMaxValue
+    thorns: MinMaxValue
+    reflection: MinMaxValue
+    exploding: MinMaxValue
+    baseWaterDefence: MinMaxValue
     rawIntelligence: MinMaxValue
+    manaRegen: MinMaxValue
+    dexterity: MinMaxValue
+    rawDexterity: MinMaxValue
+    rawThunderMainAttackDamage: MinMaxValue
+    mainAttackRange: MinMaxValue
+    thunderDefence: MinMaxValue
+    baseThunderDamage: MinMaxValue
+    baseFireDamage: MinMaxValue
+    defence: MinMaxValue
+    rawSpellDamage: MinMaxValue
+    manaSteal: MinMaxValue
+    airDamage: MinMaxValue
+    fireDefence: MinMaxValue
+    rawStrength: MinMaxValue
     rawDefence: MinMaxValue
     rawAgility: MinMaxValue
+    baseDamage: MinMaxValue
+    baseEarthDamage: MinMaxValue
+    strength: MinMaxValue
     lootBonus: MinMaxValue
-    fireDefence: MinMaxValue
-    airDefence: MinMaxValue
-    mainAttackDamage: MinMaxValue
-    spellDamage: MinMaxValue
-    exploding: MinMaxValue
-    airDamage: MinMaxValue
-    rawHealth: MinMaxValue
-    reflection: MinMaxValue
-    earthDefence: MinMaxValue
     earthDamage: MinMaxValue
     waterDamage: MinMaxValue
-    waterDefence: MinMaxValue
-    healthRegen: MinMaxValue
-    manaRegen: MinMaxValue
-    fireDamage: MinMaxValue
-    lifeSteal: MinMaxValue
+    baseThunderDefence: MinMaxValue
+    baseFireDefence: MinMaxValue
+    baseAirDefence: MinMaxValue
+    mainAttackDamage: MinMaxValue
+    rawMainAttackDamage: MinMaxValue
+    spellDamage: MinMaxValue
+    healthRegenRaw: MinMaxValue
     rawAttackSpeed: MinMaxValue
-    xpBonus: MinMaxValue
-    thunderDefence: MinMaxValue
-    thorns: MinMaxValue
-    soulPointRegen: MinMaxValue
-    stealing: MinMaxValue
-    firstSpellCost: MinMaxValue
-    secondSpellCost: MinMaxValue
-    rawfirstSpellCost: MinMaxValue
-    rawthirdSpellCost: MinMaxValue
-    jumpHeight: MinMaxValue
-    airSpellDamage: MinMaxValue
-    poison: MinMaxValue
-    elementalDamage: MinMaxValue
-    healingEfficiency: MinMaxValue
-    rawfourthSpellCost: MinMaxValue
-    rawsecondSpellCost: MinMaxValue
-    sprintRegen: MinMaxValue
-    slowEnemy: MinMaxValue
-    thirdSpellCost: MinMaxValue
-    sprint: MinMaxValue
-    elementalSpellDamage: MinMaxValue
-    rawNeutralSpellDamage: MinMaxValue
-    fourthSpellCost: MinMaxValue
-    knockback: MinMaxValue
-    waterSpellDamage: MinMaxValue
-    fireSpellDamage: MinMaxValue
-    rawAirMainAttackDamage: MinMaxValue
-    rawAirSpellDamage: MinMaxValue
-    earthSpellDamage: MinMaxValue
-    rawThunderDamage: MinMaxValue
-    rawWaterDamage: MinMaxValue
-    rawElementalDamage: MinMaxValue
-    rawEarthSpellDamage: MinMaxValue
-    elementalDefence: MinMaxValue
-    rawThunderMainAttackDamage: MinMaxValue
-    thunderSpellDamage: MinMaxValue
-    rawThunderSpellDamage: MinMaxValue
-    rawFireMainAttackDamage: MinMaxValue
-    weakenEnemy: MinMaxValue
-    rawWaterSpellDamage: MinMaxValue
+    thunderDamage: MinMaxValue
+    fireDamage: MinMaxValue
+    rawHealth: MinMaxValue
+    lifeSteal: MinMaxValue
+    waterDefence: MinMaxValue
     earthMainAttackDamage: MinMaxValue
-    rawFireSpellDamage: MinMaxValue
-    rawElementalSpellDamage: MinMaxValue
-    healing: MinMaxValue
-    rawElementalMainAttackDamage: MinMaxValue
+    fireMainAttackDamage: MinMaxValue
+    earthDefence: MinMaxValue
     damage: MinMaxValue
+    firstSpellCost: MinMaxValue
+    knockback: MinMaxValue
+    slowEnemy: MinMaxValue
+    poison: MinMaxValue
+    xpBonus: MinMaxValue
+    agility: MinMaxValue
+    elementalSpellDamage: MinMaxValue
+    baseAirDamage: MinMaxValue
+    walkSpeed: MinMaxValue
+    weakenEnemy: MinMaxValue
+    sprintRegen: MinMaxValue
+    jumpHeight: MinMaxValue
+    baseWaterDamage: MinMaxValue
+    intelligence: MinMaxValue
+    airDefence: MinMaxValue
+    rawsecondSpellCost: MinMaxValue
+    rawElementalDamage: MinMaxValue
+    healingEfficiency: MinMaxValue
     rawDamage: MinMaxValue
-    elementalMainAttackDamage: MinMaxValue
-    airMainAttackDamage: MinMaxValue
-    thunderMainAttackDamage: MinMaxValue
-    leveledLootBonus: MinMaxValue
-    damageFromMobs: MinMaxValue
-    leveledXpBonus: MinMaxValue
-    elementalDefense: MinMaxValue
-    rawAirDamage: MinMaxValue
-    rawEarthDamage: MinMaxValue
+    elementalDefence: MinMaxValue
+    stealing: MinMaxValue
+    thirdSpellCost: MinMaxValue
+    secondSpellCost: MinMaxValue
+    elementalDamage: MinMaxValue
+    sprint: MinMaxValue
+    rawMaxMana: MinMaxValue
+    rawthirdSpellCost: MinMaxValue
+    rawFireMainAttackDamage: MinMaxValue
+    earthSpellDamage: MinMaxValue
+    airSpellDamage: MinMaxValue
+    rawfourthSpellCost: MinMaxValue
     rawFireDamage: MinMaxValue
+    rawThunderDamage: MinMaxValue
+    rawfirstSpellCost: MinMaxValue
+    fourthSpellCost: MinMaxValue
+    rawEarthMainAttackDamage: MinMaxValue
+    rawAirMainAttackDamage: MinMaxValue
+    rawAirDamage: MinMaxValue
+    rawWaterSpellDamage: MinMaxValue
+    waterSpellDamage: MinMaxValue
+    rawThunderSpellDamage: MinMaxValue
+    neutralDamage: MinMaxValue
     rawNeutralDamage: MinMaxValue
-    lootQuality: MinMaxValue
+    rawElementalMainAttackDamage: MinMaxValue
+    thunderMainAttackDamage: MinMaxValue
+    rawEarthDamage: MinMaxValue
+    fireSpellDamage: MinMaxValue
+    rawElementalSpellDamage: MinMaxValue
+    criticalDamageBonus: MinMaxValue
+    rawFireSpellDamage: MinMaxValue
+    rawAirSpellDamage: MinMaxValue
+    thunderSpellDamage: MinMaxValue
+    rawNeutralMainAttackDamage: MinMaxValue
+    airMainAttackDamage: MinMaxValue
+    rawNeutralSpellDamage: MinMaxValue
+    rawWaterDamage: MinMaxValue
+    elementalMainAttackDamage: MinMaxValue
+    rawEarthSpellDamage: MinMaxValue
+    neutralMainAttackDamage: MinMaxValue
+    neutralSpellDamage: MinMaxValue
+    leveledXpBonus: MinMaxValue
+    damageFromMobs: MinMaxValue
     gatherXpBonus: MinMaxValue
+    leveledLootBonus: MinMaxValue
+    lootQuality: MinMaxValue
     gatherSpeed: MinMaxValue
     rawWaterMainAttackDamage: MinMaxValue
-    rawEarthMainAttackDamage: MinMaxValue
+    combatExperience: MinMaxValue
+    gatheringExperience: MinMaxValue
+    waterMainAttackDamage: MinMaxValue
+
 
     def __init__(self, ids: dict[str, MinMaxValue]):
         self._ids = ids

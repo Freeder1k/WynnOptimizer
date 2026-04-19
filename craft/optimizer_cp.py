@@ -187,7 +187,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
             f"Solution {self.count}, time = {self.WallTime()} s, objective = {self.ObjectiveValue()}, ingredients = {ingredients}")
 
         recipe = Recipe(*ingredients)
-        print(f"https://hppeng-wynn.github.io/crafter/#1{Base64.fromInt(recipe.id, order=12)}9i91")
+        print(f"https://wynnbuilder-beta.github.io/crafter/#1{Base64.fromInt(recipe.id, order=12)}8e81")
 
 
 class _IdentificationsLinExprFactory(LinearExprFactory):
